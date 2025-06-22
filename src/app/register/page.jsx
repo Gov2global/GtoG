@@ -1,5 +1,5 @@
 import React from 'react'
-import FarmerFormPage from './components/FarmerForm'
+import FarmerFormPage from './components/PrivateAgency'
 import Container from './components/Container'
 
 function FormResgiPage() {
