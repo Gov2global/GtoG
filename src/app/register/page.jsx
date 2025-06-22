@@ -1,11 +1,13 @@
 import React from 'react'
+import FarmerFormPage from './components/FarmerForm'
+import Container from './components/Container'
 
 function FormResgiPage() {
   return (
-    <div>
-      
-    </div>
+    <Container>
+      <FarmerFormPage/>
+    </Container>
   )
 }
 
-export default FormPage
+export default FormResgiPage
