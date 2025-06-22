@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import ModernInput from "./ui/Input";
-import ModernSelect from "./ui/Select";
+import { ModernSelect} from "./ui/Select"; 
 import { BsShop } from "react-icons/bs";
 import { DiCoda } from "react-icons/di";
 

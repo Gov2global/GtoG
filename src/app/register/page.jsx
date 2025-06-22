@@ -1,6 +1,6 @@
-import React from 'react'
-import FarmerFormPage from './components/FarmerForm'
-import Container from './components/Container'
+import React from 'react';
+import FarmerFormPage from './components/GovernmentAgencies';
+import Container from './components/Container';
 
 function FormResgiPage() {
   return (
