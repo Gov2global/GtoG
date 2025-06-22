@@ -6,7 +6,7 @@ import { GiFarmTractor } from "react-icons/gi";
 import { DiCoda } from "react-icons/di";
 import { MdOutlineLocalLibrary } from "react-icons/md";
 
-function LocalAuthorityPage() {
+function LocalAuthorityPage({ selectedType = "", selectedSubType = "" }) {
   const [formData, setFormData] = useState({
     regPosition: "",
     regAreaOfResponsibility: "",
@@ -17,6 +17,8 @@ function LocalAuthorityPage() {
     province: "",
     district: "",
     sub_district: "",
+    regType: selectedType || "",
+    regSubType: selectedSubType || "",
   });
 
   const [regFruits, setRegFruits] = useState([""]);
@@ -37,6 +39,14 @@ function LocalAuthorityPage() {
     };
     fetchProvinces();
   }, []);
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      regType: selectedType || "",
+      regSubType: selectedSubType || "",
+    }));
+  }, [selectedType, selectedSubType]);
 
   const handleChange = useCallback(
     (field) => (value) => {
@@ -104,6 +114,9 @@ function LocalAuthorityPage() {
           <ModernInput label="LINE ID" value={formData.regLineID} onChange={handleChange("regLineID")} placeholder="LINE ID ของคุณ" ringColor="gray" />
           <ModernInput label="ตำแหน่ง" value={formData.regPosition} onChange={handleChange("regPosition")} placeholder="กรอกตำแหน่ง" ringColor="gray" />
           <ModernInput label="เขตพื้นที่รับผิดชอบ" value={formData.regAreaOfResponsibility} onChange={handleChange("regAreaOfResponsibility")} placeholder="กรอกเขตพื้นที่รับผิดชอบ" ringColor="gray" />
+
+          <ModernInput label="ประเภทหน่วยงาน" value={formData.regType} onChange={handleChange("regType")} placeholder="ประเภทหน่วยงาน" ringColor="gray" disabled />
+          <ModernInput label="หมวดหมู่" value={formData.regSubType} onChange={handleChange("regSubType")} placeholder="หมวดหมู่" ringColor="gray" disabled />
 
           <ModernSelect
             label="จังหวัด"

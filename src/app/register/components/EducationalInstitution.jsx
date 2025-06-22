@@ -3,9 +3,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import ModernInput from "./ui/Input";
 import { ModernSelect } from "./ui/Select";
 import { DiCoda } from "react-icons/di";
-import { MdOutlineLocalLibrary } from "react-icons/md"; 
+import { MdOutlineLocalLibrary } from "react-icons/md";
 
-function EducationalInstitutionPage() {
+function EducationalInstitutionPage({ selectedType = "", selectedSubType = "" }) {
   const [formData, setFormData] = useState({
     regSchoolName: "",
     regName: "",
@@ -15,6 +15,8 @@ function EducationalInstitutionPage() {
     province: "",
     district: "",
     sub_district: "",
+    regType: selectedType || "",
+    regSubType: selectedSubType || "",
   });
 
   const [regFruits, setRegFruits] = useState([""]);
@@ -30,11 +32,19 @@ function EducationalInstitutionPage() {
         const json = await res.json();
         if (json.success) setProvinceList(json.data);
       } catch (err) {
-        console.error("❌ โหลดจังหวัดล้มเหลว:", err);
+        console.error("\u274C \u0e42\u0e2b\u0e25\u0e14\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14\u0e25\u0e49\u0e21\u0e40\u0e2b\u0e25\u0e27:", err);
       }
     };
     fetchProvinces();
   }, []);
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      regType: selectedType || "",
+      regSubType: selectedSubType || "",
+    }));
+  }, [selectedType, selectedSubType]);
 
   const handleChange = useCallback(
     (field) => (value) => {
@@ -80,7 +90,7 @@ function EducationalInstitutionPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("📦 ข้อมูลที่บันทึก:", {
+    console.log("\ud83d\udce6 \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e17\u0e35\u0e48\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01:", {
       ...formData,
       postcode,
       regFruits,
@@ -101,7 +111,9 @@ function EducationalInstitutionPage() {
           <ModernInput label="เบอร์โทร" value={formData.regTel} onChange={handleChange("regTel")} placeholder="08xxxxxxxx" type="tel" ringColor="blue" />
           <ModernInput label="LINE ID" value={formData.regLineID} onChange={handleChange("regLineID")} placeholder="LINE ID ของคุณ" ringColor="blue" />
           <ModernInput label="ชื่อโรงเรียน" value={formData.regSchoolName} onChange={handleChange("regSchoolName")} placeholder="กรอกชื่อโรงเรียน" ringColor="blue" />
-          
+
+          <ModernInput label="ประเภทหน่วยงาน" value={formData.regType} onChange={handleChange("regType")} placeholder="ประเภทหน่วยงาน" ringColor="blue" disabled />
+          <ModernInput label="หมวดหมู่" value={formData.regSubType} onChange={handleChange("regSubType")} placeholder="หมวดหมู่" ringColor="blue" disabled />
 
           <ModernSelect
             label="จังหวัด"

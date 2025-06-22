@@ -1,11 +1,13 @@
+// ✅ Modified PrivateAgencyPage to accept and bind selectedType & selectedSubType
+
 "use client";
 import React, { useState, useEffect } from "react";
 import ModernInput from "./ui/Input";
-import { ModernSelect} from "./ui/Select"; 
+import { ModernSelect } from "./ui/Select";
 import { BsShop } from "react-icons/bs";
 import { DiCoda } from "react-icons/di";
 
-function PrivateAgencyPage() {
+function PrivateAgencyPage({ selectedType = "", selectedSubType = "" }) {
   const [formData, setFormData] = useState({
     regCompany: "",
     regName: "",
@@ -16,10 +18,11 @@ function PrivateAgencyPage() {
     district: "",
     sub_district: "",
     addressDetail: "",
+    regType: selectedType,
+    regSubType: selectedSubType,
   });
 
   const [regFruits, setRegFruits] = useState([""]);
-
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [subDistricts, setSubDistricts] = useState([]);
@@ -38,6 +41,14 @@ function PrivateAgencyPage() {
     fetchProvinces();
   }, []);
 
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      regType: selectedType,
+      regSubType: selectedSubType,
+    }));
+  }, [selectedType, selectedSubType]);
+
   const handleChange = (field) => (value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -51,11 +62,7 @@ function PrivateAgencyPage() {
     setDistricts(filteredDistricts);
     setSubDistricts([]);
     setPostcode("");
-    setFormData((prev) => ({
-      ...prev,
-      district: "",
-      sub_district: "",
-    }));
+    setFormData((prev) => ({ ...prev, district: "", sub_district: "" }));
   };
 
   const handleDistrictChange = (value) => {
@@ -68,10 +75,7 @@ function PrivateAgencyPage() {
       .map((item) => item.sub_district);
     setSubDistricts(filteredSub);
     setPostcode("");
-    setFormData((prev) => ({
-      ...prev,
-      sub_district: "",
-    }));
+    setFormData((prev) => ({ ...prev, sub_district: "" }));
   };
 
   const handleSubDistrictChange = (value) => {
@@ -125,32 +129,17 @@ function PrivateAgencyPage() {
           <ModernInput label="เบอร์โทร" value={formData.regTel} onChange={handleChange("regTel")} placeholder="08xxxxxxxx" type="tel" ringColor="blue" />
           <ModernInput label="LINE ID" value={formData.regLineID} onChange={handleChange("regLineID")} placeholder="LINE ID ของคุณ" ringColor="blue" />
 
-          <ModernSelect
-            label="จังหวัด"
-            value={formData.province}
-            onChange={handleProvinceChange}
-            options={[...new Set(provinces.map((p) => p.province))].map((p) => ({ value: p, label: p }))}
-            ringColor="blue"
-          />
+          <ModernInput label="ประเภทหน่วยงาน" value={formData.regType} onChange={handleChange("regType")} disabled ringColor="blue" />
+          <ModernInput label="หมวดหมู่" value={formData.regSubType} onChange={handleChange("regSubType")} disabled ringColor="blue" />
+
+          <ModernSelect label="จังหวัด" value={formData.province} onChange={handleProvinceChange} options={[...new Set(provinces.map((p) => p.province))].map((p) => ({ value: p, label: p }))} ringColor="blue" />
 
           {formData.province && (
-            <ModernSelect
-              label="อำเภอ"
-              value={formData.district}
-              onChange={handleDistrictChange}
-              options={districts.map((d) => ({ value: d, label: d }))}
-              ringColor="blue"
-            />
+            <ModernSelect label="อำเภอ" value={formData.district} onChange={handleDistrictChange} options={districts.map((d) => ({ value: d, label: d }))} ringColor="blue" />
           )}
 
           {formData.district && (
-            <ModernSelect
-              label="ตำบล"
-              value={formData.sub_district}
-              onChange={handleSubDistrictChange}
-              options={subDistricts.map((s) => ({ value: s, label: s }))}
-              ringColor="blue"
-            />
+            <ModernSelect label="ตำบล" value={formData.sub_district} onChange={handleSubDistrictChange} options={subDistricts.map((s) => ({ value: s, label: s }))} ringColor="blue" />
           )}
 
           {formData.sub_district && (
@@ -160,42 +149,24 @@ function PrivateAgencyPage() {
             </>
           )}
 
-          {/* 🔵 ผลไม้ที่ต้องการซื้อ */}
           <div>
             <h3 className="text-lg font-semibold text-blue-800 mb-2">ผลไม้ที่ต้องการซื้อ</h3>
             {regFruits.map((fruit, index) => (
               <div key={index} className="flex gap-2 items-end mb-3">
-                <ModernInput
-                  label={`ผลไม้ #${index + 1}`}
-                  value={fruit}
-                  onChange={(val) => handleFruitChange(index, val)}
-                  placeholder="เช่น มะม่วง"
-                  ringColor="blue"
-                />
+                <ModernInput label={`ผลไม้ #${index + 1}`} value={fruit} onChange={(val) => handleFruitChange(index, val)} placeholder="เช่น มะม่วง" ringColor="blue" />
                 {regFruits.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeFruit(index)}
-                    className="text-red-500 hover:text-red-700 text-sm font-medium"
-                  >
+                  <button type="button" onClick={() => removeFruit(index)} className="text-red-500 hover:text-red-700 text-sm font-medium">
                     ลบ
                   </button>
                 )}
               </div>
             ))}
-            <button
-              type="button"
-              onClick={addFruit}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-            >
+            <button type="button" onClick={addFruit} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
               ➕ เพิ่มรายการผลไม้
             </button>
           </div>
 
-          <button
-            type="submit"
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-800 to-blue-600 text-white py-3 rounded-full font-semibold hover:from-blue-900 hover:to-blue-700 shadow-lg transition-all duration-300"
-          >
+          <button type="submit" className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-800 to-blue-600 text-white py-3 rounded-full font-semibold hover:from-blue-900 hover:to-blue-700 shadow-lg transition-all duration-300">
             <DiCoda size={22} className="opacity-90" />
             ลงทะเบียน
           </button>

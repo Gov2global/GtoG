@@ -6,7 +6,7 @@ import { GiFarmTractor } from "react-icons/gi";
 import { DiCoda } from "react-icons/di";
 import { BsShop } from "react-icons/bs";
 
-function GovernmentAgenciesPage() {
+function GovernmentAgenciesPage({ selectedType = "", selectedSubType = "" }) {
   const [formData, setFormData] = useState({
     regPosition: "",
     regAreaOfResponsibility: "",
@@ -17,6 +17,8 @@ function GovernmentAgenciesPage() {
     province: "",
     district: "",
     sub_district: "",
+    regType: selectedType || "",
+    regSubType: selectedSubType || "",
   });
 
   const [regFruits, setRegFruits] = useState([""]);
@@ -25,7 +27,6 @@ function GovernmentAgenciesPage() {
   const [subDistrictList, setSubDistrictList] = useState([]);
   const [postcode, setPostcode] = useState("");
 
-  // 📌 โหลดข้อมูลจังหวัด
   useEffect(() => {
     const fetchProvinces = async () => {
       try {
@@ -39,7 +40,14 @@ function GovernmentAgenciesPage() {
     fetchProvinces();
   }, []);
 
-  // 🔧 ฟังก์ชัน handle field ทั่วไป
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      regType: selectedType || "",
+      regSubType: selectedSubType || "",
+    }));
+  }, [selectedType, selectedSubType]);
+
   const handleChange = useCallback(
     (field) => (value) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
@@ -47,7 +55,6 @@ function GovernmentAgenciesPage() {
     []
   );
 
-  // 📍 เลือกจังหวัด
   const handleProvinceChange = (province) => {
     handleChange("province")(province);
     const filteredDistricts = provinceList
@@ -61,7 +68,6 @@ function GovernmentAgenciesPage() {
     setFormData((prev) => ({ ...prev, district: "", sub_district: "" }));
   };
 
-  // 📍 เลือกอำเภอ
   const handleDistrictChange = (district) => {
     handleChange("district")(district);
     const filteredSub = provinceList
@@ -73,7 +79,6 @@ function GovernmentAgenciesPage() {
     setFormData((prev) => ({ ...prev, sub_district: "" }));
   };
 
-  // 📍 เลือกตำบล
   const handleSubDistrictChange = (sub_district) => {
     handleChange("sub_district")(sub_district);
     const found = provinceList.find(
@@ -83,20 +88,6 @@ function GovernmentAgenciesPage() {
         item.sub_district === sub_district
     );
     setPostcode(found?.postcode?.toString() || "");
-  };
-
-  // 🥭 จัดการผลไม้ (ถ้าใช้งานต่อในอนาคต)
-  const handleFruitChange = (index, value) => {
-    const updated = [...regFruits];
-    updated[index] = value;
-    setRegFruits(updated);
-  };
-
-  const addFruit = () => setRegFruits([...regFruits, ""]);
-  const removeFruit = (index) => {
-    const updated = [...regFruits];
-    updated.splice(index, 1);
-    setRegFruits(updated);
   };
 
   const handleSubmit = (e) => {
@@ -123,6 +114,9 @@ function GovernmentAgenciesPage() {
           <ModernInput label="LINE ID" value={formData.regLineID} onChange={handleChange("regLineID")} placeholder="LINE ID ของคุณ" ringColor="gray" />
           <ModernInput label="ตำแหน่ง" value={formData.regPosition} onChange={handleChange("regPosition")} placeholder="กรอกตำแหน่ง" ringColor="gray" />
           <ModernInput label="เขตพื้นที่รับผิดชอบ" value={formData.regAreaOfResponsibility} onChange={handleChange("regAreaOfResponsibility")} placeholder="กรอกเขตพื้นที่รับผิดชอบ" ringColor="gray" />
+
+          <ModernInput label="ประเภทหน่วยงาน" value={formData.regType} onChange={handleChange("regType")} placeholder="ประเภทหน่วยงาน" ringColor="gray" disabled />
+          <ModernInput label="หมวดหมู่" value={formData.regSubType} onChange={handleChange("regSubType")} placeholder="หมวดหมู่" ringColor="gray" disabled />
 
           <ModernSelect
             label="จังหวัด"
@@ -153,9 +147,7 @@ function GovernmentAgenciesPage() {
           )}
 
           {formData.sub_district && (
-            <>
-              <ModernInput label="รหัสไปรษณีย์" value={postcode} onChange={(val) => setPostcode(val)} placeholder="รหัสไปรษณีย์" ringColor="gray" />
-            </>
+            <ModernInput label="รหัสไปรษณีย์" value={postcode} onChange={(val) => setPostcode(val)} placeholder="รหัสไปรษณีย์" ringColor="gray" />
           )}
 
           <button

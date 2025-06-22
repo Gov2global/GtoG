@@ -19,7 +19,7 @@ const plantLabelMap = {
   "ส้มโอ":"pomelo",
 };
 
-function FarmerFormPage() {
+function FarmerFormPage({ selectedType, selectedSubType }) {
   const [formData, setFormData] = useState({
     regName: "",
     regSurname: "",
@@ -37,7 +37,17 @@ function FarmerFormPage() {
     district: "",
     sub_district: "",
     addressDetail: "",
+    regType: "",
+    regSubType: "",
   });
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      regType: selectedType || "",
+      regSubType: selectedSubType || "",
+    }));
+  }, [selectedType, selectedSubType]);
 
   const [plantOptions, setPlantOptions] = useState([]);
   const [provinces, setProvinces] = useState([]);
@@ -46,59 +56,32 @@ function FarmerFormPage() {
   const [postcode, setPostcode] = useState("");
 
   useEffect(() => {
-    const fetchProvinces = async () => {
-      try {
-        const res = await fetch("/api/farmer/get/province");
-        const json = await res.json();
-        if (json.success) setProvinces(json.data);
-      } catch (err) {
-        console.error("❌ โหลดจังหวัดล้มเหลว:", err);
-      }
-    };
-    fetchProvinces();
+    fetch("/api/farmer/get/province")
+      .then((res) => res.json())
+      .then((json) => json.success && setProvinces(json.data))
+      .catch((err) => console.error("❌ โหลดจังหวัดล้มเหลว:", err));
   }, []);
 
   useEffect(() => {
-    const fetchPlants = async () => {
-      try {
-        const res = await fetch("/api/farmer/get/plant");
-        const json = await res.json();
+    fetch("/api/farmer/get/plant")
+      .then((res) => res.json())
+      .then((json) => {
         if (json.success) {
-          const formatted = json.data.map((item) => ({
-            value: item.plantID,
-            label: item.plantNameTH,
-          }));
+          const formatted = json.data.map((item) => ({ value: item.plantID, label: item.plantNameTH }));
           formatted.push({ value: "other", label: "อื่นๆ (โปรดระบุ)" });
           setPlantOptions(formatted);
         }
-      } catch (error) {
-        console.error("❌ โหลดพืชล้มเหลว:", error);
-      }
-    };
-    fetchPlants();
+      })
+      .catch((err) => console.error("❌ โหลดพืชล้มเหลว:", err));
   }, []);
 
   const handleChange = (field) => (value) => {
     setFormData((prev) => {
       if (field === "regPlant") {
-        return {
-          ...prev,
-          regPlant: value,
-          regPlantSpecies: [],
-          regPlantOther: "",
-        };
+        return { ...prev, regPlant: value, regPlantSpecies: [], regPlantOther: "" };
       }
       if (field === "regPlantSpecies") {
-        if (Array.isArray(value)) {
-          return {
-            ...prev,
-            [field]: value
-              .filter(Boolean)
-              .map((v) => (typeof v === "string" ? v : v.value)),
-          };
-        } else {
-          return { ...prev, [field]: [value] };
-        }
+        return { ...prev, [field]: Array.isArray(value) ? value.map((v) => (typeof v === "string" ? v : v.value)) : [value] };
       }
       return { ...prev, [field]: value };
     });
@@ -106,10 +89,7 @@ function FarmerFormPage() {
 
   const handleProvinceChange = (value) => {
     handleChange("province")(value);
-    const filteredDistricts = provinces
-      .filter((item) => item.province === value)
-      .map((item) => item.district)
-      .filter((v, i, a) => a.indexOf(v) === i);
+    const filteredDistricts = [...new Set(provinces.filter(p => p.province === value).map(p => p.district))];
     setDistricts(filteredDistricts);
     setSubDistricts([]);
     setPostcode("");
@@ -118,9 +98,7 @@ function FarmerFormPage() {
 
   const handleDistrictChange = (value) => {
     handleChange("district")(value);
-    const filteredSub = provinces
-      .filter((item) => item.province === formData.province && item.district === value)
-      .map((item) => item.sub_district);
+    const filteredSub = provinces.filter(p => p.province === formData.province && p.district === value).map(p => p.sub_district);
     setSubDistricts(filteredSub);
     setPostcode("");
     setFormData((prev) => ({ ...prev, sub_district: "" }));
@@ -129,10 +107,7 @@ function FarmerFormPage() {
   const handleSubDistrictChange = (value) => {
     handleChange("sub_district")(value);
     const found = provinces.find(
-      (item) =>
-        item.province === formData.province &&
-        item.district === formData.district &&
-        item.sub_district === value
+      (p) => p.province === formData.province && p.district === formData.district && p.sub_district === value
     );
     setPostcode(found?.postcode?.toString() || "");
   };
@@ -167,10 +142,9 @@ function FarmerFormPage() {
       ? formData.regPlantSpecies.map((v) => ({ value: v, label: v }))
       : [];
 
-  const safeOptions =
-    Array.isArray(plantVarieties?.[mappedKey])
-      ? plantVarieties[mappedKey].filter(Boolean).map((v) => ({ value: v, label: v }))
-      : [];
+  const safeOptions = Array.isArray(plantVarieties?.[mappedKey])
+    ? plantVarieties[mappedKey].filter(Boolean).map((v) => ({ value: v, label: v }))
+    : [];
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-yellow-100 via-white to-yellow-200 p-4">
@@ -196,7 +170,7 @@ function FarmerFormPage() {
             <>
               {mappedKey && plantVarieties[mappedKey] ? (
                 <ModernCreatableSelect
-                  label={`เลือกหรือพิมพ์พันธุ์ของ "${selectedLabel}"`}
+                  label={`เลือกหรือพิมพ์พันธุ์ของ \"${selectedLabel}\"`}
                   value={safePlantSpecies}
                   onChange={handleChange("regPlantSpecies")}
                   options={safeOptions}
@@ -205,7 +179,7 @@ function FarmerFormPage() {
                 />
               ) : (
                 <ModernInput
-                  label={`โปรดระบุพันธุ์ของ "${cleanLabel}" ที่ท่านปลูก`}
+                  label={`โปรดระบุพันธุ์ของ \"${cleanLabel}\" ที่ท่านปลูก`}
                   value={formData.regPlantSpecies?.[0] || ""}
                   onChange={(v) => setFormData((prev) => ({ ...prev, regPlantSpecies: [v] }))}
                   placeholder="เช่น พันธุ์สุวรรณ 1 หรือ สายพันธุ์อื่นๆ"
