@@ -1,11 +1,10 @@
-// ✅ Modified PrivateAgencyPage to accept and bind selectedType & selectedSubType
-
 "use client";
 import React, { useState, useEffect } from "react";
 import ModernInput from "./ui/Input";
 import { ModernSelect } from "./ui/Select";
 import { BsShop } from "react-icons/bs";
 import { DiCoda } from "react-icons/di";
+import LoadingOverlay from "./LoadingOverlatCAR";
 
 function PrivateAgencyPage({ selectedType = "", selectedSubType = "" }) {
   const [formData, setFormData] = useState({
@@ -27,6 +26,7 @@ function PrivateAgencyPage({ selectedType = "", selectedSubType = "" }) {
   const [districts, setDistricts] = useState([]);
   const [subDistricts, setSubDistricts] = useState([]);
   const [postcode, setPostcode] = useState("");
+  const [showLoading, setShowLoading] = useState(false);
 
   useEffect(() => {
     const fetchProvinces = async () => {
@@ -41,13 +41,14 @@ function PrivateAgencyPage({ selectedType = "", selectedSubType = "" }) {
     fetchProvinces();
   }, []);
 
-  useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      regType: selectedType,
-      regSubType: selectedSubType,
-    }));
-  }, [selectedType, selectedSubType]);
+useEffect(() => {
+  setFormData((prev) => ({
+    ...prev,
+    regType: selectedType || "", // ← อาจจะว่าง!
+    regSubType: selectedSubType || "",
+  }));
+}, [selectedType, selectedSubType]);
+console.log("🧾 selectedType จาก props:", selectedType);
 
   const handleChange = (field) => (value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -68,10 +69,7 @@ function PrivateAgencyPage({ selectedType = "", selectedSubType = "" }) {
   const handleDistrictChange = (value) => {
     handleChange("district")(value);
     const filteredSub = provinces
-      .filter(
-        (item) =>
-          item.province === formData.province && item.district === value
-      )
+      .filter((item) => item.province === formData.province && item.district === value)
       .map((item) => item.sub_district);
     setSubDistricts(filteredSub);
     setPostcode("");
@@ -107,45 +105,75 @@ function PrivateAgencyPage({ selectedType = "", selectedSubType = "" }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("📦 ข้อมูลที่บันทึก:", {
-      ...formData,
-      postcode,
-      regFruits,
-    });
+    setShowLoading(true);
+
+    setTimeout(async () => {
+      try {
+        const idRes = await fetch(`/api/farmer/gen-id?regType=${formData.regType}`);
+        const idJson = await idRes.json();
+        if (!idJson.success) throw new Error("ไม่สามารถสร้างรหัสลงทะเบียนได้");
+
+        const payload = {
+          ...formData,
+          regID: idJson.regID,
+          postcode,
+          regFruits: regFruits.filter((f) => f.trim() !== ""),
+        };
+
+        console.log("📦 ส่งข้อมูล:", payload);
+
+        const submitRes = await fetch("/api/farmer/submit/farmer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const submitJson = await submitRes.json();
+        if (!submitJson.success) throw new Error("บันทึกข้อมูลล้มเหลว");
+
+        // alert("✅ ลงทะเบียนสำเร็จ: " + submitJson.data.regID);
+        window.location.reload();
+      } catch (err) {
+        console.error("❌", err.message);
+        alert("❌ เกิดข้อผิดพลาด: " + err.message);
+      } finally {
+        setShowLoading(false);
+      }
+    }, 5000);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-gray-100 via-white to-blue-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-gray-100 via-white to-blue-100 p-4 relative">
+      {showLoading && <LoadingOverlay />}
       <div className="w-full max-w-lg bg-white shadow-2xl rounded-3xl px-8 py-10 border border-gray-200">
-        <h2 className="text-3xl font-extrabold text-center text-blue-900 mb-8 tracking-tight flex items-center justify-center gap-3 hover:text-blue-950 transition">
+        <h2 className="text-3xl font-extrabold text-center text-blue-900 mb-8 flex items-center justify-center gap-3">
           <BsShop size={45} className="animate-bounce-slow" />
           ลงทะเบียนหน่วยงานเอกชน
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <ModernInput label="ชื่อบริษัทฯ" value={formData.regCompany} onChange={handleChange("regCompany")} placeholder="กรอกชื่อบริษัทฯ" ringColor="blue" />
-          <ModernInput label="ชื่อ" value={formData.regName} onChange={handleChange("regName")} placeholder="กรอกชื่อ" ringColor="blue" />
-          <ModernInput label="นามสกุล" value={formData.regSurname} onChange={handleChange("regSurname")} placeholder="กรอกนามสกุล" ringColor="blue" />
-          <ModernInput label="เบอร์โทร" value={formData.regTel} onChange={handleChange("regTel")} placeholder="08xxxxxxxx" type="tel" ringColor="blue" />
-          <ModernInput label="LINE ID" value={formData.regLineID} onChange={handleChange("regLineID")} placeholder="LINE ID ของคุณ" ringColor="blue" />
-
-          <ModernInput label="ประเภทหน่วยงาน" value={formData.regType} onChange={handleChange("regType")} disabled ringColor="blue" />
-          <ModernInput label="หมวดหมู่" value={formData.regSubType} onChange={handleChange("regSubType")} disabled ringColor="blue" />
-
-          <ModernSelect label="จังหวัด" value={formData.province} onChange={handleProvinceChange} options={[...new Set(provinces.map((p) => p.province))].map((p) => ({ value: p, label: p }))} ringColor="blue" />
+          <ModernInput label="ชื่อบริษัทฯ" value={formData.regCompany} onChange={handleChange("regCompany")} ringColor="blue" />
+          <ModernInput label="ชื่อ" value={formData.regName} onChange={handleChange("regName")} ringColor="blue" />
+          <ModernInput label="นามสกุล" value={formData.regSurname} onChange={handleChange("regSurname")} ringColor="blue" />
+          <ModernInput label="เบอร์โทร" value={formData.regTel} onChange={handleChange("regTel")} type="tel" ringColor="blue" />
+          <ModernInput label="LINE ID" value={formData.regLineID} onChange={handleChange("regLineID")} ringColor="blue" />
+          <ModernSelect label="จังหวัด" value={formData.province} onChange={handleProvinceChange}
+            options={[...new Set(provinces.map((p) => p.province))].map((p) => ({ value: p, label: p }))} ringColor="blue" />
 
           {formData.province && (
-            <ModernSelect label="อำเภอ" value={formData.district} onChange={handleDistrictChange} options={districts.map((d) => ({ value: d, label: d }))} ringColor="blue" />
+            <ModernSelect label="อำเภอ" value={formData.district} onChange={handleDistrictChange}
+              options={districts.map((d) => ({ value: d, label: d }))} ringColor="blue" />
           )}
 
           {formData.district && (
-            <ModernSelect label="ตำบล" value={formData.sub_district} onChange={handleSubDistrictChange} options={subDistricts.map((s) => ({ value: s, label: s }))} ringColor="blue" />
+            <ModernSelect label="ตำบล" value={formData.sub_district} onChange={handleSubDistrictChange}
+              options={subDistricts.map((s) => ({ value: s, label: s }))} ringColor="blue" />
           )}
 
           {formData.sub_district && (
             <>
-              <ModernInput label="รหัสไปรษณีย์" value={postcode} onChange={(val) => setPostcode(val)} placeholder="รหัสไปรษณีย์" ringColor="blue" />
-              <ModernInput label="ที่อยู่เพิ่มเติม (เช่น บ้านเลขที่/หมู่)" value={formData.addressDetail} onChange={handleChange("addressDetail")} placeholder="เช่น 123 หมู่ 4 บ้านโพน" ringColor="blue" />
+              <ModernInput label="รหัสไปรษณีย์" value={postcode} onChange={setPostcode} ringColor="blue" />
+              <ModernInput label="ที่อยู่เพิ่มเติม" value={formData.addressDetail} onChange={handleChange("addressDetail")} ringColor="blue" />
             </>
           )}
 

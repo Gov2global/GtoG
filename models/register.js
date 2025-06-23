@@ -2,33 +2,36 @@ import mongoose from "mongoose";
 
 const registerSchema = new mongoose.Schema(
   {
-    regDta: { type: Date},
-    regLineID: { type: String },
+    regData: { type: Date },
+    regID: { type: String, unique: true, required: true },
     regName: { type: String },
     regSurname: { type: String },
-    resCompanyName: { type: String},
-    resInstitute: { type: String},
-    resSchool: { type: String},
-    resPosition: { type: String },
-    resAreaofResponsibility: { type: String },
     regTel: { type: String },
-    regLineID: { type: String},
-    regPlant: { type: String },  
-    resPlantsAreYouInterested: { type: String},
-    regPlantSpecies: { type: String},
-    regPlantAge: { type: String},
-    regNumberOfPlants: { type: Number },
-    regFarm: { type: Number},
-    regNgan: { type: Number},
-    regSquareWa: { type: Number },
-    regProvince: { type: String },
-    regDistrict: { type: String},
-    regSubDistrict: { type: String},
-    regPostcode: { type: String},
-    regAddress: { type: String },
+    regLineID: { type: String },
+    regPlant: { type: String },
+    regPlantOther: { type: String },
+    regPlantSpecies: { type: [String] },
+    regPlantAmount: { type: Number },
+    regPlantAge: { type: Number },
+    areaRai: { type: Number },
+    areaNgan: { type: Number },
+    areaWa: { type: Number },
+    province: { type: String },
+    district: { type: String },
+    sub_district: { type: String },
+    addressDetail: { type: String },
+    regType: { type: String },
+    regSubType: { type: String },
+    regCompany: { type: String },
+    regPosition: { type: String },
+    regAreaOfResponsibility: { type: String },
+    regSchoolName: { type: String },
+    regFruits: { type: [String] },
   },
   { timestamps: true }
 );
 
-const Register = mongoose.models.Register || mongoose.model("Register", registerSchema, "Register");
+const Register =
+  mongoose.models.Register || mongoose.model("Register", registerSchema, "Register");
+
 export default Register;

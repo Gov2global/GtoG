@@ -4,6 +4,9 @@ import ModernInput from "./ui/Input";
 import { ModernSelect, ModernCreatableSelect } from "./ui/Select"; 
 import { GiFarmTractor } from "react-icons/gi";
 import { DiCoda } from "react-icons/di";
+import LoadingOverlay from "./LoadingOverlat";
+
+
 
 const plantVarieties = {
   durian: ["พันธุ์หมอนทอง", "พันธุ์ชะนี", "พันธุ์ก้านยาว", "พันธุ์กระดุมทอง","พันธุ์หลงลับแล","พันธุ์หลิงลับแล"],
@@ -41,19 +44,24 @@ function FarmerFormPage({ selectedType, selectedSubType }) {
     regSubType: "",
   });
 
-  useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      regType: selectedType || "",
-      regSubType: selectedSubType || "",
-    }));
-  }, [selectedType, selectedSubType]);
+useEffect(() => {
+  setFormData((prev) => ({
+    ...prev,
+    regType: selectedType || "", // ← อาจจะว่าง!
+    regSubType: selectedSubType || "",
+  }));
+}, [selectedType, selectedSubType]);
+console.log("🧾 selectedType จาก props:", selectedType);
+
 
   const [plantOptions, setPlantOptions] = useState([]);
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [subDistricts, setSubDistricts] = useState([]);
   const [postcode, setPostcode] = useState("");
+  // เพิ่ม state นี้ด้านบน
+  const [showLoading, setShowLoading] = useState(false);
+
 
   useEffect(() => {
     fetch("/api/farmer/get/province")
@@ -119,17 +127,48 @@ function FarmerFormPage({ selectedType, selectedSubType }) {
     return rai * 1600 + ngan * 400 + wa * 4;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const totalAreaSqm = calculateTotalAreaSqm();
-    const payload = {
-      ...formData,
-      regPlantSpecies: formData.regPlantSpecies.filter(Boolean),
-      postcode,
-      totalAreaSqm,
-    };
-    console.log("📦 ข้อมูลที่บันทึก:", payload);
-  };
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  const totalAreaSqm = calculateTotalAreaSqm();
+
+  setShowLoading(true); // ✅ แสดง overlay ก่อน
+
+  setTimeout(async () => {
+    try {
+      const idRes = await fetch(`/api/farmer/gen-id?regType=${formData.regType}`);
+      const idJson = await idRes.json();
+      if (!idJson.success) throw new Error("ไม่สามารถสร้างรหัสเกษตรกรได้");
+
+      const payload = {
+        ...formData,
+        regID: idJson.regID,
+        regPlantSpecies: formData.regPlantSpecies.filter(Boolean),
+        postcode,
+        totalAreaSqm,
+      };
+
+      const submitRes = await fetch("/api/farmer/submit/farmer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const submitJson = await submitRes.json();
+      if (!submitJson.success) throw new Error("บันทึกข้อมูลล้มเหลว");
+       window.location.reload();
+
+
+      // alert("✅ ลงทะเบียนสำเร็จ: " + submitJson.data.regID);
+    } catch (err) {
+      console.error("❌", err.message);
+      alert("❌ เกิดข้อผิดพลาด: " + err.message);
+    } finally {
+      setShowLoading(false); // ✅ ซ่อน overlay
+    }
+  }, 5000); // ✅ รอ 5 วินาทีก่อนส่งจริง
+};
+
+
 
   const selectedLabel = plantOptions.find((opt) => opt.value === formData.regPlant)?.label || "";
   const mappedKey = plantLabelMap[selectedLabel];
@@ -222,6 +261,7 @@ function FarmerFormPage({ selectedType, selectedSubType }) {
           </button>
         </form>
       </div>
+      {showLoading && <LoadingOverlay />}
     </div>
   );
 }
