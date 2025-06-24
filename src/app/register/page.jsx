@@ -13,7 +13,7 @@ function FormResgiPage() {
   const [step, setStep] = useState(1);
   const [typeFarmList, setTypeFarmList] = useState([]);
   const [selectedType, setSelectedType] = useState("");
-  const [selectedSubType, setSelectedSubType] = useState("");
+  const [selectedSubType, setSelectedSubType] = useState(""); 
 
   useEffect(() => {
     const fetchTypeFarm = async () => {
