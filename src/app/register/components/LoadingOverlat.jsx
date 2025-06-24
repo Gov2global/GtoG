@@ -15,7 +15,7 @@ const LoadingOverlay = ({ text = "🚚 กำลังส่งข้อมู�
       setAnimationData(data);
     };
     load();
-  }, []);
+  }, []); 
 
   return (
     <div className="fixed inset-0 z-50 bg-white/70 backdrop-blur-md flex flex-col items-center justify-center">
