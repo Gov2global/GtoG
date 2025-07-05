@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
-const richMenuId = 'richmenu-acdcb2175544dc36fc6c79d18524d110'; // richMenuId ที่ upload รูปสำเร็จแล้ว
+const richMenuId = 'richmenu-3885f8f149520f74e1b16fa7d9457a98'; // richMenuId ที่ upload รูปสำเร็จแล้ว
 
 axios.post(
   `https://api.line.me/v2/bot/user/all/richmenu/${richMenuId}`,
