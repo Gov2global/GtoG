@@ -8,6 +8,7 @@ const registerSchema = new mongoose.Schema(
     regSurname: { type: String },
     regTel: { type: String },
     regLineID: { type: String },
+    regProfile: { type: String },
     regPlant: { type: String },
     regPlantOther: { type: String },
     regPlantSpecies: { type: [String] },

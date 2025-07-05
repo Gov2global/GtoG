@@ -8,22 +8,24 @@ import EducationalInstitution from "./components/EducationalInstitution";
 import Container from "./components/Container";
 import { ModernSelect } from "./components/ui/Select";
 import { MdOutlineLibraryBooks } from "react-icons/md";
-import liff from '@line/liff'; 
+import liff from '@line/liff';
 
 function FormResgiPage() {
   const [step, setStep] = useState(1);
   const [typeFarmList, setTypeFarmList] = useState([]);
+  const [isLoadingTypeFarm, setIsLoadingTypeFarm] = useState(true); // <-- Loading state
   const [selectedType, setSelectedType] = useState("");
-  const [selectedSubType, setSelectedSubType] = useState(""); 
+  const [selectedSubType, setSelectedSubType] = useState("");
   const [regLineID, setRegLineID] = useState("");
+  const [regProfile, setRegProfile] = useState("");
 
   useEffect(() => {
-    // ดึง userId จาก LINE LIFF
     liff.init({ liffId: '2007697520-g59jM8X3' })
       .then(() => {
         if (liff.isLoggedIn()) {
           liff.getProfile().then(profile => {
-            setRegLineID(profile.userId); // <--- เก็บ userId ใน regLineID
+            setRegLineID(profile.userId);
+            setRegProfile(profile.displayName);
           });
         } else {
           liff.login();
@@ -36,6 +38,7 @@ function FormResgiPage() {
 
   useEffect(() => {
     const fetchTypeFarm = async () => {
+      setIsLoadingTypeFarm(true);
       try {
         const res = await fetch("/api/farmer/get/typeFarm");
         const json = await res.json();
@@ -45,6 +48,7 @@ function FormResgiPage() {
       } catch (err) {
         console.error("❌ โหลด typeFarm ล้มเหลว", err);
       }
+      setIsLoadingTypeFarm(false);
     };
     fetchTypeFarm();
   }, []);
@@ -59,7 +63,7 @@ function FormResgiPage() {
   };
 
   const handleNext = () => {
-    if (selectedType && selectedSubType) {
+    if (selectedType && selectedSubType && !isLoadingTypeFarm) {
       setStep(2);
     } else {
       alert("กรุณาเลือกประเภทและหมวดหมู่ให้ครบถ้วน");
@@ -89,25 +93,27 @@ function FormResgiPage() {
               </p>
             </div>
 
-             {/* โชว์ regLineID */}
-            <div className="mb-3 text-center">
-              <span className="text-xs text-gray-400">
-                LINE UserID: {regLineID ? regLineID : "กำลังเชื่อมต่อ..."}
-              </span>
-            </div>
-
             <div className="space-y-5">
-              <ModernSelect
-                label="ประเภทหน่วยงาน"
-                value={selectedType}
-                onChange={handleTypeChange}
-                options={[...new Set(typeFarmList.map((t) => t.typeDetaiTH))].map((t) => ({
-                  value: t,
-                  label: t,
-                }))}
-                placeholder="-- กรุณาเลือก --"
-                ringColor="amber"
-              />
+              {/* แสดง Loading ถ้ายังโหลด typeFarmList ไม่เสร็จ */}
+              {isLoadingTypeFarm ? (
+                <div className="flex items-center justify-center py-8 text-amber-600">
+                  <span className="animate-spin mr-2">⏳</span>
+                  กำลังโหลดข้อมูลประเภทหน่วยงาน...
+                </div>
+              ) : (
+                <ModernSelect
+                  label="ประเภทหน่วยงาน"
+                  value={selectedType}
+                  onChange={handleTypeChange}
+                  options={[...new Set(typeFarmList.map((t) => t.typeDetaiTH))].map((t) => ({
+                    value: t,
+                    label: t,
+                  }))}
+                  placeholder="-- กรุณาเลือก --"
+                  ringColor="amber"
+                  disabled={isLoadingTypeFarm}
+                />
+              )}
 
               {selectedType && (
                 <ModernSelect
@@ -117,12 +123,15 @@ function FormResgiPage() {
                   options={getSubTypeOptions()}
                   placeholder="-- กรุณาเลือก --"
                   ringColor="amber"
+                  disabled={isLoadingTypeFarm}
                 />
               )}
 
               <button
                 onClick={handleNext}
-                className="mt-6 w-full bg-gradient-to-r from-[#D97706] to-[#9C4400] text-white text-lg py-3 rounded-full font-bold flex justify-center items-center gap-2 hover:from-[#B45309] hover:to-[#7C3A00] transition-all"
+                disabled={isLoadingTypeFarm}
+                className={`mt-6 w-full bg-gradient-to-r from-[#D97706] to-[#9C4400] text-white text-lg py-3 rounded-full font-bold flex justify-center items-center gap-2 hover:from-[#B45309] hover:to-[#7C3A00] transition-all
+                  ${isLoadingTypeFarm ? 'opacity-50 pointer-events-none' : ''}`}
               >
                 ถัดไป
                 <span className="text-xl">➡️</span>
@@ -138,15 +147,42 @@ function FormResgiPage() {
             <FarmerFormPage
               selectedType={selectedType}
               selectedSubType={selectedSubType}
+              regLineID={regLineID}
+              regProfile={regProfile}
             />
           )}
           {selectedType === "หน่วยงานเอกชน" && (
-            <PrivateAgency selectedType={selectedType} selectedSubType={selectedSubType} />
+            <PrivateAgency
+              selectedType={selectedType}
+              selectedSubType={selectedSubType}
+              regLineID={regLineID}
+              regProfile={regProfile}
+            />
           )}
-
-          {selectedType === "หน่วยงานราชการ" && <GovernmentAgencies selectedType={selectedType} selectedSubType={selectedSubType}/>}
-          {selectedType === "หน่วยงานท้องถิ่น" && <LocalAuthority selectedType={selectedType} selectedSubType={selectedSubType}/>}
-          {selectedType === "สถาบันการศึกษา" && <EducationalInstitution selectedType={selectedType} selectedSubType={selectedSubType}/>}
+          {selectedType === "หน่วยงานราชการ" && (
+            <GovernmentAgencies
+              selectedType={selectedType}
+              selectedSubType={selectedSubType}
+              regLineID={regLineID}
+              regProfile={regProfile}
+            />
+          )}
+          {selectedType === "หน่วยงานท้องถิ่น" && (
+            <LocalAuthority
+              selectedType={selectedType}
+              selectedSubType={selectedSubType}
+              regLineID={regLineID}
+              regProfile={regProfile}
+            />
+          )}
+          {selectedType === "สถาบันการศึกษา" && (
+            <EducationalInstitution
+              selectedType={selectedType}
+              selectedSubType={selectedSubType}
+              regLineID={regLineID}
+              regProfile={regProfile}
+            />
+          )}
         </>
       )}
     </Container>

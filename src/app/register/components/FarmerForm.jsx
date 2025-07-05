@@ -1,28 +1,27 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import ModernInput from "./ui/Input";
-import { ModernSelect, ModernCreatableSelect } from "./ui/Select"; 
+import { ModernSelect, ModernCreatableSelect } from "./ui/Select";
 import { GiFarmTractor } from "react-icons/gi";
 import { DiCoda } from "react-icons/di";
 import LoadingOverlay from "./LoadingOverlat";
-
-
+import liff from "@line/liff"; // ใส่ import liff ด้วย
 
 const plantVarieties = {
-  durian: ["พันธุ์หมอนทอง", "พันธุ์ชะนี", "พันธุ์ก้านยาว", "พันธุ์กระดุมทอง","พันธุ์หลงลับแล","พันธุ์หลิงลับแล"],
+  durian: ["พันธุ์หมอนทอง", "พันธุ์ชะนี", "พันธุ์ก้านยาว", "พันธุ์กระดุมทอง", "พันธุ์หลงลับแล", "พันธุ์หลิงลับแล"],
   longan: ["พันธุ์อีดอ", "พันธุ์สีชมพู", "พันธุ์เบี้ยวเขียว", "พันธุ์พวงทอง"],
-  tangerine:["พันธุ์สีทอง","พันธุ์เวียดนาม","พันธุ์พื้นเมือง","พันธุ์เชียงใหม่"],
-  pomelo:["พันธุ์ขาวน้ำผึ้ง","พันธุ์ทองดี","พันธุ์ขาวแตงกวา","พันธุ์ทับทิมสยาม"]
+  tangerine: ["พันธุ์สีทอง", "พันธุ์เวียดนาม", "พันธุ์พื้นเมือง", "พันธุ์เชียงใหม่"],
+  pomelo: ["พันธุ์ขาวน้ำผึ้ง", "พันธุ์ทองดี", "พันธุ์ขาวแตงกวา", "พันธุ์ทับทิมสยาม"],
 };
 
 const plantLabelMap = {
   "ทุเรียน": "durian",
   "ลำไย": "longan",
-  "ส้มเขียวหวาน":"tangerine",
-  "ส้มโอ":"pomelo",
+  "ส้มเขียวหวาน": "tangerine",
+  "ส้มโอ": "pomelo",
 };
 
-function FarmerFormPage({ selectedType, selectedSubType }) {
+function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }) {
   const [formData, setFormData] = useState({
     regName: "",
     regSurname: "",
@@ -44,25 +43,32 @@ function FarmerFormPage({ selectedType, selectedSubType }) {
     regSubType: "",
   });
 
-useEffect(() => {
-  setFormData((prev) => ({
-    ...prev,
-    regType: selectedType || "", // ← อาจจะว่าง!
-    regSubType: selectedSubType || "",
-  }));
-}, [selectedType, selectedSubType]);
-console.log("🧾 selectedType จาก props:", selectedType);
+  // Autofill LINE ID & Display Name (ชื่อ)
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      regLineID: regLineID || "",
+      regName: regProfile || prev.regName,
+    }));
+  }, [regLineID, regProfile]);
 
+  // Autofill ประเภทจาก parent
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      regType: selectedType || "",
+      regSubType: selectedSubType || "",
+    }));
+  }, [selectedType, selectedSubType]);
 
   const [plantOptions, setPlantOptions] = useState([]);
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [subDistricts, setSubDistricts] = useState([]);
   const [postcode, setPostcode] = useState("");
-  // เพิ่ม state นี้ด้านบน
   const [showLoading, setShowLoading] = useState(false);
 
-
+  // โหลดข้อมูลจังหวัด
   useEffect(() => {
     fetch("/api/farmer/get/province")
       .then((res) => res.json())
@@ -70,12 +76,16 @@ console.log("🧾 selectedType จาก props:", selectedType);
       .catch((err) => console.error("❌ โหลดจังหวัดล้มเหลว:", err));
   }, []);
 
+  // โหลดข้อมูลพืช
   useEffect(() => {
     fetch("/api/farmer/get/plant")
       .then((res) => res.json())
       .then((json) => {
         if (json.success) {
-          const formatted = json.data.map((item) => ({ value: item.plantID, label: item.plantNameTH }));
+          const formatted = json.data.map((item) => ({
+            value: item.plantID,
+            label: item.plantNameTH,
+          }));
           formatted.push({ value: "other", label: "อื่นๆ (โปรดระบุ)" });
           setPlantOptions(formatted);
         }
@@ -97,7 +107,9 @@ console.log("🧾 selectedType จาก props:", selectedType);
 
   const handleProvinceChange = (value) => {
     handleChange("province")(value);
-    const filteredDistricts = [...new Set(provinces.filter(p => p.province === value).map(p => p.district))];
+    const filteredDistricts = [
+      ...new Set(provinces.filter((p) => p.province === value).map((p) => p.district)),
+    ];
     setDistricts(filteredDistricts);
     setSubDistricts([]);
     setPostcode("");
@@ -106,7 +118,9 @@ console.log("🧾 selectedType จาก props:", selectedType);
 
   const handleDistrictChange = (value) => {
     handleChange("district")(value);
-    const filteredSub = provinces.filter(p => p.province === formData.province && p.district === value).map(p => p.sub_district);
+    const filteredSub = provinces
+      .filter((p) => p.province === formData.province && p.district === value)
+      .map((p) => p.sub_district);
     setSubDistricts(filteredSub);
     setPostcode("");
     setFormData((prev) => ({ ...prev, sub_district: "" }));
@@ -115,7 +129,10 @@ console.log("🧾 selectedType จาก props:", selectedType);
   const handleSubDistrictChange = (value) => {
     handleChange("sub_district")(value);
     const found = provinces.find(
-      (p) => p.province === formData.province && p.district === formData.district && p.sub_district === value
+      (p) =>
+        p.province === formData.province &&
+        p.district === formData.district &&
+        p.sub_district === value
     );
     setPostcode(found?.postcode?.toString() || "");
   };
@@ -128,12 +145,10 @@ console.log("🧾 selectedType จาก props:", selectedType);
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  const totalAreaSqm = calculateTotalAreaSqm();
+    e.preventDefault();
+    const totalAreaSqm = calculateTotalAreaSqm();
+    setShowLoading(true);
 
-  setShowLoading(true); // ✅ แสดง overlay ก่อน
-
-  setTimeout(async () => {
     try {
       const idRes = await fetch(`/api/farmer/gen-id?regType=${formData.regType}`);
       const idJson = await idRes.json();
@@ -155,26 +170,27 @@ console.log("🧾 selectedType จาก props:", selectedType);
 
       const submitJson = await submitRes.json();
       if (!submitJson.success) throw new Error("บันทึกข้อมูลล้มเหลว");
-       window.location.reload();
 
+      setShowLoading(false);
 
-      // alert("✅ ลงทะเบียนสำเร็จ: " + submitJson.data.regID);
+      // ✅ ปิด LIFF window ทันที (บนมือถือ/แอป LINE เท่านั้น)
+      if (window?.liff) {
+        window.liff.closeWindow();
+      } else if (liff?.closeWindow) {
+        liff.closeWindow();
+      }
     } catch (err) {
-      console.error("❌", err.message);
       alert("❌ เกิดข้อผิดพลาด: " + err.message);
-    } finally {
-      setShowLoading(false); // ✅ ซ่อน overlay
+      setShowLoading(false);
     }
-  }, 5000); // ✅ รอ 5 วินาทีก่อนส่งจริง
-};
-
-
+  };
 
   const selectedLabel = plantOptions.find((opt) => opt.value === formData.regPlant)?.label || "";
   const mappedKey = plantLabelMap[selectedLabel];
-  const cleanLabel = formData.regPlant === "other"
-    ? formData.regPlantOther || "พืชอื่นๆ"
-    : selectedLabel.replace(" (โปรดระบุ)", "");
+  const cleanLabel =
+    formData.regPlant === "other"
+      ? formData.regPlantOther || "พืชอื่นๆ"
+      : selectedLabel.replace(" (โปรดระบุ)", "");
 
   const safePlantSpecies =
     Array.isArray(formData.regPlantSpecies) && formData.regPlantSpecies.every((item) => typeof item === "string")
@@ -192,12 +208,15 @@ console.log("🧾 selectedType จาก props:", selectedType);
           <GiFarmTractor size={45} className="animate-bounce-slow" />
           ลงทะเบียนเกษตรกร
         </h2>
-
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* ชื่อ LINE (autofill แต่แก้ไขได้) */}
           <ModernInput label="ชื่อ" value={formData.regName} onChange={handleChange("regName")} placeholder="กรอกชื่อ" ringColor="amber" />
+
           <ModernInput label="นามสกุล" value={formData.regSurname} onChange={handleChange("regSurname")} placeholder="กรอกนามสกุล" ringColor="amber" />
           <ModernInput label="เบอร์โทร" value={formData.regTel} onChange={handleChange("regTel")} placeholder="08xxxxxxxx" type="tel" ringColor="amber" />
-          <ModernInput label="LINE ID" value={formData.regLineID} onChange={handleChange("regLineID")} placeholder="LINE ID ของคุณ" ringColor="amber" />
+          
+          {/* LINE UserID (readonly) */}
+          <ModernInput label="LINE UserID" value={formData.regProfile} onChange={() => {}} placeholder="LINE UserID (อัตโนมัติ)" ringColor="amber" readOnly />
 
           <ModernSelect label="เลือกพืชที่ปลูก" value={formData.regPlant} onChange={handleChange("regPlant")} options={plantOptions} ringColor="amber" />
 
