@@ -8,12 +8,31 @@ import EducationalInstitution from "./components/EducationalInstitution";
 import Container from "./components/Container";
 import { ModernSelect } from "./components/ui/Select";
 import { MdOutlineLibraryBooks } from "react-icons/md";
+import liff from '@line/liff'; 
 
 function FormResgiPage() {
   const [step, setStep] = useState(1);
   const [typeFarmList, setTypeFarmList] = useState([]);
   const [selectedType, setSelectedType] = useState("");
   const [selectedSubType, setSelectedSubType] = useState(""); 
+  const [regLineID, setRegLineID] = useState("");
+
+  useEffect(() => {
+    // ดึง userId จาก LINE LIFF
+    liff.init({ liffId: '2007697520-g59jM8X3' })
+      .then(() => {
+        if (liff.isLoggedIn()) {
+          liff.getProfile().then(profile => {
+            setRegLineID(profile.userId); // <--- เก็บ userId ใน regLineID
+          });
+        } else {
+          liff.login();
+        }
+      })
+      .catch((err) => {
+        console.error("LIFF init error", err);
+      });
+  }, []);
 
   useEffect(() => {
     const fetchTypeFarm = async () => {
@@ -68,6 +87,13 @@ function FormResgiPage() {
               <p className="text-sm text-gray-500 mt-1">
                 กรุณาเลือกประเภทหน่วยงานและหมวดหมู่ที่คุณต้องการลงทะเบียน
               </p>
+            </div>
+
+             {/* โชว์ regLineID */}
+            <div className="mb-3 text-center">
+              <span className="text-xs text-gray-400">
+                LINE UserID: {regLineID ? regLineID : "กำลังเชื่อมต่อ..."}
+              </span>
             </div>
 
             <div className="space-y-5">
