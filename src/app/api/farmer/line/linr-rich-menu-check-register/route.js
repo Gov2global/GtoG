@@ -1,7 +1,7 @@
 // api/linr-rich-menu-check-register/route.js
 import { NextResponse } from "next/server";
-import { connectMongoDB } from '@/lib/mongodb';
-import Register from "@/models/register";
+import { connectMongoDB } from '../../../../../../lib/mongodb';
+import Register from "../../../../../../models/register";
 import axios from "axios";
 
 const channelAccessToken = "YOUR_LINE_TOKEN";
