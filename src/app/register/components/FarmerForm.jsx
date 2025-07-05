@@ -23,6 +23,7 @@ const plantLabelMap = {
 
 function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }) {
   const [formData, setFormData] = useState({
+    regName:"",
     regProfile: "",
     regSurname: "",
     regTel: "",
@@ -218,19 +219,11 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
           ลงทะเบียนเกษตรกร
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* โชว์ชื่อ LINE (หรือจะ readOnly ก็ได้ ถ้าไม่อยากให้ user เปลี่ยน) */}
-          <ModernInput
-            label="ชื่อ LINE"
-            value={formData.regProfile}
-            onChange={handleChange("regProfile")}
-            placeholder="ชื่อ LINE (อัตโนมัติ)"
-            ringColor="amber"
-            readOnly // ถ้าอยากให้ user แก้ได้ เอาออกได้
-          />
-
+        
+          <ModernInput label="ชื่อ" value={formData.regName} onChange={handleChange("regName")} placeholder="กรอกชื่อ" ringColor="amber" />
           <ModernInput label="นามสกุล" value={formData.regSurname} onChange={handleChange("regSurname")} placeholder="กรอกนามสกุล" ringColor="amber" />
           <ModernInput label="เบอร์โทร" value={formData.regTel} onChange={handleChange("regTel")} placeholder="08xxxxxxxx" type="tel" ringColor="amber" />
-
+          <ModernInput label="ID LINE"  value={formData.regProfile} onChange={handleChange("regProfile")} placeholder="กรุณากรอกชื่อ LINE" ringColor="amber"/>
           <ModernSelect label="เลือกพืชที่ปลูก" value={formData.regPlant} onChange={handleChange("regPlant")} options={plantOptions} ringColor="amber" />
 
           {formData.regPlant === "other" && (
