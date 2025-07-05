@@ -27,6 +27,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
     regSurname: "",
     regTel: "",
     regLineID: "",
+    regProfile:"",
     regPlant: "",
     regPlantOther: "",
     regPlantSpecies: [],
@@ -48,7 +49,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
     setFormData((prev) => ({
       ...prev,
       regLineID: regLineID || "",
-      regName: regProfile || prev.regName,
+      regProfile: regProfile || prev.regProfile,
     }));
   }, [regLineID, regProfile]);
 
