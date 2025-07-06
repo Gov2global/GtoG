@@ -74,7 +74,6 @@ import axios from "axios";
 import { NextResponse } from "next/server";
 
 const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-// RichMenu ที่ต้องการเซ็ตทุกคน
 const MEMBER_MENU_ID_FARMER = "richmenu-2bf18f235fabf148d57cbf2d988bcc11";
 
 async function setRichMenu(userId) {
