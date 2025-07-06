@@ -9,37 +9,36 @@ const MEMBER_MENU_ID_FARMER = "richmenu-2bf18f235fabf148d57cbf2d988bcc11";
 const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 
 export async function POST(request) {
-  await connectMongoDB();
-  const { regLineID } = await request.json();
-
-  if (!regLineID)
-    return NextResponse.json({ success: false, message: "regLineID is required" }, { status: 400 });
-
-  const user = await Register.findOne({ regLineID });
-
-  // ถ้า user ยังไม่มีหรือ regType ยังไม่ถูกต้อง
-  const menuType = user?.regType === "เกษตรกร" ? "เกษตรกร" : "register";
-  const richMenuId = menuType === "เกษตรกร" ? MEMBER_MENU_ID_FARMER : REGISTER_MENU_ID;
-
   try {
+    await connectMongoDB();
+    const { regLineID } = await request.json();
+
+    if (!regLineID) {
+      return NextResponse.json({ success: false, message: "regLineID is required" }, { status: 400 });
+    }
+
+    const user = await Register.findOne({ regLineID });
+    const menuType = user?.regType === "เกษตรกร" ? "เกษตรกร" : "register";
+    const richMenuId = menuType === "เกษตรกร" ? MEMBER_MENU_ID_FARMER : REGISTER_MENU_ID;
+
     await axios.post(
       `https://api.line.me/v2/bot/user/${regLineID}/richmenu/${richMenuId}`,
       {},
       { headers: { Authorization: `Bearer ${channelAccessToken}` } }
     );
+
+    return NextResponse.json({
+      success: true,
+      menuType,
+      regType: user?.regType || null,
+      richMenuId,
+      message: `Rich menu updated for user ${regLineID}`,
+    });
   } catch (error) {
     return NextResponse.json({
       success: false,
       message: "Richmenu set error",
       error: error.response?.data || error.message,
-    });
+    }, { status: error.response?.status || 500 });
   }
-
-  return NextResponse.json({
-    success: true,
-    menuType,
-    regType: user?.regType || null,
-    richMenuId,
-    message: `Rich menu updated for user ${regLineID}`,
-  });
 }

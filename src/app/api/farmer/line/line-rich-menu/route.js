@@ -9,8 +9,8 @@ export async function POST(req) {
   const user = await Register.findOne({ regLineID: userId });
   const isRegistered = !!user;
   const richMenuId = isRegistered
-    ? 'richmenu-370037ea591efaf5a7d4af363333dacf'
-    : 'richmenu-9e2ef7471e5fab457460e7f94a0c995c';
+    ? 'richmenu-2bf18f235fabf148d57cbf2d988bcc11'
+    : 'richmenu-de998bd0e0ffeb7d4bdacf46a282c010';
   await axios.post(
     `https://api.line.me/v2/bot/user/${userId}/richmenu/${richMenuId}`,
     {},
