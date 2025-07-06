@@ -183,23 +183,24 @@ const handleSubmit = async (e) => {
     // 4. เปลี่ยน RichMenu (ใช้ endpoint ใหม่!)
     try {
       await new Promise((r) => setTimeout(r, 400)); // รอ DB update ก่อน
+      // ใช้ key ให้ตรงกับ API ฝั่ง backend
       const resRichmenu = await fetch("/api/farmer/line/line-rich-menu-farmer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ regLineID }),
+        body: JSON.stringify({ userId: regLineID }), // <= **ตรงนี้สำคัญ**
       });
       const richJson = await resRichmenu.json();
       if (!richJson.success) {
         console.error("Set RichMenu Error:", richJson.message);
-        // ถ้าอยากแสดง Toast แจ้งเตือนได้ (optional)
+        // show Toast error (optional)
       }
-      console.log("Set RichMenu after register:", richJson);
+      // console.log("Set RichMenu after register:", richJson); // dev only
     } catch (err) {
       console.error("Set RichMenu Error:", err);
-      // ถ้าอยากแสดง Toast แจ้งเตือนได้ (optional)
+      // show Toast error (optional)
     }
 
-    setShowLoading(false);
+    setShowLoading(false); // <== ตรงนี้
 
     // ปิด LIFF window
     if (window?.liff) {
@@ -212,6 +213,7 @@ const handleSubmit = async (e) => {
     setShowLoading(false);
   }
 };
+
 
 
   // Helper สำหรับ select พันธุ์และ options
