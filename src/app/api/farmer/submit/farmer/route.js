@@ -2,7 +2,7 @@
 import { connectMongoDB } from '../../../../../../lib/mongodb';
 import Register from '../../../../../../models/register';
 import { NextResponse } from "next/server";
-import { run } from '../../../../register/components/line/condition'; // import ฟังก์ชัน run (path ปรับตามจริง)
+import { run } from '../../../../register/components/line/condition';
 
 export async function POST(req) {
   try {
@@ -17,10 +17,10 @@ export async function POST(req) {
 
     // === Call RichMenu update ===
     try {
+      console.log("API: Call run() with regLineID:", newRegister.regLineID);
       await run(newRegister.regLineID);
     } catch (err) {
       console.error("RichMenu update failed:", err);
-      // ไม่ throw error จะได้ save ได้ก่อน
     }
 
     return NextResponse.json({ success: true, data: newRegister });

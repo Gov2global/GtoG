@@ -4,6 +4,7 @@ import { run } from "../../../../register/components/line/condition";
 
 export async function POST(req) {
   const { userId } = await req.json();
+  console.log('ROUTE /run-richmenu-condition userId:', userId);
   if (!userId) {
     return NextResponse.json({ success: false, message: "userId is required" }, { status: 400 });
   }

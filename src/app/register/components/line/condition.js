@@ -8,6 +8,7 @@ const MONGO_URI = process.env.MONGODB_URI;
 const REGISTER_MENU_ID = 'richmenu-de998bd0e0ffeb7d4bdacf46a282c010';
 const MEMBER_MENU_ID_FARMER = 'richmenu-2bf18f235fabf148d57cbf2d988bcc11';
 
+// Mongoose schema/model
 const registerSchema = new mongoose.Schema({
   regData: { type: Date },
   regID: { type: String, unique: true, required: true },
@@ -55,19 +56,16 @@ async function setRichMenu(userId, menuType) {
 }
 
 export async function run(userId) {
-  console.log("MONGODB_URI:", MONGO_URI ? "OK" : "NOT FOUND");
-  console.log("LINE_CHANNEL_ACCESS_TOKEN:", channelAccessToken ? "OK" : "NOT FOUND");
-  await mongoose.connect(MONGO_URI);
+  console.log("RUN: userId =", userId);
+  if (!userId) throw new Error("userId is required");
 
+  await mongoose.connect(MONGO_URI);
   const user = await Register.findOne({ regLineID: userId });
   console.log('DEBUG user:', user);
 
   const menuType = user?.regType === "เกษตรกร" ? "เกษตรกร" : "register";
   await setRichMenu(userId, menuType);
 
-  console.log(
-    '🎉 FINISHED: Rich menu updated!',
-    menuType === "เกษตรกร" ? "(Farmer)" : "(Register)"
-  );
+  console.log('🎉 FINISHED: Rich menu updated!', menuType === "เกษตรกร" ? "(Farmer)" : "(Register)");
   await mongoose.disconnect();
 }
