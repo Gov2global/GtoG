@@ -199,11 +199,12 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
 
       // >>>>>>> เพิ่มตรงนี้: เรียก API ไปเปลี่ยน RichMenu <<<<<<<
       try {
-        await fetch("/api/farmer/line/set-richmenu", { 
+        await fetch("/api/farmer/line/set-richmenu", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: regLineID }),
+          body: JSON.stringify({ regLineID }), // <<< ส่ง regLineID ตรงๆ
         });
+
 
       } catch (err) {
         console.error("เปลี่ยน RichMenu ไม่สำเร็จ:", err);
