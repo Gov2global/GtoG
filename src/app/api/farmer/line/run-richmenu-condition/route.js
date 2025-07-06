@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 import { run } from "../../../../register/components/line/condition";
 
 export async function POST(req) {
-  const { userId } = await req.json();
+  const body = await req.json();
+  console.log('DEBUG req.body', body);
+  const userId = body.userId;
   console.log('ROUTE /run-richmenu-condition userId:', userId);
   if (!userId) {
     return NextResponse.json({ success: false, message: "userId is required" }, { status: 400 });
