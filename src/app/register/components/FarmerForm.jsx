@@ -164,9 +164,13 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting.current) return;
-    setErrorMsg(""); setSuccessMsg("");
+    setErrorMsg("");
+    setSuccessMsg("");
     const validateMsg = validate();
-    if (validateMsg) { setErrorMsg(validateMsg); return; }
+    if (validateMsg) {
+      setErrorMsg(validateMsg);
+      return;
+    }
 
     setShowLoading(true);
     isSubmitting.current = true;
@@ -176,10 +180,6 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
       const idJson = await idRes.json();
       if (!idJson.success) throw new Error("ไม่สามารถสร้างรหัสเกษตรกรได้");
 
-      // Log debug
-      console.log("regLineID (userId) >>>", regLineID);
-      console.log("regProfile >>>", regProfile);
-
       const payload = {
         ...formData,
         regID: idJson.regID,
@@ -188,7 +188,6 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
         totalAreaSqm: calculateTotalAreaSqm(),
         regLineID: regLineID,
       };
-      console.log("ส่งข้อมูล payload:", payload);
 
       const submitRes = await fetch("/api/farmer/submit/farmer", {
         method: "POST",
@@ -197,6 +196,18 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
       });
       const submitJson = await submitRes.json();
       if (!submitJson.success) throw new Error(submitJson.message || "บันทึกข้อมูลล้มเหลว");
+
+      // >>>>>>> เพิ่มตรงนี้: เรียก API ไปเปลี่ยน RichMenu <<<<<<<
+      try {
+        await fetch("/api/line/set-richmenu", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: regLineID }),
+        });
+      } catch (err) {
+        console.error("เปลี่ยน RichMenu ไม่สำเร็จ:", err);
+      }
+      // <<<<<<<< End
 
       setSuccessMsg("✅ ลงทะเบียนสำเร็จ!");
       setTimeout(() => {
@@ -235,17 +246,59 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
           <GiFarmTractor size={45} className="animate-bounce-slow" aria-hidden />
           ลงทะเบียนเกษตรกร
         </h2>
-        {errorMsg && <div className="mb-4 text-red-700 bg-red-100 rounded-lg px-4 py-2">{errorMsg}</div>}
-        {successMsg && <div className="mb-4 text-green-700 bg-green-100 rounded-lg px-4 py-2">{successMsg}</div>}
+        {errorMsg && (
+          <div className="mb-4 text-red-700 bg-red-100 rounded-lg px-4 py-2">{errorMsg}</div>
+        )}
+        {successMsg && (
+          <div className="mb-4 text-green-700 bg-green-100 rounded-lg px-4 py-2">{successMsg}</div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-6" aria-label="ฟอร์มลงทะเบียนเกษตรกร">
-          <ModernInput label="ชื่อ" value={formData.regName} onChange={handleChange("regName")} placeholder="กรอกชื่อ" ringColor="amber" autoFocus />
-          <ModernInput label="นามสกุล" value={formData.regSurname} onChange={handleChange("regSurname")} placeholder="กรอกนามสกุล" ringColor="amber" />
-          <ModernInput label="เบอร์โทร" value={formData.regTel} onChange={handleChange("regTel")} placeholder="08xxxxxxxx" type="tel" ringColor="amber" />
-          <ModernInput label="ID LINE" value={formData.regProfile} onChange={handleChange("regProfile")} placeholder="กรุณากรอกชื่อ LINE" ringColor="amber" />
-          <ModernSelect label="เลือกพืชที่ปลูก" value={formData.regPlant} onChange={handleChange("regPlant")} options={plantOptions} ringColor="amber" />
+          <ModernInput
+            label="ชื่อ"
+            value={formData.regName}
+            onChange={handleChange("regName")}
+            placeholder="กรอกชื่อ"
+            ringColor="amber"
+            autoFocus
+          />
+          <ModernInput
+            label="นามสกุล"
+            value={formData.regSurname}
+            onChange={handleChange("regSurname")}
+            placeholder="กรอกนามสกุล"
+            ringColor="amber"
+          />
+          <ModernInput
+            label="เบอร์โทร"
+            value={formData.regTel}
+            onChange={handleChange("regTel")}
+            placeholder="08xxxxxxxx"
+            type="tel"
+            ringColor="amber"
+          />
+          <ModernInput
+            label="ID LINE"
+            value={formData.regProfile}
+            onChange={handleChange("regProfile")}
+            placeholder="กรุณากรอกชื่อ LINE"
+            ringColor="amber"
+          />
+          <ModernSelect
+            label="เลือกพืชที่ปลูก"
+            value={formData.regPlant}
+            onChange={handleChange("regPlant")}
+            options={plantOptions}
+            ringColor="amber"
+          />
 
           {formData.regPlant === "other" && (
-            <ModernInput label="ระบุพืชอื่นๆ" value={formData.regPlantOther} onChange={handleChange("regPlantOther")} placeholder="เช่น กล้วย มังคุด" ringColor="amber" />
+            <ModernInput
+              label="ระบุพืชอื่นๆ"
+              value={formData.regPlantOther}
+              onChange={handleChange("regPlantOther")}
+              placeholder="เช่น กล้วย มังคุด"
+              ringColor="amber"
+            />
           )}
 
           {formData.regPlant && (
@@ -263,42 +316,106 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
                 <ModernInput
                   label={`โปรดระบุพันธุ์ของ "${cleanLabel}" ที่ท่านปลูก`}
                   value={formData.regPlantSpecies?.[0] || ""}
-                  onChange={(v) => setFormData((prev) => ({ ...prev, regPlantSpecies: [v] }))}
+                  onChange={(v) =>
+                    setFormData((prev) => ({ ...prev, regPlantSpecies: [v] }))
+                  }
                   placeholder="เช่น พันธุ์สุวรรณ 1 หรือ สายพันธุ์อื่นๆ"
                   ringColor="amber"
                 />
               )}
 
-              <ModernInput label="จำนวนที่ปลูก (ต้น)" value={formData.regPlantAmount} onChange={handleChange("regPlantAmount")} placeholder="เช่น 100 ต้น" ringColor="amber" />
-              <ModernInput label="อายุของพืช" value={formData.regPlantAge} onChange={handleChange("regPlantAge")} placeholder="เช่น 2 เดือน หรือ 1 ปี" ringColor="amber" />
+              <ModernInput
+                label="จำนวนที่ปลูก (ต้น)"
+                value={formData.regPlantAmount}
+                onChange={handleChange("regPlantAmount")}
+                placeholder="เช่น 100 ต้น"
+                ringColor="amber"
+              />
+              <ModernInput
+                label="อายุของพืช"
+                value={formData.regPlantAge}
+                onChange={handleChange("regPlantAge")}
+                placeholder="เช่น 2 เดือน หรือ 1 ปี"
+                ringColor="amber"
+              />
 
-              <h3 className="text-xl font-semibold text-amber-700 mb-2 mt-4">พื้นที่ที่ปลูก</h3>
+              <h3 className="text-xl font-semibold text-amber-700 mb-2 mt-4">
+                พื้นที่ที่ปลูก
+              </h3>
               <div className="grid grid-cols-3 gap-4">
-                <ModernInput label="ไร่" value={formData.areaRai} onChange={handleChange("areaRai")} placeholder="0" type="number" ringColor="amber" />
-                <ModernInput label="งาน" value={formData.areaNgan} onChange={handleChange("areaNgan")} placeholder="0" type="number" ringColor="amber" />
-                <ModernInput label="ตารางวา" value={formData.areaWa} onChange={handleChange("areaWa")} placeholder="0" type="number" ringColor="amber" />
+                <ModernInput
+                  label="ไร่"
+                  value={formData.areaRai}
+                  onChange={handleChange("areaRai")}
+                  placeholder="0"
+                  type="number"
+                  ringColor="amber"
+                />
+                <ModernInput
+                  label="งาน"
+                  value={formData.areaNgan}
+                  onChange={handleChange("areaNgan")}
+                  placeholder="0"
+                  type="number"
+                  ringColor="amber"
+                />
+                <ModernInput
+                  label="ตารางวา"
+                  value={formData.areaWa}
+                  onChange={handleChange("areaWa")}
+                  placeholder="0"
+                  type="number"
+                  ringColor="amber"
+                />
               </div>
               <p className="text-sm text-gray-600 mt-2">
-                🧮 รวมพื้นที่ทั้งหมด: <strong>{calculateTotalAreaSqm()}</strong> ตารางเมตร
+                🧮 รวมพื้นที่ทั้งหมด:{" "}
+                <strong>{calculateTotalAreaSqm()}</strong> ตารางเมตร
               </p>
 
               <ModernSelect
                 label="จังหวัด"
                 value={formData.province}
                 onChange={handleProvinceChange}
-                options={[...new Set(provinces.map((p) => p.province))].map((p) => ({ value: p, label: p }))}
+                options={[
+                  ...new Set(provinces.map((p) => p.province)),
+                ].map((p) => ({ value: p, label: p }))}
                 ringColor="amber"
               />
               {formData.province && (
-                <ModernSelect label="อำเภอ" value={formData.district} onChange={handleDistrictChange} options={districts.map((d) => ({ value: d, label: d }))} ringColor="amber" />
+                <ModernSelect
+                  label="อำเภอ"
+                  value={formData.district}
+                  onChange={handleDistrictChange}
+                  options={districts.map((d) => ({ value: d, label: d }))}
+                  ringColor="amber"
+                />
               )}
               {formData.district && (
-                <ModernSelect label="ตำบล" value={formData.sub_district} onChange={handleSubDistrictChange} options={subDistricts.map((s) => ({ value: s, label: s }))} ringColor="amber" />
+                <ModernSelect
+                  label="ตำบล"
+                  value={formData.sub_district}
+                  onChange={handleSubDistrictChange}
+                  options={subDistricts.map((s) => ({ value: s, label: s }))}
+                  ringColor="amber"
+                />
               )}
               {formData.sub_district && (
                 <>
-                  <ModernInput label="รหัสไปรษณีย์" value={postcode} onChange={(val) => setPostcode(val)} placeholder="รหัสไปรษณีย์" ringColor="amber" />
-                  <ModernInput label="ที่อยู่เพิ่มเติม (เช่น บ้านเลขที่/หมู่)" value={formData.addressDetail} onChange={handleChange("addressDetail")} placeholder="เช่น 123 หมู่ 4 บ้านโพน" ringColor="amber" />
+                  <ModernInput
+                    label="รหัสไปรษณีย์"
+                    value={postcode}
+                    onChange={(val) => setPostcode(val)}
+                    placeholder="รหัสไปรษณีย์"
+                    ringColor="amber"
+                  />
+                  <ModernInput
+                    label="ที่อยู่เพิ่มเติม (เช่น บ้านเลขที่/หมู่)"
+                    value={formData.addressDetail}
+                    onChange={handleChange("addressDetail")}
+                    placeholder="เช่น 123 หมู่ 4 บ้านโพน"
+                    ringColor="amber"
+                  />
                 </>
               )}
             </>
