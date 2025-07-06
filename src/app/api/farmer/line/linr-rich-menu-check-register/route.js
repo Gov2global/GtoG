@@ -4,54 +4,44 @@ import { connectMongoDB } from '../../../../../../lib/mongodb';
 import Register from "../../../../../../models/register";
 import axios from "axios";
 
-const channelAccessToken = "ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=";
+const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN; // ควรเก็บไว้ใน .env
 
 export async function POST(request) {
-  await connectMongoDB();
-  const body = await request.json();
-  const { regLineID } = body;
-
-  if (!regLineID) {
-    return NextResponse.json(
-      { success: false, message: "regLineID is required" },
-      { status: 400 }
-    );
-  }
-
-  const regDoc = await Register.findOne({ regLineID });
-
-  // Default richmenu สำหรับผู้ไม่เคยลงทะเบียน
-  let showRichMenu = "richmenu-3885f8f149520f74e1b16fa7d9457a98";
-  if (regDoc && regDoc.regType === "เกษตรกร") {
-    showRichMenu = "richmenu-2bf18f235fabf148d57cbf2d988bcc11";
-  }
-
-  // เรียก LINE API set richmenu ให้ user
   try {
+    await connectMongoDB();
+    const { regLineID } = await request.json();
+
+    if (!regLineID) {
+      return NextResponse.json({ success: false, message: "regLineID is required" }, { status: 400 });
+    }
+
+    const regDoc = await Register.findOne({ regLineID });
+
+    const isFarmer = regDoc?.regType === "เกษตรกร";
+    const showRichMenu = isFarmer
+      ? "richmenu-2bf18f235fabf148d57cbf2d988bcc11"
+      : "richmenu-3885f8f149520f74e1b16fa7d9457a98";
+
+    // set richmenu
     await axios.post(
       `https://api.line.me/v2/bot/user/${regLineID}/richmenu/${showRichMenu}`,
       {},
-      {
-        headers: {
-          Authorization: `Bearer ${channelAccessToken}`,
-        },
-      }
+      { headers: { Authorization: `Bearer ${channelAccessToken}` } }
     );
-  } catch (e) {
-    console.error("Set richmenu error:", e?.response?.data || e.message);
-    // ส่ง error กลับ frontend ด้วยก็ได้
+
+    return NextResponse.json({
+      success: true,
+      isRegistered: !!regDoc,
+      regType: regDoc?.regType || null,
+      showRichMenu,
+    });
+
+  } catch (error) {
+    console.error("Set richmenu error:", error?.response?.data || error.message);
     return NextResponse.json({
       success: false,
       message: "Set richmenu error",
-      error: e?.response?.data || e.message,
+      error: error?.response?.data || error.message,
     });
   }
-
-  // ส่งสถานะกลับ
-  return NextResponse.json({
-    success: true,
-    isRegistered: !!regDoc,
-    regType: regDoc?.regType || null,
-    showRichMenu,
-  });
 }
