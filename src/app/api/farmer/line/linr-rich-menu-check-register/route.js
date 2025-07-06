@@ -4,7 +4,7 @@ import { connectMongoDB } from '../../../../../../lib/mongodb';
 import Register from "../../../../../../models/register";
 import axios from "axios";
 
-const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN; // แนะนำใช้จาก .env
+const channelAccessToken = "ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU="; // แนะนำใช้จาก .env
 
 export async function POST(request) {
   try {
