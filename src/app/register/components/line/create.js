@@ -144,51 +144,51 @@
 // });
 
 
-const axios = require('axios');
+// const axios = require('axios');
 
-const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
+// const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
 
-const richMenuBody = {
-  size: { width: 2500, height: 1686 },
-  selected: true,
-  name: "RichMenuGovernmentAgency",
-  chatBarText: "หน่วยงานราชการ",
-  areas: [
-    {
-      bounds: { x: 65, y: 1200, width: 700, height: 330 },
-      action: {  type: "message", label: "เอกสาร MOU", text: "เอกสาร MOU" }
-    },
-    {
-      bounds: { x: 825, y: 1200, width: 680, height: 330 },
-      action: {  type: "message", label: "รายชื่อเกษตรกร", text: "รายชื่อเกษตรกร" }
-    },
-    {
-      bounds: { x: 1540, y: 1200, width: 600, height: 330 },
-      action: {  type: "message", label: "นัดพบเกษตรกร", text: "นัดพบเกษตรกร" }
-    },
-    {
-      bounds: { x: 2190, y: 1085, width: 250, height: 420 },
-      action: { type: "message", label: "ติดต่อเจ้าหน้าที่", text: "ติดต่อเจ้าหน้าที่" }
-    }
-  ]
-};
+// const richMenuBody = {
+//   size: { width: 2500, height: 1686 },
+//   selected: true,
+//   name: "RichMenuGovernmentAgency",
+//   chatBarText: "หน่วยงานราชการ",
+//   areas: [
+//     {
+//       bounds: { x: 65, y: 1200, width: 700, height: 330 },
+//       action: {  type: "message", label: "เอกสาร MOU", text: "เอกสาร MOU" }
+//     },
+//     {
+//       bounds: { x: 825, y: 1200, width: 680, height: 330 },
+//       action: {  type: "message", label: "รายชื่อเกษตรกร", text: "รายชื่อเกษตรกร" }
+//     },
+//     {
+//       bounds: { x: 1540, y: 1200, width: 600, height: 330 },
+//       action: {  type: "message", label: "นัดพบเกษตรกร", text: "นัดพบเกษตรกร" }
+//     },
+//     {
+//       bounds: { x: 2190, y: 1085, width: 250, height: 420 },
+//       action: { type: "message", label: "ติดต่อเจ้าหน้าที่", text: "ติดต่อเจ้าหน้าที่" }
+//     }
+//   ]
+// };
 
-axios.post(
-  "https://api.line.me/v2/bot/richmenu",
-  richMenuBody,
-  {
-    headers: {
-      "Authorization": `Bearer ${channelAccessToken}`,
-      "Content-Type": "application/json",
-    },
-  }
-)
-.then(res => {
-  console.log('RichMenu created:', res.data);
-})
-.catch(err => {
-  console.error('Error:', err.response?.data || err.message);
-});
+// axios.post(
+//   "https://api.line.me/v2/bot/richmenu",
+//   richMenuBody,
+//   {
+//     headers: {
+//       "Authorization": `Bearer ${channelAccessToken}`,
+//       "Content-Type": "application/json",
+//     },
+//   }
+// )
+// .then(res => {
+//   console.log('RichMenu created:', res.data);
+// })
+// .catch(err => {
+//   console.error('Error:', err.response?.data || err.message);
+// });
 
 
 
@@ -242,3 +242,54 @@ axios.post(
 // .catch(err => {
 //   console.error('Error:', err.response?.data || err.message);
 // });
+
+
+const axios = require('axios');
+
+const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
+
+const richMenuBody = {
+  size: { width: 2500, height: 1686 },
+  selected: true,
+  name: "RichMenuEducational",
+  chatBarText: "การศึกษา",
+  areas: [
+    // 1. ติดตามสวน
+    {
+      bounds: { x: 1370, y: 160, width: 1060, height: 260 },
+      action: { type: "message", label: "ติดตามสวน", text: "ติดตามสวน" }
+    },
+    // 2. ฟาร์มตัวอย่าง
+    {
+      bounds: { x: 1370, y: 440, width: 1060, height: 260 },
+      action: { type: "message", label: "ฟาร์มตัวอย่าง", text: "ฟาร์มตัวอย่าง" }
+    },
+    // 3. ส่งภาพแปลงปลูก
+    {
+      bounds: { x: 1370, y: 720, width: 1060, height: 260 },
+      action: { type: "message", label: "ส่งภาพแปลงปลูก", text: "ส่งภาพแปลงปลูก" }
+    },
+    // 4. ติดต่อเจ้าหน้าที่ (มุมขวาล่าง)
+    {
+      bounds: { x: 2020, y: 1400, width: 410, height: 260 },
+      action: { type: "message", label: "ติดต่อเจ้าหน้าที่", text: "ติดต่อเจ้าหน้าที่" }
+    }
+  ]
+};
+
+axios.post(
+  "https://api.line.me/v2/bot/richmenu",
+  richMenuBody,
+  {
+    headers: {
+      "Authorization": `Bearer ${channelAccessToken}`,
+      "Content-Type": "application/json",
+    },
+  }
+)
+.then(res => {
+  console.log('RichMenu created:', res.data);
+})
+.catch(err => {
+  console.error('Error:', err.response?.data || err.message);
+});
