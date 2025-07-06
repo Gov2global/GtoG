@@ -150,46 +150,60 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
   // -------------------------
   // Submit
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const totalAreaSqm = calculateTotalAreaSqm();
-    setShowLoading(true);
+  e.preventDefault();
+  const totalAreaSqm = calculateTotalAreaSqm();
+  setShowLoading(true);
 
+  try {
+    const idRes = await fetch(`/api/farmer/gen-id?regType=${formData.regType}`);
+    const idJson = await idRes.json();
+    if (!idJson.success) throw new Error("ไม่สามารถสร้างรหัสเกษตรกรได้");
+
+    const payload = {
+      ...formData,
+      regID: idJson.regID,
+      regPlantSpecies: formData.regPlantSpecies.filter(Boolean),
+      postcode,
+      totalAreaSqm,
+      regLineID: regLineID, // << ส่ง userId (ซ่อน)
+    };
+
+    const submitRes = await fetch("/api/farmer/submit/farmer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const submitJson = await submitRes.json();
+    if (!submitJson.success) throw new Error("บันทึกข้อมูลล้มเหลว");
+
+    // --- เรียกเปลี่ยน RichMenu หลังบันทึกข้อมูลเสร็จ ---
     try {
-      const idRes = await fetch(`/api/farmer/gen-id?regType=${formData.regType}`);
-      const idJson = await idRes.json();
-      if (!idJson.success) throw new Error("ไม่สามารถสร้างรหัสเกษตรกรได้");
-
-      const payload = {
-        ...formData,
-        regID: idJson.regID,
-        regPlantSpecies: formData.regPlantSpecies.filter(Boolean),
-        postcode,
-        totalAreaSqm,
-        regLineID: regLineID, // << ส่ง userId (ซ่อน)
-      };
-
-      const submitRes = await fetch("/api/farmer/submit/farmer", {
+      const resRichmenu = await fetch("/api/farmer/line/line-rich-menu-check-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ regLineID }),
       });
-
-      const submitJson = await submitRes.json();
-      if (!submitJson.success) throw new Error("บันทึกข้อมูลล้มเหลว");
-
-      setShowLoading(false);
-
-      // ปิด LIFF window
-      if (window?.liff) {
-        window.liff.closeWindow();
-      } else if (liff?.closeWindow) {
-        liff.closeWindow();
-      }
+      const richJson = await resRichmenu.json();
+      console.log("Set RichMenu after register:", richJson);
     } catch (err) {
-      alert("❌ เกิดข้อผิดพลาด: " + err.message);
-      setShowLoading(false);
+      console.error("Set RichMenu Error:", err);
     }
-  };
+
+    setShowLoading(false);
+
+    // ปิด LIFF window
+    if (window?.liff) {
+      window.liff.closeWindow();
+    } else if (liff?.closeWindow) {
+      liff.closeWindow();
+    }
+  } catch (err) {
+    alert("❌ เกิดข้อผิดพลาด: " + err.message);
+    setShowLoading(false);
+  }
+};
+
 
   // -------------------------
   // Helper สำหรับ select พันธุ์/option
