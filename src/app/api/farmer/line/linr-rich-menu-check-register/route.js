@@ -20,7 +20,7 @@ export async function POST(request) {
     const isFarmer = regDoc?.regType === "เกษตรกร";
     const showRichMenu = isFarmer
       ? "richmenu-2bf18f235fabf148d57cbf2d988bcc11"
-      : "richmenu-3885f8f149520f74e1b16fa7d9457a98";
+      : "richmenu-de998bd0e0ffeb7d4bdacf46a282c010";
 
     // set richmenu
     await axios.post(
