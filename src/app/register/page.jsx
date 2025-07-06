@@ -19,7 +19,7 @@ function FormResgiPage() {
   const [regLineID, setRegLineID] = useState("");
   const [regProfile, setRegProfile] = useState("");
 
-  // --- LIFF Init & Get UserID ---
+  // ✅ Init LIFF + set regLineID/regProfile + set RichMenu ทันทีที่ user login
   useEffect(() => {
     liff
       .init({ liffId: "2007697520-g59jM8X3" })
@@ -28,6 +28,20 @@ function FormResgiPage() {
           liff.getProfile().then((profile) => {
             setRegLineID(profile.userId);
             setRegProfile(profile.displayName);
+
+            // 🟢 Set RichMenu ทันทีเมื่อได้ userId
+            fetch("/api/farmer/line/line-rich-menu-check-register", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ regLineID: profile.userId }),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                console.log("RichMenu set result:", data);
+              })
+              .catch((err) => {
+                console.error("RichMenu set error:", err);
+              });
           });
         } else {
           liff.login();
@@ -38,27 +52,7 @@ function FormResgiPage() {
       });
   }, []);
 
-  // --- Set RichMenu ตาม user ทุกครั้งที่ regLineID ได้ค่า ---
-  useEffect(() => {
-  if (regLineID) {
-    fetch("/api/farmer/line/linr-rich-menu-check-register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ regLineID }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        // ดูผลลัพธ์ log ได้
-        console.log("RichMenu set result:", data);
-      })
-      .catch((err) => {
-        console.error("RichMenu set error:", err);
-      });
-  }
-}, [regLineID]);
-
-
-  // --- Load typeFarm data ---
+  // ✅ โหลด typeFarm จาก backend
   useEffect(() => {
     const fetchTypeFarm = async () => {
       setIsLoadingTypeFarm(true);
@@ -115,7 +109,6 @@ function FormResgiPage() {
                 กรุณาเลือกประเภทหน่วยงานและหมวดหมู่ที่คุณต้องการลงทะเบียน
               </p>
             </div>
-
             <div className="space-y-5">
               {isLoadingTypeFarm ? (
                 <div className="flex items-center justify-center py-8 text-amber-600">
@@ -127,9 +120,7 @@ function FormResgiPage() {
                   label="ประเภทหน่วยงาน"
                   value={selectedType}
                   onChange={handleTypeChange}
-                  options={[
-                    ...new Set(typeFarmList.map((t) => t.typeDetaiTH)),
-                  ].map((t) => ({
+                  options={[...new Set(typeFarmList.map((t) => t.typeDetaiTH))].map((t) => ({
                     value: t,
                     label: t,
                   }))}
@@ -138,7 +129,6 @@ function FormResgiPage() {
                   disabled={isLoadingTypeFarm}
                 />
               )}
-
               {selectedType && (
                 <ModernSelect
                   label="หมวดหมู่"
@@ -150,7 +140,6 @@ function FormResgiPage() {
                   disabled={isLoadingTypeFarm}
                 />
               )}
-
               <button
                 onClick={handleNext}
                 disabled={isLoadingTypeFarm}
