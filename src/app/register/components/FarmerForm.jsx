@@ -181,7 +181,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
       try {
         // (แนะนำ: delay 200-400ms เพื่อให้ regType ถูก save ใน DB ก่อน)
         await new Promise((r) => setTimeout(r, 400));
-        const resRichmenu = await fetch("/api/farmer/line/line-rich-menu-check-register", {
+        const resRichmenu = await fetch("/api/farmer/line/line-rich-menu", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ regLineID }),
