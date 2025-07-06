@@ -21,11 +21,13 @@ export async function POST(request) {
     const menuType = user?.regType === "เกษตรกร" ? "เกษตรกร" : "register";
     const richMenuId = menuType === "เกษตรกร" ? MEMBER_MENU_ID_FARMER : REGISTER_MENU_ID;
 
-    await axios.post(
+    const response = await axios.post(
       `https://api.line.me/v2/bot/user/${regLineID}/richmenu/${richMenuId}`,
       {},
       { headers: { Authorization: `Bearer ${channelAccessToken}` } }
     );
+
+    console.log("LINE API response:", response.status, response.data);
 
     return NextResponse.json({
       success: true,
@@ -35,6 +37,7 @@ export async function POST(request) {
       message: `Rich menu updated for user ${regLineID}`,
     });
   } catch (error) {
+    console.error("Set RichMenu Error:", error.response?.data || error.message);
     return NextResponse.json({
       success: false,
       message: "Richmenu set error",

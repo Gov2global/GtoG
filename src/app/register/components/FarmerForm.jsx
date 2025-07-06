@@ -14,6 +14,7 @@ const plantVarieties = {
   tangerine: ["พันธุ์สีทอง", "พันธุ์เวียดนาม", "พันธุ์พื้นเมือง", "พันธุ์เชียงใหม่"],
   pomelo: ["พันธุ์ขาวน้ำผึ้ง", "พันธุ์ทองดี", "พันธุ์ขาวแตงกวา", "พันธุ์ทับทิมสยาม"],
 };
+
 const plantLabelMap = {
   "ทุเรียน": "durian",
   "ลำไย": "longan",
@@ -22,7 +23,7 @@ const plantLabelMap = {
 };
 
 function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }) {
-  // ----- State หลัก -----
+  // State หลัก
   const [formData, setFormData] = useState({
     regName: "",
     regProfile: "",
@@ -50,13 +51,14 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
   const [postcode, setPostcode] = useState("");
   const [showLoading, setShowLoading] = useState(false);
 
-  // ----- Autofill regProfile และ regType -----
+  // Autofill ค่า regProfile, regType จาก props
   useEffect(() => {
     setFormData((prev) => ({
       ...prev,
       regProfile: regProfile || prev.regProfile,
     }));
   }, [regProfile]);
+
   useEffect(() => {
     setFormData((prev) => ({
       ...prev,
@@ -65,7 +67,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
     }));
   }, [selectedType, selectedSubType]);
 
-  // ----- โหลด options จังหวัด -----
+  // โหลด options จังหวัด
   useEffect(() => {
     fetch("/api/farmer/get/province")
       .then((res) => res.json())
@@ -73,7 +75,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
       .catch((err) => console.error("❌ โหลดจังหวัดล้มเหลว:", err));
   }, []);
 
-  // ----- โหลด options พืช -----
+  // โหลด options พืช
   useEffect(() => {
     fetch("/api/farmer/get/plant")
       .then((res) => res.json())
@@ -90,11 +92,11 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
       .catch((err) => console.error("❌ โหลดพืชล้มเหลว:", err));
   }, []);
 
-  // ----- Handle change field ทุกช่อง -----
+  // Handle change ทุกช่อง
   const handleChange = (field) => (value) => {
     setFormData((prev) => {
       if (field === "regPlant") {
-        // เปลี่ยนชนิดพืช reset พันธุ์ + อื่นๆ
+        // เปลี่ยนพืช reset พันธุ์และอื่นๆ
         return { ...prev, regPlant: value, regPlantSpecies: [], regPlantOther: "" };
       }
       if (field === "regPlantSpecies") {
@@ -109,7 +111,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
     });
   };
 
-  // ----- Handle จังหวัด/อำเภอ/ตำบล dropdown -----
+  // Handle จังหวัด/อำเภอ/ตำบล Dropdown
   const handleProvinceChange = (value) => {
     handleChange("province")(value);
     const filteredDistricts = [
@@ -122,10 +124,10 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
   };
   const handleDistrictChange = (value) => {
     handleChange("district")(value);
-    const filteredSub = provinces
+    const filteredSubDistricts = provinces
       .filter((p) => p.province === formData.province && p.district === value)
       .map((p) => p.sub_district);
-    setSubDistricts(filteredSub);
+    setSubDistricts(filteredSubDistricts);
     setPostcode("");
     setFormData((prev) => ({ ...prev, sub_district: "" }));
   };
@@ -140,7 +142,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
     setPostcode(found?.postcode?.toString() || "");
   };
 
-  // ----- คำนวณพื้นที่รวม -----
+  // คำนวณพื้นที่รวม
   const calculateTotalAreaSqm = () => {
     const rai = parseFloat(formData.areaRai) || 0;
     const ngan = parseFloat(formData.areaNgan) || 0;
@@ -148,7 +150,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
     return rai * 1600 + ngan * 400 + wa * 4;
   };
 
-  // ----- SUBMIT FORM -----
+  // Submit ฟอร์ม
   const handleSubmit = async (e) => {
     e.preventDefault();
     setShowLoading(true);
@@ -158,7 +160,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
       const idJson = await idRes.json();
       if (!idJson.success) throw new Error("ไม่สามารถสร้างรหัสเกษตรกรได้");
 
-      // 2. Prepare Payload
+      // 2. เตรียมข้อมูลส่ง
       const payload = {
         ...formData,
         regID: idJson.regID,
@@ -168,7 +170,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
         regLineID: regLineID,
       };
 
-      // 3. Submit ข้อมูล
+      // 3. ส่งข้อมูลลงทะเบียน
       const submitRes = await fetch("/api/farmer/submit/farmer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -177,11 +179,10 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
       const submitJson = await submitRes.json();
       if (!submitJson.success) throw new Error("บันทึกข้อมูลล้มเหลว");
 
-      // 4. เรียก API เปลี่ยน RichMenu
+      // 4. เรียก API เปลี่ยน RichMenu ของ LINE
       try {
-        // (แนะนำ: delay 200-400ms เพื่อให้ regType ถูก save ใน DB ก่อน)
-        await new Promise((r) => setTimeout(r, 400));
-        const resRichmenu = await fetch("/api/farmer/line/line-rich-menu", {
+        await new Promise((r) => setTimeout(r, 400)); // รอ DB update ก่อน
+        const resRichmenu = await fetch("/api/farmer/line/line-rich-menu-check-register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ regLineID }),
@@ -194,7 +195,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
 
       setShowLoading(false);
 
-      // ปิด LIFF window (LINE)
+      // ปิด LIFF window
       if (window?.liff) {
         window.liff.closeWindow();
       } else if (liff?.closeWindow) {
@@ -206,7 +207,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
     }
   };
 
-  // ----- Helper select พันธุ์/option -----
+  // Helper สำหรับ select พันธุ์และ options
   const selectedLabel = plantOptions.find((opt) => opt.value === formData.regPlant)?.label || "";
   const mappedKey = plantLabelMap[selectedLabel];
   const cleanLabel =
@@ -222,7 +223,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
     ? plantVarieties[mappedKey].filter(Boolean).map((v) => ({ value: v, label: v }))
     : [];
 
-  // ----- RENDER -----
+  // Render JSX
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-yellow-100 via-white to-yellow-200 p-4">
       <div className="w-full max-w-lg bg-white shadow-2xl rounded-3xl px-8 py-10">
@@ -231,14 +232,51 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
           ลงทะเบียนเกษตรกร
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <ModernInput label="ชื่อ" value={formData.regName} onChange={handleChange("regName")} placeholder="กรอกชื่อ" ringColor="amber" />
-          <ModernInput label="นามสกุล" value={formData.regSurname} onChange={handleChange("regSurname")} placeholder="กรอกนามสกุล" ringColor="amber" />
-          <ModernInput label="เบอร์โทร" value={formData.regTel} onChange={handleChange("regTel")} placeholder="08xxxxxxxx" type="tel" ringColor="amber" />
-          <ModernInput label="ID LINE" value={formData.regProfile} onChange={handleChange("regProfile")} placeholder="กรุณากรอกชื่อ LINE" ringColor="amber" />
-          <ModernSelect label="เลือกพืชที่ปลูก" value={formData.regPlant} onChange={handleChange("regPlant")} options={plantOptions} ringColor="amber" />
+          <ModernInput
+            label="ชื่อ"
+            value={formData.regName}
+            onChange={handleChange("regName")}
+            placeholder="กรอกชื่อ"
+            ringColor="amber"
+          />
+          <ModernInput
+            label="นามสกุล"
+            value={formData.regSurname}
+            onChange={handleChange("regSurname")}
+            placeholder="กรอกนามสกุล"
+            ringColor="amber"
+          />
+          <ModernInput
+            label="เบอร์โทร"
+            value={formData.regTel}
+            onChange={handleChange("regTel")}
+            placeholder="08xxxxxxxx"
+            type="tel"
+            ringColor="amber"
+          />
+          <ModernInput
+            label="ID LINE"
+            value={formData.regProfile}
+            onChange={handleChange("regProfile")}
+            placeholder="กรุณากรอกชื่อ LINE"
+            ringColor="amber"
+          />
+          <ModernSelect
+            label="เลือกพืชที่ปลูก"
+            value={formData.regPlant}
+            onChange={handleChange("regPlant")}
+            options={plantOptions}
+            ringColor="amber"
+          />
 
           {formData.regPlant === "other" && (
-            <ModernInput label="ระบุพืชอื่นๆ" value={formData.regPlantOther} onChange={handleChange("regPlantOther")} placeholder="เช่น กล้วย มังคุด" ringColor="amber" />
+            <ModernInput
+              label="ระบุพืชอื่นๆ"
+              value={formData.regPlantOther}
+              onChange={handleChange("regPlantOther")}
+              placeholder="เช่น กล้วย มังคุด"
+              ringColor="amber"
+            />
           )}
 
           {formData.regPlant && (
@@ -262,14 +300,47 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
                 />
               )}
 
-              <ModernInput label="จำนวนที่ปลูก (ต้น)" value={formData.regPlantAmount} onChange={handleChange("regPlantAmount")} placeholder="เช่น 100 ต้น" ringColor="amber" />
-              <ModernInput label="อายุของพืช" value={formData.regPlantAge} onChange={handleChange("regPlantAge")} placeholder="เช่น 2 เดือน หรือ 1 ปี" ringColor="amber" />
+              <ModernInput
+                label="จำนวนที่ปลูก (ต้น)"
+                value={formData.regPlantAmount}
+                onChange={handleChange("regPlantAmount")}
+                placeholder="เช่น 100 ต้น"
+                ringColor="amber"
+              />
+              <ModernInput
+                label="อายุของพืช"
+                value={formData.regPlantAge}
+                onChange={handleChange("regPlantAge")}
+                placeholder="เช่น 2 เดือน หรือ 1 ปี"
+                ringColor="amber"
+              />
 
               <h3 className="text-xl font-semibold text-amber-700 mb-2 mt-4">พื้นที่ที่ปลูก</h3>
               <div className="grid grid-cols-3 gap-4">
-                <ModernInput label="ไร่" value={formData.areaRai} onChange={handleChange("areaRai")} placeholder="0" type="number" ringColor="amber" />
-                <ModernInput label="งาน" value={formData.areaNgan} onChange={handleChange("areaNgan")} placeholder="0" type="number" ringColor="amber" />
-                <ModernInput label="ตารางวา" value={formData.areaWa} onChange={handleChange("areaWa")} placeholder="0" type="number" ringColor="amber" />
+                <ModernInput
+                  label="ไร่"
+                  value={formData.areaRai}
+                  onChange={handleChange("areaRai")}
+                  placeholder="0"
+                  type="number"
+                  ringColor="amber"
+                />
+                <ModernInput
+                  label="งาน"
+                  value={formData.areaNgan}
+                  onChange={handleChange("areaNgan")}
+                  placeholder="0"
+                  type="number"
+                  ringColor="amber"
+                />
+                <ModernInput
+                  label="ตารางวา"
+                  value={formData.areaWa}
+                  onChange={handleChange("areaWa")}
+                  placeholder="0"
+                  type="number"
+                  ringColor="amber"
+                />
               </div>
               <p className="text-sm text-gray-600 mt-2">
                 🧮 รวมพื้นที่ทั้งหมด: <strong>{calculateTotalAreaSqm()}</strong> ตารางเมตร
