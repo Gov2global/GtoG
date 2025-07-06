@@ -42,7 +42,6 @@ const registerSchema = new mongoose.Schema({
 
 const Register = mongoose.models.Register || mongoose.model("Register", registerSchema, "Register");
 
-// --- Set RichMenu Function ---
 async function setRichMenu(userId, menuType) {
   const richMenuId = menuType === "เกษตรกร" ? MEMBER_MENU_ID_FARMER : REGISTER_MENU_ID;
   const url = `https://api.line.me/v2/bot/user/${userId}/richmenu/${richMenuId}`;
@@ -52,13 +51,12 @@ async function setRichMenu(userId, menuType) {
       {},
       { headers: { Authorization: `Bearer ${channelAccessToken}` } }
     );
-    console.log(`✅ Set RichMenu Success! [${menuType}]`, res.status);
+    console.log(`✅ Set RichMenu Success! [${menuType}]`, res.status, res.data);
   } catch (err) {
     console.error('❌ Set RichMenu Error:', err.response?.data || err.message);
   }
 }
 
-// --- Main ---
 async function run(userId) {
   console.log("MONGODB_URI:", MONGO_URI ? "OK" : "NOT FOUND");
   console.log("LINE_CHANNEL_ACCESS_TOKEN:", channelAccessToken ? "OK" : "NOT FOUND");
@@ -79,6 +77,6 @@ async function run(userId) {
   await mongoose.disconnect();
 }
 
-// --- ตัวอย่าง userId (LINE User ID จริง) ---
-run('U9522cc6ee5337c62188de55406470c41')
-  .catch(err => console.error('❌ Error:', err.response?.data || err.message));
+// export เท่านั้น (อย่า run auto)
+module.exports = { run };
+// ถ้าใช้ ES Module: export { run }
