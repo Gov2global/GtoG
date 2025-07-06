@@ -40,22 +40,23 @@ function FormResgiPage() {
 
   // --- Set RichMenu ตาม user ทุกครั้งที่ regLineID ได้ค่า ---
   useEffect(() => {
-    if (regLineID) {
-      fetch("/api/linr-rich-menu-check-register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ regLineID }),
+  if (regLineID) {
+    fetch("/api/farmer/line/linr-rich-menu-check-register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ regLineID }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        // ดูผลลัพธ์ log ได้
+        console.log("RichMenu set result:", data);
       })
-        .then((res) => res.json())
-        .then((data) => {
-          // debug ดูผลลัพธ์ได้
-          console.log("RichMenu set result:", data);
-        })
-        .catch((err) => {
-          console.error("RichMenu set error:", err);
-        });
-    }
-  }, [regLineID]);
+      .catch((err) => {
+        console.error("RichMenu set error:", err);
+      });
+  }
+}, [regLineID]);
+
 
   // --- Load typeFarm data ---
   useEffect(() => {
