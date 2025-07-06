@@ -12,21 +12,29 @@ export async function POST(request) {
   await connectMongoDB();
   const { regLineID } = await request.json();
 
+  console.log("==== RichMenu API ====");
+  console.log("regLineID", regLineID);
+
   if (!regLineID)
     return NextResponse.json({ success: false, message: "regLineID is required" }, { status: 400 });
 
   const user = await Register.findOne({ regLineID });
+  console.log("User from DB:", user);
 
   const menuType = user?.regType === "เกษตรกร" ? "เกษตรกร" : "register";
   const richMenuId = menuType === "เกษตรกร" ? MEMBER_MENU_ID_FARMER : REGISTER_MENU_ID;
 
+  console.log("menuType:", menuType, "richMenuId:", richMenuId);
+
   try {
-    await axios.post(
+    const result = await axios.post(
       `https://api.line.me/v2/bot/user/${regLineID}/richmenu/${richMenuId}`,
       {},
       { headers: { Authorization: `Bearer ${channelAccessToken}` } }
     );
+    console.log("LINE API result:", result.status, result.data);
   } catch (error) {
+    console.log("LINE API error:", error.response?.status, error.response?.data || error.message);
     return NextResponse.json({
       success: false,
       message: "Richmenu set error",
