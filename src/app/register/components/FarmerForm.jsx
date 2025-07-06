@@ -151,61 +151,68 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
   };
 
   // Submit ฟอร์ม
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setShowLoading(true);
+  // --- ส่วนใน FarmerFormPage ---
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setShowLoading(true);
+  try {
+    // 1. Gen ID
+    const idRes = await fetch(`/api/farmer/gen-id?regType=${formData.regType}`);
+    const idJson = await idRes.json();
+    if (!idJson.success) throw new Error("ไม่สามารถสร้างรหัสเกษตรกรได้");
+
+    // 2. เตรียมข้อมูลส่ง
+    const payload = {
+      ...formData,
+      regID: idJson.regID,
+      regPlantSpecies: formData.regPlantSpecies.filter(Boolean),
+      postcode,
+      totalAreaSqm: calculateTotalAreaSqm(),
+      regLineID: regLineID,
+    };
+
+    // 3. ส่งข้อมูลลงทะเบียน
+    const submitRes = await fetch("/api/farmer/submit/farmer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const submitJson = await submitRes.json();
+    if (!submitJson.success) throw new Error("บันทึกข้อมูลล้มเหลว");
+
+    // 4. เปลี่ยน RichMenu (ใช้ endpoint ใหม่!)
     try {
-      // 1. Gen ID
-      const idRes = await fetch(`/api/farmer/gen-id?regType=${formData.regType}`);
-      const idJson = await idRes.json();
-      if (!idJson.success) throw new Error("ไม่สามารถสร้างรหัสเกษตรกรได้");
-
-      // 2. เตรียมข้อมูลส่ง
-      const payload = {
-        ...formData,
-        regID: idJson.regID,
-        regPlantSpecies: formData.regPlantSpecies.filter(Boolean),
-        postcode,
-        totalAreaSqm: calculateTotalAreaSqm(),
-        regLineID: regLineID,
-      };
-
-      // 3. ส่งข้อมูลลงทะเบียน
-      const submitRes = await fetch("/api/farmer/submit/farmer", {
+      await new Promise((r) => setTimeout(r, 400)); // รอ DB update ก่อน
+      const resRichmenu = await fetch("/api/farmer/line/line-rich-menu-farmer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ regLineID }),
       });
-      const submitJson = await submitRes.json();
-      if (!submitJson.success) throw new Error("บันทึกข้อมูลล้มเหลว");
-
-      // 4. เรียก API เปลี่ยน RichMenu ของ LINE
-      try {
-        await new Promise((r) => setTimeout(r, 400)); // รอ DB update ก่อน
-        const resRichmenu = await fetch("/api/farmer/line/line-rich-menu-check-register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ regLineID }),
-        });
-        const richJson = await resRichmenu.json();
-        console.log("Set RichMenu after register:", richJson);
-      } catch (err) {
-        console.error("Set RichMenu Error:", err);
+      const richJson = await resRichmenu.json();
+      if (!richJson.success) {
+        console.error("Set RichMenu Error:", richJson.message);
+        // ถ้าอยากแสดง Toast แจ้งเตือนได้ (optional)
       }
-
-      setShowLoading(false);
-
-      // ปิด LIFF window
-      if (window?.liff) {
-        window.liff.closeWindow();
-      } else if (liff?.closeWindow) {
-        liff.closeWindow();
-      }
+      console.log("Set RichMenu after register:", richJson);
     } catch (err) {
-      alert("❌ เกิดข้อผิดพลาด: " + err.message);
-      setShowLoading(false);
+      console.error("Set RichMenu Error:", err);
+      // ถ้าอยากแสดง Toast แจ้งเตือนได้ (optional)
     }
-  };
+
+    setShowLoading(false);
+
+    // ปิด LIFF window
+    if (window?.liff) {
+      window.liff.closeWindow();
+    } else if (liff?.closeWindow) {
+      liff.closeWindow();
+    }
+  } catch (err) {
+    alert("❌ เกิดข้อผิดพลาด: " + err.message);
+    setShowLoading(false);
+  }
+};
+
 
   // Helper สำหรับ select พันธุ์และ options
   const selectedLabel = plantOptions.find((opt) => opt.value === formData.regPlant)?.label || "";
