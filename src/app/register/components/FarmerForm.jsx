@@ -23,7 +23,6 @@ const plantLabelMap = {
 };
 
 function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }) {
-  // State หลัก
   const [formData, setFormData] = useState({
     regName: "",
     regProfile: "",
@@ -151,70 +150,63 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
   };
 
   // Submit ฟอร์ม
-  // --- ส่วนใน FarmerFormPage ---
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setShowLoading(true);
-  try {
-    // 1. Gen ID
-    const idRes = await fetch(`/api/farmer/gen-id?regType=${formData.regType}`);
-    const idJson = await idRes.json();
-    if (!idJson.success) throw new Error("ไม่สามารถสร้างรหัสเกษตรกรได้");
-
-    // 2. เตรียมข้อมูลส่ง
-    const payload = {
-      ...formData,
-      regID: idJson.regID,
-      regPlantSpecies: formData.regPlantSpecies.filter(Boolean),
-      postcode,
-      totalAreaSqm: calculateTotalAreaSqm(),
-      regLineID: regLineID,
-    };
-
-    // 3. ส่งข้อมูลลงทะเบียน
-    const submitRes = await fetch("/api/farmer/submit/farmer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const submitJson = await submitRes.json();
-    if (!submitJson.success) throw new Error("บันทึกข้อมูลล้มเหลว");
-
-    // 4. เปลี่ยน RichMenu (ใช้ endpoint ใหม่!)
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setShowLoading(true);
     try {
-      await new Promise((r) => setTimeout(r, 400)); // รอ DB update ก่อน
-      // ใช้ key ให้ตรงกับ API ฝั่ง backend
-      const resRichmenu = await fetch("/api/farmer/line/line-rich-menu-farmer", {
+      // 1. Gen ID
+      const idRes = await fetch(`/api/farmer/gen-id?regType=${formData.regType}`);
+      const idJson = await idRes.json();
+      if (!idJson.success) throw new Error("ไม่สามารถสร้างรหัสเกษตรกรได้");
+
+      // 2. เตรียมข้อมูลส่ง
+      const payload = {
+        ...formData,
+        regID: idJson.regID,
+        regPlantSpecies: formData.regPlantSpecies.filter(Boolean),
+        postcode,
+        totalAreaSqm: calculateTotalAreaSqm(),
+        regLineID: regLineID,
+      };
+
+      // 3. ส่งข้อมูลลงทะเบียน
+      const submitRes = await fetch("/api/farmer/submit/farmer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: regLineID }), // <= **ตรงนี้สำคัญ**
+        body: JSON.stringify(payload),
       });
-      const richJson = await resRichmenu.json();
-      if (!richJson.success) {
-        console.error("Set RichMenu Error:", richJson.message);
-        // show Toast error (optional)
+      const submitJson = await submitRes.json();
+      if (!submitJson.success) throw new Error("บันทึกข้อมูลล้มเหลว");
+
+      // 4. เปลี่ยน RichMenu (ใช้ endpoint ใหม่! key = userId)
+      try {
+        await new Promise((r) => setTimeout(r, 400)); // รอ DB update ก่อน
+        const resRichmenu = await fetch("/api/farmer/line/run-richmenu-condition", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: regLineID }), // KEY = userId
+        });
+        const richJson = await resRichmenu.json();
+        if (!richJson.success) {
+          console.error("Set RichMenu Error:", richJson.message);
+        }
+      } catch (err) {
+        console.error("Set RichMenu Error:", err);
       }
-      // console.log("Set RichMenu after register:", richJson); // dev only
+
+      setShowLoading(false);
+
+      // ปิด LIFF window
+      if (window?.liff) {
+        window.liff.closeWindow();
+      } else if (liff?.closeWindow) {
+        liff.closeWindow();
+      }
     } catch (err) {
-      console.error("Set RichMenu Error:", err);
-      // show Toast error (optional)
+      alert("❌ เกิดข้อผิดพลาด: " + err.message);
+      setShowLoading(false);
     }
-
-    setShowLoading(false); // <== ตรงนี้
-
-    // ปิด LIFF window
-    if (window?.liff) {
-      window.liff.closeWindow();
-    } else if (liff?.closeWindow) {
-      liff.closeWindow();
-    }
-  } catch (err) {
-    alert("❌ เกิดข้อผิดพลาด: " + err.message);
-    setShowLoading(false);
-  }
-};
-
-
+  };
 
   // Helper สำหรับ select พันธุ์และ options
   const selectedLabel = plantOptions.find((opt) => opt.value === formData.regPlant)?.label || "";
