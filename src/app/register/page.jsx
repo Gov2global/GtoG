@@ -20,37 +20,55 @@ function FormResgiPage() {
   const [regProfile, setRegProfile] = useState("");
 
   // ✅ Init LIFF + set regLineID/regProfile + set RichMenu ทันทีที่ user login
-  useEffect(() => {
-    liff
-      .init({ liffId: "2007697520-g59jM8X3" })
-      .then(() => {
-        if (liff.isLoggedIn()) {
-          liff.getProfile().then((profile) => {
-            setRegLineID(profile.userId);
-            setRegProfile(profile.displayName);
+  // useEffect(() => {
+  //   liff
+  //     .init({ liffId: "2007697520-g59jM8X3" })
+  //     .then(() => {
+  //       if (liff.isLoggedIn()) {
+  //         liff.getProfile().then((profile) => {
+  //           setRegLineID(profile.userId);
+  //           setRegProfile(profile.displayName);
 
-            // 🟢 Set RichMenu ทันทีเมื่อได้ userId
-            fetch("/api/farmer/line/line-rich-menu-check-register", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ regLineID: profile.userId }),
-            })
-              .then((res) => res.json())
-              .then((data) => {
-                console.log("RichMenu set result:", data);
-              })
-              .catch((err) => {
-                console.error("RichMenu set error:", err);
-              });
+  //           // 🟢 Set RichMenu ทันทีเมื่อได้ userId
+  //           fetch("/api/farmer/line/line-rich-menu-check-register", {
+  //             method: "POST",
+  //             headers: { "Content-Type": "application/json" },
+  //             body: JSON.stringify({ regLineID: profile.userId }),
+  //           })
+  //             .then((res) => res.json())
+  //             .then((data) => {
+  //               console.log("RichMenu set result:", data);
+  //             })
+  //             .catch((err) => {
+  //               console.error("RichMenu set error:", err);
+  //             });
+  //         });
+  //       } else {
+  //         liff.login();
+  //       }
+  //     })
+  //     .catch((err) => {
+  //       console.error("LIFF init error", err);
+  //     });
+  // }, []);
+
+  useEffect(() => {
+  liff.init({ liffId: "2007697520-g59jM8X3" })
+    .then(() => {
+      if (liff.isLoggedIn()) {
+        liff.getProfile().then(profile => {
+          fetch("/api/farmer/line/line-rich-menu-check-register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ regLineID: profile.userId }),
           });
-        } else {
-          liff.login();
-        }
-      })
-      .catch((err) => {
-        console.error("LIFF init error", err);
-      });
-  }, []);
+        });
+      } else {
+        liff.login();
+      }
+    });
+}, []);
+
 
   // ✅ โหลด typeFarm จาก backend
   useEffect(() => {
