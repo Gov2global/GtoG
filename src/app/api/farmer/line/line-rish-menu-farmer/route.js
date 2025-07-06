@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 
 // ปกติควรเก็บใน .env, demo นี้ hardcode ให้ก่อน
-const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN || "YOUR_LONG_ACCESS_TOKEN";
+const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN || 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
 const RICHMENU_ID = "richmenu-2bf18f235fabf148d57cbf2d988bcc11";
 
 export async function POST(req) {
