@@ -96,32 +96,84 @@
 
 
 
+// const axios = require('axios');
+
+// const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
+
+
+// const richMenuBody = {
+//   size: { width: 2500, height: 1686 },
+//   selected: true,
+//   name: "fruit_premium_menu",
+//   chatBarText: "เมนูหลัก",
+//   areas: [
+//     {
+//       bounds: { x: 0, y: 1286, width: 625, height: 400 },
+//       action: { type: "uri", uri: "https://your-location-link" }
+//     },
+//     {
+//       bounds: { x: 625, y: 1286, width: 625, height: 400 },
+//       action: { type: "uri", uri: "https://your-produce-link" }
+//     },
+//     {
+//       bounds: { x: 1250, y: 1286, width: 625, height: 400 },
+//       action: { type: "uri", uri: "https://your-gardens-link" }
+//     },
+//     {
+//       bounds: { x: 1875, y: 1286, width: 625, height: 400 },
+//       action: { type: "message", text: "ติดต่อเจ้าหน้าที่" }
+//     }
+//   ]
+// };
+
+// axios.post(
+//   "https://api.line.me/v2/bot/richmenu",
+//   richMenuBody,
+//   {
+//     headers: {
+//       "Authorization": `Bearer ${channelAccessToken}`,
+//       "Content-Type": "application/json",
+//     },
+//   }
+// )
+// .then(res => {
+//   console.log('RichMenu created:', res.data);
+// })
+// .catch(err => {
+//   console.error('Error:', err.response?.data || err.message);
+// });
+
+
+
+
 const axios = require('axios');
 
 const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
 
-
 const richMenuBody = {
   size: { width: 2500, height: 1686 },
   selected: true,
-  name: "fruit_premium_menu",
-  chatBarText: "เมนูหลัก",
+  name: "RichMenuLocalAgency",
+  chatBarText: "หน่วยงานท้องถิ่น",
   areas: [
     {
-      bounds: { x: 0, y: 1286, width: 625, height: 400 },
-      action: { type: "uri", uri: "https://your-location-link" }
+      bounds: { x: 60, y: 1200, width: 780, height: 350 },
+      action: { type: "message", label: "สนับสนุนปัจจัย", text: "สนับสนุนปัจจัย" }
+      // หรือใช้ type: "uri" เช่น { type: "uri", label: "สนับสนุนปัจจัย", uri: "https://your-donate-link" }
     },
     {
-      bounds: { x: 625, y: 1286, width: 625, height: 400 },
-      action: { type: "uri", uri: "https://your-produce-link" }
+      bounds: { x: 865, y: 1200, width: 610, height: 350 },
+      action: { type: "message", label: "พิกัดสวน", text: "พิกัดสวน" }
+      // หรือ { type: "uri", label: "พิกัดสวน", uri: "https://your-location-link" }
     },
     {
-      bounds: { x: 1250, y: 1286, width: 625, height: 400 },
-      action: { type: "uri", uri: "https://your-gardens-link" }
+      bounds: { x: 1510, y: 1200, width: 650, height: 350 },
+      action: { type: "message", label: "รายชื่อเกษตรกร", text: "รายชื่อเกษตรกร" }
+      // หรือ { type: "uri", label: "รายชื่อเกษตรกร", uri: "https://your-farmer-list-link" }
     },
     {
-      bounds: { x: 1875, y: 1286, width: 625, height: 400 },
-      action: { type: "message", text: "ติดต่อเจ้าหน้าที่" }
+      bounds: { x: 2200, y: 1200, width: 230, height: 350 },
+      action: { type: "message", label: "ติดต่อเจ้าหน้าที่", text: "ติดต่อเจ้าหน้าที่" }
     }
   ]
 };
