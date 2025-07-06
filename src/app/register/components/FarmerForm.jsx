@@ -204,6 +204,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: regLineID }),
         });
+
       } catch (err) {
         console.error("เปลี่ยน RichMenu ไม่สำเร็จ:", err);
       }
