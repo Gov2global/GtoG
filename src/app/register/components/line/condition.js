@@ -1,16 +1,13 @@
-require('dotenv').config({ path: '../../../../../.env' });
-const mongoose = require('mongoose');
-const axios = require('axios');
+import 'dotenv/config';
+import mongoose from 'mongoose';
+import axios from 'axios';
 
-// --- ENV CONFIG ---
 const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 const MONGO_URI = process.env.MONGODB_URI;
 
-// --- RichMenu IDs ---
-const REGISTER_MENU_ID = 'richmenu-de998bd0e0ffeb7d4bdacf46a282c010';      // สำหรับยังไม่สมัคร
-const MEMBER_MENU_ID_FARMER = 'richmenu-2bf18f235fabf148d57cbf2d988bcc11'; // สำหรับเกษตรกรที่สมัครแล้ว
+const REGISTER_MENU_ID = 'richmenu-de998bd0e0ffeb7d4bdacf46a282c010';
+const MEMBER_MENU_ID_FARMER = 'richmenu-2bf18f235fabf148d57cbf2d988bcc11';
 
-// --- Mongoose Model (ตาม schema ที่คุณใช้จริง) ---
 const registerSchema = new mongoose.Schema({
   regData: { type: Date },
   regID: { type: String, unique: true, required: true },
@@ -57,16 +54,14 @@ async function setRichMenu(userId, menuType) {
   }
 }
 
-async function run(userId) {
+export async function run(userId) {
   console.log("MONGODB_URI:", MONGO_URI ? "OK" : "NOT FOUND");
   console.log("LINE_CHANNEL_ACCESS_TOKEN:", channelAccessToken ? "OK" : "NOT FOUND");
   await mongoose.connect(MONGO_URI);
 
-  // หา user จาก regLineID
   const user = await Register.findOne({ regLineID: userId });
   console.log('DEBUG user:', user);
 
-  // ถ้าพบ user และเป็น "เกษตรกร" = ให้เมนูเกษตรกร, ถ้าไม่พบหรือไม่ใช่ = เมนูสมัคร
   const menuType = user?.regType === "เกษตรกร" ? "เกษตรกร" : "register";
   await setRichMenu(userId, menuType);
 
@@ -76,7 +71,3 @@ async function run(userId) {
   );
   await mongoose.disconnect();
 }
-
-// export เท่านั้น (อย่า run auto)
-module.exports = { run };
-// ถ้าใช้ ES Module: export { run }

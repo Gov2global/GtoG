@@ -169,7 +169,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
       regLineID: regLineID,
     };
 
-    // 3. Save to backend (RichMenu จะเปลี่ยนโดย backend ทันที)
+    // 3. Save to backend
     const submitRes = await fetch("/api/farmer/submit/farmer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -177,6 +177,8 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
     });
     const submitJson = await submitRes.json();
     if (!submitJson.success) throw new Error("บันทึกข้อมูลล้มเหลว");
+
+    // (optional) show Toast, etc.
 
     setShowLoading(false);
 
@@ -191,6 +193,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
     setShowLoading(false);
   }
 };
+
 
 
   // Helper สำหรับ select พันธุ์และ options
