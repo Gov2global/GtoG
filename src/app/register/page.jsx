@@ -8,22 +8,24 @@ import EducationalInstitution from "./components/EducationalInstitution";
 import Container from "./components/Container";
 import { ModernSelect } from "./components/ui/Select";
 import { MdOutlineLibraryBooks } from "react-icons/md";
-import liff from '@line/liff';
+import liff from "@line/liff";
 
 function FormResgiPage() {
   const [step, setStep] = useState(1);
   const [typeFarmList, setTypeFarmList] = useState([]);
-  const [isLoadingTypeFarm, setIsLoadingTypeFarm] = useState(true); // <-- Loading state
+  const [isLoadingTypeFarm, setIsLoadingTypeFarm] = useState(true);
   const [selectedType, setSelectedType] = useState("");
   const [selectedSubType, setSelectedSubType] = useState("");
   const [regLineID, setRegLineID] = useState("");
   const [regProfile, setRegProfile] = useState("");
 
+  // --- LIFF Init & Get UserID ---
   useEffect(() => {
-    liff.init({ liffId: '2007697520-g59jM8X3' })
+    liff
+      .init({ liffId: "2007697520-g59jM8X3" })
       .then(() => {
         if (liff.isLoggedIn()) {
-          liff.getProfile().then(profile => {
+          liff.getProfile().then((profile) => {
             setRegLineID(profile.userId);
             setRegProfile(profile.displayName);
           });
@@ -36,6 +38,26 @@ function FormResgiPage() {
       });
   }, []);
 
+  // --- Set RichMenu ตาม user ทุกครั้งที่ regLineID ได้ค่า ---
+  useEffect(() => {
+    if (regLineID) {
+      fetch("/api/linr-rich-menu-check-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ regLineID }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          // debug ดูผลลัพธ์ได้
+          console.log("RichMenu set result:", data);
+        })
+        .catch((err) => {
+          console.error("RichMenu set error:", err);
+        });
+    }
+  }, [regLineID]);
+
+  // --- Load typeFarm data ---
   useEffect(() => {
     const fetchTypeFarm = async () => {
       setIsLoadingTypeFarm(true);
@@ -94,7 +116,6 @@ function FormResgiPage() {
             </div>
 
             <div className="space-y-5">
-              {/* แสดง Loading ถ้ายังโหลด typeFarmList ไม่เสร็จ */}
               {isLoadingTypeFarm ? (
                 <div className="flex items-center justify-center py-8 text-amber-600">
                   <span className="animate-spin mr-2">⏳</span>
@@ -105,7 +126,9 @@ function FormResgiPage() {
                   label="ประเภทหน่วยงาน"
                   value={selectedType}
                   onChange={handleTypeChange}
-                  options={[...new Set(typeFarmList.map((t) => t.typeDetaiTH))].map((t) => ({
+                  options={[
+                    ...new Set(typeFarmList.map((t) => t.typeDetaiTH)),
+                  ].map((t) => ({
                     value: t,
                     label: t,
                   }))}
@@ -131,7 +154,7 @@ function FormResgiPage() {
                 onClick={handleNext}
                 disabled={isLoadingTypeFarm}
                 className={`mt-6 w-full bg-gradient-to-r from-[#D97706] to-[#9C4400] text-white text-lg py-3 rounded-full font-bold flex justify-center items-center gap-2 hover:from-[#B45309] hover:to-[#7C3A00] transition-all
-                  ${isLoadingTypeFarm ? 'opacity-50 pointer-events-none' : ''}`}
+                  ${isLoadingTypeFarm ? "opacity-50 pointer-events-none" : ""}`}
               >
                 ถัดไป
                 <span className="text-xl">➡️</span>
