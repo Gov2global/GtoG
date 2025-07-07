@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
 const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
 const MONGO_URI = process.env.MONGODB_URI;
 // เอาแค่ RichMenu เดียว (เปลี่ยนได้เลย)
-const MEMBER_MENU_ID_FARMER = "richmenu-182702126c5dc08b61d31fbed6e47edb";
+const MEMBER_MENU_ID_FARMER = "richmenu-857a99a8b63fc636f0eaf9d7754f1e02";
 
 // --- Helper: connect DB (optional ถ้าใช้ mongoose) ---
 async function dbConnect() {
