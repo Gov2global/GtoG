@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU='; // โหลดจาก .env จะดีกว่า
-const richMenuId = 'richmenu-857a99a8b63fc636f0eaf9d7754f1e02';
+const richMenuId = 'richmenu-37479f237e378dd3541d5e7cf1ea4f7c';
 
 // ✅ ให้ path เป็น absolute
 const imagePath = path.resolve(__dirname, '../../../../../public/richmenu/richmenu_1751743859220.jpg');

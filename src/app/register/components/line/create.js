@@ -48,29 +48,31 @@ const richMenuBody = {
   selected: true,
   name: "RichMenuFarmer",
   chatBarText: "เกษตรกร",
-    areas: [
+  areas: [
+    // แถวบน
     {
-      bounds: { x: 950, y: 1090, width: 440, height: 305 },
+      bounds: { x: 100, y: 1120, width: 335, height: 275 },
       action: { type: "message", text: "เช็คภาระกิจ" }
     },
     {
-      bounds: { x: 538, y: 1090, width: 440, height: 305 },
+      bounds: { x: 480, y: 1120, width: 335, height: 275 },
       action: { type: "message", text: "ลงทะเบียนเข้าร่วม GAP" }
     },
     {
-      bounds: { x: 179, y: 1090, width: 440, height: 305 },
+      bounds: { x: 860, y: 1120, width: 335, height: 275 },
       action: { type: "message", text: "ติดต่อเจ้าหน้าที่" }
     },
+    // แถวล่าง
     {
-      bounds: { x: 950, y: 1430, width: 440, height: 225 },
+      bounds: { x: 100, y: 1410, width: 335, height: 205 },
       action: { type: "message", text: "แจ้งผลผลิต" }
     },
     {
-      bounds: { x: 538, y: 1430, width: 440, height: 225 },
+      bounds: { x: 480, y: 1410, width: 335, height: 205 },
       action: { type: "message", text: "ขอเงินสนับสนุน" }
     },
     {
-      bounds: { x: 179, y: 1430, width: 440, height: 225 },
+      bounds: { x: 860, y: 1410, width: 335, height: 205 },
       action: { type: "message", text: "สั่งซื้อผลิตภัณฑ์ปุ๋ย ยา" }
     }
   ]
