@@ -39,59 +39,59 @@
 
 
 
-// const axios = require('axios');
+const axios = require('axios');
 
-// const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
+const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
 
-// const richMenuBody = {
-//   size: { width: 2500, height: 1686 },
-//   selected: true,
-//   name: "RichMenuFarmer",
-//   chatBarText: "เกษตรกร",
-//   areas: [
-//     {
-//       bounds: { x: 0, y: 843, width: 834, height: 421 },
-//       action: { type: "message", text: "เช็คภาระกิจ" }
-//     },
-//     {
-//       bounds: { x: 833, y: 843, width: 834, height: 421 },
-//       action: { type: "message", text: "ลงทะเบียนเข้าร่วม GAP" }
-//     },
-//     {
-//       bounds: { x: 1667, y: 843, width: 834, height: 421 },
-//       action: { type: "message", text: "ติดต่อเจ้าหน้าที่" }
-//     },
-//     {
-//       bounds: { x: 0, y: 1264, width: 834, height: 421 },
-//       action: { type: "message", text: "แจ้งผลผลิต" }
-//     },
-//     {
-//       bounds: { x: 833, y: 1264, width: 834, height: 421 },
-//       action: { type: "message", text: "ขอเงินสนับสนุน" }
-//     },
-//     {
-//       bounds: { x: 1667, y: 1264, width: 834, height: 421 },
-//       action: { type: "message", text: "สั่งซื้อผลิตภัณฑ์ปุ๋ย ยา" }
-//     }
-//   ]
-// };
+const richMenuBody = {
+  size: { width: 2500, height: 1686 },
+  selected: true,
+  name: "RichMenuFarmer",
+  chatBarText: "เกษตรกร",
+  areas: [
+    {
+      bounds: { x: 1123, y: 950, width: 606, height: 421306 },
+      action: { type: "message", text: "เช็คภาระกิจ" }
+    },
+    {
+      bounds: { x: 1123, y: 1550, width: 606, height: 306 },
+      action: { type: "message", text: "ลงทะเบียนเข้าร่วม GAP" }
+    },
+    {
+      bounds: { x: 1123, y: 2078, width: 606, height: 306 },
+      action: { type: "message", text: "ติดต่อเจ้าหน้าที่" }
+    },
+    {
+      bounds: { x: 1495, y: 950, width: 606, height: 306 },
+      action: { type: "message", text: "แจ้งผลผลิต" }
+    },
+    {
+      bounds: { x: 1495, y: 1550, width: 606, height: 306 },
+      action: { type: "message", text: "ขอเงินสนับสนุน" }
+    },
+    {
+      bounds: { x: 1495, y: 2078, width: 606, height: 306 },
+      action: { type: "message", text: "สั่งซื้อผลิตภัณฑ์ปุ๋ย ยา" }
+    }
+  ]
+};
 
-// axios.post(
-//   "https://api.line.me/v2/bot/richmenu",
-//   richMenuBody,
-//   {
-//     headers: {
-//       "Authorization": `Bearer ${channelAccessToken}`,
-//       "Content-Type": "application/json",
-//     },
-//   }
-// )
-// .then(res => {
-//   console.log('RichMenu created:', res.data);
-// })
-// .catch(err => {
-//   console.error('Error:', err.response?.data || err.message);
-// });
+axios.post(
+  "https://api.line.me/v2/bot/richmenu",
+  richMenuBody,
+  {
+    headers: {
+      "Authorization": `Bearer ${channelAccessToken}`,
+      "Content-Type": "application/json",
+    },
+  }
+)
+.then(res => {
+  console.log('RichMenu created:', res.data);
+})
+.catch(err => {
+  console.error('Error:', err.response?.data || err.message);
+});
 
 
 
@@ -244,52 +244,52 @@
 // });
 
 
-const axios = require('axios');
+// const axios = require('axios');
 
-const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
+// const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
 
-const richMenuBody = {
-  size: { width: 2500, height: 1686 },
-  selected: true,
-  name: "RichMenuEducational",
-  chatBarText: "การศึกษา",
-  areas: [
-    // 1. ติดตามสวน
-    {
-      bounds: { x: 1370, y: 160, width: 1060, height: 260 },
-      action: { type: "message", label: "ติดตามสวน", text: "ติดตามสวน" }
-    },
-    // 2. ฟาร์มตัวอย่าง
-    {
-      bounds: { x: 1370, y: 440, width: 1060, height: 260 },
-      action: { type: "message", label: "ฟาร์มตัวอย่าง", text: "ฟาร์มตัวอย่าง" }
-    },
-    // 3. ส่งภาพแปลงปลูก
-    {
-      bounds: { x: 1370, y: 720, width: 1060, height: 260 },
-      action: { type: "message", label: "ส่งภาพแปลงปลูก", text: "ส่งภาพแปลงปลูก" }
-    },
-    // 4. ติดต่อเจ้าหน้าที่ (มุมขวาล่าง)
-    {
-      bounds: { x: 2020, y: 1400, width: 410, height: 260 },
-      action: { type: "message", label: "ติดต่อเจ้าหน้าที่", text: "ติดต่อเจ้าหน้าที่" }
-    }
-  ]
-};
+// const richMenuBody = {
+//   size: { width: 2500, height: 1686 },
+//   selected: true,
+//   name: "RichMenuEducational",
+//   chatBarText: "การศึกษา",
+//   areas: [
+//     // 1. ติดตามสวน
+//     {
+//       bounds: { x: 1370, y: 160, width: 1060, height: 260 },
+//       action: { type: "message", label: "ติดตามสวน", text: "ติดตามสวน" }
+//     },
+//     // 2. ฟาร์มตัวอย่าง
+//     {
+//       bounds: { x: 1370, y: 440, width: 1060, height: 260 },
+//       action: { type: "message", label: "ฟาร์มตัวอย่าง", text: "ฟาร์มตัวอย่าง" }
+//     },
+//     // 3. ส่งภาพแปลงปลูก
+//     {
+//       bounds: { x: 1370, y: 720, width: 1060, height: 260 },
+//       action: { type: "message", label: "ส่งภาพแปลงปลูก", text: "ส่งภาพแปลงปลูก" }
+//     },
+//     // 4. ติดต่อเจ้าหน้าที่ (มุมขวาล่าง)
+//     {
+//       bounds: { x: 2020, y: 1400, width: 410, height: 260 },
+//       action: { type: "message", label: "ติดต่อเจ้าหน้าที่", text: "ติดต่อเจ้าหน้าที่" }
+//     }
+//   ]
+// };
 
-axios.post(
-  "https://api.line.me/v2/bot/richmenu",
-  richMenuBody,
-  {
-    headers: {
-      "Authorization": `Bearer ${channelAccessToken}`,
-      "Content-Type": "application/json",
-    },
-  }
-)
-.then(res => {
-  console.log('RichMenu created:', res.data);
-})
-.catch(err => {
-  console.error('Error:', err.response?.data || err.message);
-});
+// axios.post(
+//   "https://api.line.me/v2/bot/richmenu",
+//   richMenuBody,
+//   {
+//     headers: {
+//       "Authorization": `Bearer ${channelAccessToken}`,
+//       "Content-Type": "application/json",
+//     },
+//   }
+// )
+// .then(res => {
+//   console.log('RichMenu created:', res.data);
+// })
+// .catch(err => {
+//   console.error('Error:', err.response?.data || err.message);
+// });
