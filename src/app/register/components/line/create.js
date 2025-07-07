@@ -50,7 +50,7 @@ const richMenuBody = {
   chatBarText: "เกษตรกร",
   areas: [
     {
-      bounds: { x: 1123, y: 950, width: 606, height: 421306 },
+      bounds: { x: 1123, y: 950, width: 606, height: 306 },
       action: { type: "message", text: "เช็คภาระกิจ" }
     },
     {

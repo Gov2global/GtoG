@@ -80,5 +80,5 @@ async function run(userId) {
 }
 
 // --- ตัวอย่าง userId (LINE User ID จริง) ---
-run('U0fc2bf44ecb9a30338143f85af8c5ff3')
+run('U9522cc6ee5337c62188de55406470c41')
   .catch(err => console.error('❌ Error:', err.response?.data || err.message));
