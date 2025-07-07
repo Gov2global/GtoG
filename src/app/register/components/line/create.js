@@ -65,12 +65,12 @@ const richMenuBody = {
       bounds: { x: 950, y: 1430, width: 440, height: 225 },
       action: { type: "message", text: "แจ้งผลผลิต" }
     },
-    {
-      bounds: { x: 1578, y: 1430, width: 440, height: 225 },
+ {
+      bounds: { x: 1578, y: 1430, width: 500, height: 305 },
       action: { type: "message", text: "ขอเงินสนับสนุน" }
     },
     {
-      bounds: { x: 2179, y: 1430, width: 440, height: 225 },
+      bounds: { x: 2179, y: 1430, width: 500, height: 305 },
       action: { type: "message", text: "สั่งซื้อผลิตภัณฑ์ปุ๋ย ยา" }
     }
   ]
