@@ -50,27 +50,27 @@ const richMenuBody = {
   chatBarText: "เกษตรกร",
   areas: [
     {
-      bounds: { x: 1123, y: 950, width: 606, height: 306 },
+      bounds: { x: 879, y: 1125, width: 606, height: 306 },
       action: { type: "message", text: "เช็คภาระกิจ" }
     },
     {
-      bounds: { x: 1123, y: 1550, width: 606, height: 306 },
+      bounds: { x: 1523, y: 1125, width: 606, height: 306 },
       action: { type: "message", text: "ลงทะเบียนเข้าร่วม GAP" }
     },
     {
-      bounds: { x: 1123, y: 2078, width: 606, height: 306 },
+      bounds: { x: 2067, y: 1125, width: 412, height: 306 },
       action: { type: "message", text: "ติดต่อเจ้าหน้าที่" }
     },
     {
-      bounds: { x: 1495, y: 950, width: 606, height: 306 },
+      bounds: { x: 980, y: 1465, width: 412, height: 306 },
       action: { type: "message", text: "แจ้งผลผลิต" }
     },
     {
-      bounds: { x: 1495, y: 1550, width: 606, height: 306 },
+      bounds: { x: 1523, y: 1465, width: 606, height: 306 },
       action: { type: "message", text: "ขอเงินสนับสนุน" }
     },
     {
-      bounds: { x: 1495, y: 2078, width: 606, height: 306 },
+      bounds: { x: 2167, y: 1465, width: 606, height: 306 },
       action: { type: "message", text: "สั่งซื้อผลิตภัณฑ์ปุ๋ย ยา" }
     }
   ]
