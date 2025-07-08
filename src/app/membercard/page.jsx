@@ -10,9 +10,8 @@ import liff from "@line/liff";
 
 const LIFF_ID = "2007697520-6KRLnXVP";
 
-// ฟังก์ชันอัพโหลดรูป (Mock, เปลี่ยนเป็น S3 API จริงได้)
 const uploadToS3 = async (file) => {
-  // TODO: ส่งไฟล์ไป backend → upload S3 → return url
+  // TODO: เปลี่ยนเป็น API จริง
   return "https://dummyimage.com/200x200/cccccc/ffffff";
 };
 
@@ -32,10 +31,14 @@ function MemberCardPage() {
         }
         const profile = await liff.getProfile();
         const lineId = profile.userId;
-        console.log("LINE USER ID (from LIFF):", lineId); // Debug ดูค่าจริง
+        console.log("LINE USER ID (from LIFF):", lineId);
 
-        // IMPORTANT: ปรับ endpoint ให้ถูกต้อง
         const res = await fetch(`/api/farmer/get/line-get/${lineId}`);
+        if (!res.ok) {
+          console.error("API Response Error", res.status);
+          setMember(null);
+          return;
+        }
         const data = await res.json();
 
         if (data.success && data.data) {
@@ -45,6 +48,7 @@ function MemberCardPage() {
           setMember(null);
         }
       } catch (err) {
+        console.error("LIFF or fetch error:", err);
         setMember(null);
       } finally {
         setLoading(false);
@@ -53,7 +57,6 @@ function MemberCardPage() {
     fetchMember();
   }, []);
 
-  // อัพโหลดรูป/อัปเดต profile pic
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -62,7 +65,7 @@ function MemberCardPage() {
       const url = await uploadToS3(file);
       setProfile(url);
 
-      // TODO: อัปเดต regProfile กลับ MongoDB ด้วย PATCH (แนะนำทำจริง!)
+      // TODO: PATCH/PUT ไป DB เพื่อบันทึก regProfile จริง
       // await fetch(`/api/farmer/update/profile`, {
       //   method: "PATCH",
       //   body: JSON.stringify({ regLineID: member.regLineID, regProfile: url }),
@@ -74,11 +77,9 @@ function MemberCardPage() {
     setUploading(false);
   };
 
-  // UI Loading
   if (loading)
     return <div className="text-center py-8">กำลังโหลดข้อมูล...</div>;
 
-  // UI ถ้าไม่พบข้อมูล
   if (!member)
     return (
       <div className="text-center text-red-500 py-8">
@@ -87,7 +88,6 @@ function MemberCardPage() {
       </div>
     );
 
-  // Format วันที่
   const createdAt = member.createdAt
     ? dayjs(member.createdAt).format("DD/MM/YYYY")
     : "-";
