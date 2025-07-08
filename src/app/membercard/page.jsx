@@ -1,21 +1,18 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 import Image from "next/image";
 import QRCode from "qrcode.react";
 import dayjs from "dayjs";
 import liff from "@line/liff";
 
-// ปรับตาม LIFF ID ของคุณ
 const LIFF_ID = "2007697520-6KRLnXVP";
 
-// ตัวอย่างฟังก์ชันอัพโหลด S3 (เปลี่ยนเป็น API จริงภายหลัง)
+// ฟังก์ชันอัพโหลดรูป (Mock, เปลี่ยนเป็น S3 API จริงได้)
 const uploadToS3 = async (file) => {
-  // ส่ง file ไป backend → upload ไป S3 → return url
-  // ตัวอย่าง: POST ไปที่ /api/upload/profile
-  // return url ที่ backend ส่งกลับมา
+  // TODO: ส่งไฟล์ไป backend → upload S3 → return url
   return "https://dummyimage.com/200x200/cccccc/ffffff";
 };
 
@@ -25,31 +22,38 @@ function MemberCardPage() {
   const [profile, setProfile] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  // 1. Init LIFF แล้วดึง userId (LineID)
   useEffect(() => {
-    liff
-      .init({ liffId: LIFF_ID })
-      .then(() => {
-        if (liff.isLoggedIn()) {
-          liff.getProfile().then((profile) => {
-            const lineId = profile.userId;
-            fetch(`/api/farmer/get/register/line/${lineId}`)
-              .then((res) => res.json())
-              .then((data) => {
-                setMember(data.data || null);
-                setProfile(data.data?.regProfile || "");
-                setLoading(false);
-              })
-              .catch(() => setLoading(false));
-          });
-        } else {
+    const fetchMember = async () => {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isLoggedIn()) {
           liff.login();
+          return;
         }
-      })
-      .catch(() => setLoading(false));
+        const profile = await liff.getProfile();
+        const lineId = profile.userId;
+        console.log("LINE USER ID (from LIFF):", lineId); // Debug ดูค่าจริง
+
+        // IMPORTANT: ปรับ endpoint ให้ถูกต้อง
+        const res = await fetch(`/api/farmer/get/line-get/${lineId}`);
+        const data = await res.json();
+
+        if (data.success && data.data) {
+          setMember(data.data);
+          setProfile(data.data.regProfile || "");
+        } else {
+          setMember(null);
+        }
+      } catch (err) {
+        setMember(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMember();
   }, []);
 
-  // 2. Handle อัพโหลดรูป (Upload Profile Pic)
+  // อัพโหลดรูป/อัปเดต profile pic
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -57,8 +61,8 @@ function MemberCardPage() {
     try {
       const url = await uploadToS3(file);
       setProfile(url);
-      // TODO: PATCH/PUT เพื่อบันทึก url กลับไปที่ regProfile (API อัปเดต DB)
-      // ตัวอย่าง:
+
+      // TODO: อัปเดต regProfile กลับ MongoDB ด้วย PATCH (แนะนำทำจริง!)
       // await fetch(`/api/farmer/update/profile`, {
       //   method: "PATCH",
       //   body: JSON.stringify({ regLineID: member.regLineID, regProfile: url }),
@@ -70,17 +74,26 @@ function MemberCardPage() {
     setUploading(false);
   };
 
+  // UI Loading
   if (loading)
     return <div className="text-center py-8">กำลังโหลดข้อมูล...</div>;
+
+  // UI ถ้าไม่พบข้อมูล
   if (!member)
     return (
       <div className="text-center text-red-500 py-8">
-        ไม่พบข้อมูลสมาชิก <br /> กรุณาตรวจสอบการสมัคร
+        ไม่พบข้อมูลสมาชิก <br />
+        กรุณาตรวจสอบการสมัครหรือลองใหม่
       </div>
     );
 
-  const createdAt = dayjs(member.createdAt).format("DD/MM/YYYY");
-  const expiredAt = dayjs(member.createdAt).add(1, "year").format("DD/MM/YYYY");
+  // Format วันที่
+  const createdAt = member.createdAt
+    ? dayjs(member.createdAt).format("DD/MM/YYYY")
+    : "-";
+  const expiredAt = member.createdAt
+    ? dayjs(member.createdAt).add(1, "year").format("DD/MM/YYYY")
+    : "-";
 
   return (
     <div className="flex justify-center py-8">
@@ -95,6 +108,7 @@ function MemberCardPage() {
                   alt="profile"
                   fill
                   style={{ objectFit: "cover" }}
+                  sizes="80px"
                 />
               ) : (
                 <span className="text-xs text-gray-500 flex items-center justify-center w-full h-full">
