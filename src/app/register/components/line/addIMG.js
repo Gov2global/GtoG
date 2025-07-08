@@ -3,10 +3,10 @@ const fs = require('fs');
 const path = require('path');
 
 const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU='; // โหลดจาก .env จะดีกว่า
-const richMenuId = 'richmenu-66c814ac90037bdc7305d78c002d1860';
+const richMenuId = 'richmenu-5b8c259f0bf49a82b2da4c7085adebfc';
 
 // ✅ ให้ path เป็น absolute
-const imagePath = path.resolve(__dirname, '../../../../../public/richmenu/richmenu_1751743859220.jpg');
+const imagePath = path.resolve(__dirname, '../../../../../public/richmenu/richmenu_1751820484363.jpg');
 
 if (!fs.existsSync(imagePath)) {
   console.error('❌ ไม่พบไฟล์:', imagePath);
@@ -31,3 +31,5 @@ axios.post(
 .catch(err => {
   console.error('❌ Upload image error:', err.response?.data || err.message);
 });
+
+

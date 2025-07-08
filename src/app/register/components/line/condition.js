@@ -93,8 +93,8 @@ const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 const MONGO_URI = process.env.MONGODB_URI;
 
 // --- RichMenu IDs ---
-const REGISTER_MENU_ID = 'richmenu-de998bd0e0ffeb7d4bdacf46a282c010';      // ยังไม่สมัคร
-const MEMBER_MENU_ID_FARMER = 'richmenu-2bf18f235fabf148d57cbf2d988bcc11'; // สมัครแล้ว (เกษตรกร)
+const REGISTER_MENU_ID = 'richmenu-830e0f0a946983883149cf2c5b811304';      // ยังไม่สมัคร
+const MEMBER_MENU_ID_FARMER = 'richmenu-63d63972d80bd552ba9727a1c51f271d'; // สมัครแล้ว (เกษตรกร)
 
 // --- Mongoose Model ---
 const registerSchema = new mongoose.Schema({
@@ -158,7 +158,12 @@ async function run(userId) {
 // --- Main: รับ array userId ได้เลย ---
 const userIds = [
   'U9522cc6ee5337c62188de55406470c41',
-  'Ucebe552553cd5897128d112bd2611e07'
+  'Ucebe552553cd5897128d112bd2611e07', //เกม
+  'U5983c706a6ffcd70fc5dcc7d7a416c64', //เจษฎา
+  'U4c0a522f20072235dbd786f567e65794',
+  'U41254dc5b5e5b65a2c488ac224013cfc', //ชาลี
+  'U90b5bc2c98532383d958117761f0a10e', ///wan
+  'U142a9703f5a958f2c0c60d6f46e1b464' //pam
 ];
 
 (async () => {

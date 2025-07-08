@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
-const richMenuId = 'richmenu-463f0dac5bbb3489ce15c8a017eee1eb';
+const richMenuId = 'richmenu-3913c874c39ff278b773797f2f944183';
 
 axios.delete(
   `https://api.line.me/v2/bot/richmenu/${richMenuId}`,
