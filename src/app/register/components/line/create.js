@@ -41,63 +41,63 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 
 //เกษตรกร
-// const axios = require('axios');
+const axios = require('axios');
 
-// const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
+const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
 
-// const richMenuBody = {
-//   size: { width: 2500, height: 1686 },
-//   selected: true,
-//   name: "RichMenuFarmer",
-//   chatBarText: "เกษตรกร",
-//     areas: [
-//     {
-//       bounds: { x: 882, y: 1124, width: 532, height: 252 },
-//       action: { type: "message", text: "เช็คภาระกิจ" }
-//     },
-//     {
-//       bounds: { x: 1523, y: 1124, width: 532, height: 252 },
-//       action: { type: "message", text: "ลงทะเบียนเข้าร่วม GAP" }
-//     },
-//     {
-//       bounds: { x: 2154, y: 1124, width: 532, height: 252 },
-//       action: { type: "message", text: "ติดต่อเจ้าหน้าที่" }
-//     },
-//     {
-//       bounds: { x: 449, y: 1464, width: 470, height: 252 },
-//       action: { type: "message", text: "บัตรสมาชิกเกษตรกร" }
-//     },
-//     {
-//       bounds: { x: 958, y: 1464, width: 380, height: 252 },
-//       action: { type: "message", text: "แจ้งผลผลิต" }
-//     },
-//  {
-//       bounds: { x: 1524, y: 1464, width: 532, height: 252 },
-//       action: { type: "message", text: "ขอเงินสนับสนุน" }
-//     },
-//     {
-//       bounds: { x: 2154, y: 1464, width: 532, height: 252},
-//       action: { type: "message", text: "สั่งซื้อผลิตภัณฑ์ปุ๋ย ยา" }
-//     }
-//   ]
-// };
+const richMenuBody = {
+  size: { width: 2500, height: 1686 },
+  selected: true,
+  name: "RichMenuFarmer",
+  chatBarText: "เกษตรกร",
+    areas: [
+    {
+      bounds: { x: 882, y: 1124, width: 532, height: 252 },
+      action: { type: "message", text: "เช็คภาระกิจ" }
+    },
+    {
+      bounds: { x: 1523, y: 1124, width: 532, height: 252 },
+      action: { type: "message", text: "ลงทะเบียนเข้าร่วม GAP" }
+    },
+    {
+      bounds: { x: 2154, y: 1124, width: 532, height: 252 },
+      action: { type: "message", text: "ติดต่อเจ้าหน้าที่" }
+    },
+    {
+      bounds: { x: 449, y: 1464, width: 470, height: 252 },
+      action: { type: "message", text: "บัตรสมาชิกเกษตรกร" }
+    },
+    {
+      bounds: { x: 958, y: 1464, width: 380, height: 252 },
+      action: { type: "message", text: "แจ้งผลผลิต" }
+    },
+ {
+      bounds: { x: 1524, y: 1464, width: 532, height: 252 },
+      action: { type: "message", text: "ขอเงินสนับสนุน" }
+    },
+    {
+      bounds: { x: 2154, y: 1464, width: 532, height: 252},
+      action: { type: "message", text: "สั่งซื้อผลิตภัณฑ์ปุ๋ย ยา" }
+    }
+  ]
+};
 
-// axios.post(
-//   "https://api.line.me/v2/bot/richmenu",
-//   richMenuBody,
-//   {
-//     headers: {
-//       "Authorization": `Bearer ${channelAccessToken}`,
-//       "Content-Type": "application/json",
-//     },
-//   }
-// )
-// .then(res => {
-//   console.log('RichMenu created:', res.data);
-// })
-// .catch(err => {
-//   console.error('Error:', err.response?.data || err.message);
-// });
+axios.post(
+  "https://api.line.me/v2/bot/richmenu",
+  richMenuBody,
+  {
+    headers: {
+      "Authorization": `Bearer ${channelAccessToken}`,
+      "Content-Type": "application/json",
+    },
+  }
+)
+.then(res => {
+  console.log('RichMenu created:', res.data);
+})
+.catch(err => {
+  console.error('Error:', err.response?.data || err.message);
+});
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -251,52 +251,52 @@
 // });
 
 //เมนูหน่วยงานเอกชน
-const axios = require('axios');
+// const axios = require('axios');
 
-const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
+// const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU=';
 
-const richMenuBody = {
-  size: { width: 2500, height: 1686 },
-  selected: true,
-  name: "RichMenuEducational",
-  chatBarText: "หน่วยงานเอกชน",
-  areas: [
-    // 1. ติดตามสวน
-    {
-      bounds: {x: 398, y: 1500, width: 516, height: 204},
-      action: { type: "message", label: "พิกัดสวน", text: "พิกัดสวน" }
-    },
-    // 2. ฟาร์มตัวอย่าง
-    {
-      bounds: { x: 1232, y: 1500, width: 877, height: 204 },
-      action: { type: "message", label: "ผลผลิตพร้อมขาย", text: "ผลผลิตพร้อมขาย" }
-    },
-    // 3. ส่งภาพแปลงปลูก
-    {
-      bounds: { x: 2126, y: 1500, width: 606, height: 204 },
-      action: { type: "message", label: "รายชื่อสวน", text: "รายชื่อสวน" }
-    },
-    // 4. ติดต่อเจ้าหน้าที่ (มุมขวาล่าง)
-    {
-      bounds: {x: 2289, y: 1091, width: 285, height: 398 },
-      action: { type: "message", label: "ติดต่อเจ้าหน้าที่", text: "ติดต่อเจ้าหน้าที่" }
-    }
-  ]
-};
+// const richMenuBody = {
+//   size: { width: 2500, height: 1686 },
+//   selected: true,
+//   name: "RichMenuEducational",
+//   chatBarText: "หน่วยงานเอกชน",
+//   areas: [
+//     // 1. ติดตามสวน
+//     {
+//       bounds: {x: 398, y: 1500, width: 516, height: 204},
+//       action: { type: "message", label: "พิกัดสวน", text: "พิกัดสวน" }
+//     },
+//     // 2. ฟาร์มตัวอย่าง
+//     {
+//       bounds: { x: 1232, y: 1500, width: 877, height: 204 },
+//       action: { type: "message", label: "ผลผลิตพร้อมขาย", text: "ผลผลิตพร้อมขาย" }
+//     },
+//     // 3. ส่งภาพแปลงปลูก
+//     {
+//       bounds: { x: 2126, y: 1500, width: 606, height: 204 },
+//       action: { type: "message", label: "รายชื่อสวน", text: "รายชื่อสวน" }
+//     },
+//     // 4. ติดต่อเจ้าหน้าที่ (มุมขวาล่าง)
+//     {
+//       bounds: {x: 2289, y: 1091, width: 285, height: 398 },
+//       action: { type: "message", label: "ติดต่อเจ้าหน้าที่", text: "ติดต่อเจ้าหน้าที่" }
+//     }
+//   ]
+// };
 
-axios.post(
-  "https://api.line.me/v2/bot/richmenu",
-  richMenuBody,
-  {
-    headers: {
-      "Authorization": `Bearer ${channelAccessToken}`,
-      "Content-Type": "application/json",
-    },
-  }
-)
-.then(res => {
-  console.log('RichMenu created:', res.data);
-})
-.catch(err => {
-  console.error('Error:', err.response?.data || err.message);
-});
+// axios.post(
+//   "https://api.line.me/v2/bot/richmenu",
+//   richMenuBody,
+//   {
+//     headers: {
+//       "Authorization": `Bearer ${channelAccessToken}`,
+//       "Content-Type": "application/json",
+//     },
+//   }
+// )
+// .then(res => {
+//   console.log('RichMenu created:', res.data);
+// })
+// .catch(err => {
+//   console.error('Error:', err.response?.data || err.message);
+// });
