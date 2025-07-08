@@ -65,7 +65,7 @@ const richMenuBody = {
     },
     {
       bounds: { x: 449, y: 1464, width: 470, height: 252 },
-      action: { type: "message", text: "บัตรสมาชิกเกษตรกร" }
+      action: { type: "uri", uri: "https://liff.line.me/2007697520-6KRLnXVP" } 
     },
     {
       bounds: { x: 958, y: 1464, width: 380, height: 252 },

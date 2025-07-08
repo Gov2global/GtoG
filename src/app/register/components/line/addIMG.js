@@ -3,10 +3,10 @@ const fs = require('fs');
 const path = require('path');
 
 const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU='; // โหลดจาก .env จะดีกว่า
-const richMenuId = 'richmenu-5b8c259f0bf49a82b2da4c7085adebfc';
+const richMenuId = 'richmenu-f9e21c3433e970b8e01221801c397d63';
 
 // ✅ ให้ path เป็น absolute
-const imagePath = path.resolve(__dirname, '../../../../../public/richmenu/richmenu_1751820484363.jpg');
+const imagePath = path.resolve(__dirname, '../../../../../public/richmenu/richmenu_1751743859220.jpg');
 
 if (!fs.existsSync(imagePath)) {
   console.error('❌ ไม่พบไฟล์:', imagePath);
