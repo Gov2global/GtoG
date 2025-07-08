@@ -1,16 +1,21 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Card, CardContent } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import Image from "next/image";
-import QRCode from "qrcode.react"; // หรือ qrcode-svg, ติดตั้งเพิ่มได้
+import QRCode from "qrcode.react";
 import dayjs from "dayjs";
+import liff from "@line/liff";
 
-// Mock liff & AWS S3 (ปรับใช้จริงตาม infra)
-const mockLiffGetLineID = () => "user-lineid-xxxx";
+// ปรับตาม LIFF ID ของคุณ
+const LIFF_ID = "2007697520-6KRLnXVP";
+
+// ตัวอย่างฟังก์ชันอัพโหลด S3 (เปลี่ยนเป็น API จริงภายหลัง)
 const uploadToS3 = async (file) => {
-  // TODO: เปลี่ยนเป็น API อัพโหลด S3 จริง
+  // ส่ง file ไป backend → upload ไป S3 → return url
+  // ตัวอย่าง: POST ไปที่ /api/upload/profile
+  // return url ที่ backend ส่งกลับมา
   return "https://dummyimage.com/200x200/cccccc/ffffff";
 };
 
@@ -20,46 +25,77 @@ function MemberCardPage() {
   const [profile, setProfile] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  // 1. Get LineID from LIFF
+  // 1. Init LIFF แล้วดึง userId (LineID)
   useEffect(() => {
-    const lineId = mockLiffGetLineID(); // เปลี่ยนเป็น liff.getProfile().userId
-    fetch(`/api/farmer/get/register/line/${lineId}`) // ควรเขียน route ให้ query by LineID
-      .then((res) => res.json())
-      .then((data) => {
-        setMember(data.data || null);
-        setProfile(data.data?.regProfile || "");
-        setLoading(false);
-      });
+    liff
+      .init({ liffId: LIFF_ID })
+      .then(() => {
+        if (liff.isLoggedIn()) {
+          liff.getProfile().then((profile) => {
+            const lineId = profile.userId;
+            fetch(`/api/farmer/get/register/line/${lineId}`)
+              .then((res) => res.json())
+              .then((data) => {
+                setMember(data.data || null);
+                setProfile(data.data?.regProfile || "");
+                setLoading(false);
+              })
+              .catch(() => setLoading(false));
+          });
+        } else {
+          liff.login();
+        }
+      })
+      .catch(() => setLoading(false));
   }, []);
 
-  // 2. Handle Upload
+  // 2. Handle อัพโหลดรูป (Upload Profile Pic)
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
-    const url = await uploadToS3(file); // อัพจริงเชื่อม S3
-    setProfile(url);
-    // TODO: Save URL to regProfile field in DB (API PATCH/PUT)
+    try {
+      const url = await uploadToS3(file);
+      setProfile(url);
+      // TODO: PATCH/PUT เพื่อบันทึก url กลับไปที่ regProfile (API อัปเดต DB)
+      // ตัวอย่าง:
+      // await fetch(`/api/farmer/update/profile`, {
+      //   method: "PATCH",
+      //   body: JSON.stringify({ regLineID: member.regLineID, regProfile: url }),
+      //   headers: { "Content-Type": "application/json" },
+      // });
+    } catch (err) {
+      alert("Upload รูปไม่สำเร็จ");
+    }
     setUploading(false);
   };
 
-  if (loading) return <div className="text-center py-8">กำลังโหลดข้อมูล...</div>;
+  if (loading)
+    return <div className="text-center py-8">กำลังโหลดข้อมูล...</div>;
   if (!member)
-    return <div className="text-center text-red-500 py-8">ไม่พบข้อมูลสมาชิก</div>;
+    return (
+      <div className="text-center text-red-500 py-8">
+        ไม่พบข้อมูลสมาชิก <br /> กรุณาตรวจสอบการสมัคร
+      </div>
+    );
 
-  // วันที่สมัคร+หมดอายุ
   const createdAt = dayjs(member.createdAt).format("DD/MM/YYYY");
   const expiredAt = dayjs(member.createdAt).add(1, "year").format("DD/MM/YYYY");
 
   return (
     <div className="flex justify-center py-8">
-      <Card className="w-[360px] bg-white/80 shadow-2xl rounded-2xl border-0 relative overflow-hidden">
+      <Card className="w-[360px] bg-stone-50/90 shadow-2xl rounded-2xl border-0 relative overflow-hidden">
         <CardContent className="flex gap-4 items-center p-6">
           {/* Profile Zone */}
           <div className="flex flex-col items-center w-1/3">
-            <div className="relative w-20 h-20 rounded-full bg-gray-200 overflow-hidden border-2 border-primary mb-2">
+            <div className="relative w-20 h-20 rounded-full bg-stone-200 overflow-hidden border-2 border-primary mb-2">
               {profile ? (
-                <Image src={profile} alt="profile" fill style={{ objectFit: "cover" }} />
+                <Image
+                  src={profile}
+                  alt="profile"
+                  fill
+                  style={{ objectFit: "cover" }}
+                />
               ) : (
                 <span className="text-xs text-gray-500 flex items-center justify-center w-full h-full">
                   ไม่มีรูป
@@ -75,7 +111,12 @@ function MemberCardPage() {
                   onChange={handleUpload}
                   disabled={uploading}
                 />
-                <Button variant="outline" size="sm" className="mt-1" disabled={uploading}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-1"
+                  disabled={uploading}
+                >
                   {uploading ? "กำลังอัปโหลด..." : "ถ่าย/อัปโหลดรูป"}
                 </Button>
               </label>
