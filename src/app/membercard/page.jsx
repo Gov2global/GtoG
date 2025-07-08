@@ -31,14 +31,9 @@ function MemberCardPage() {
         }
         const profile = await liff.getProfile();
         const lineId = profile.userId;
-        console.log("LINE USER ID (from LIFF):", lineId);
 
+        // ดึงข้อมูล member ด้วย lineId
         const res = await fetch(`/api/farmer/get/line-get/${lineId}`);
-        if (!res.ok) {
-          console.error("API Response Error", res.status);
-          setMember(null);
-          return;
-        }
         const data = await res.json();
 
         if (data.success && data.data) {
@@ -47,8 +42,11 @@ function MemberCardPage() {
         } else {
           setMember(null);
         }
+
+        // ถ้าต้องการ call richmenu API สามารถเพิ่มฟังก์ชันนี้ทีหลัง (optional)
+        // await fetch("/api/richmenu/set", { method: "POST", ... })
+
       } catch (err) {
-        console.error("LIFF or fetch error:", err);
         setMember(null);
       } finally {
         setLoading(false);
