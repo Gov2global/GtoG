@@ -12,7 +12,7 @@ const LIFF_ID = "2007697520-6KRLnXVP";
 const LOGO = "/logo.jpg";
 const FARMER_ICON = "/farmer-icon.svg";
 
-// เปลี่ยนเป็น pattern จริงได้ภายหลัง (SVG/PNG)
+// พื้นหลัง SVG pattern (จาง สบายตา)
 const CARD_BG_PATTERN =
   "url('data:image/svg+xml;utf8,<svg width=\"400\" height=\"200\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"60\" cy=\"50\" r=\"30\" fill=\"%23e0ffcb\" fill-opacity=\"0.25\"/><circle cx=\"300\" cy=\"150\" r=\"80\" fill=\"%23c0eec8\" fill-opacity=\"0.13\"/></svg>')";
 
@@ -161,10 +161,15 @@ export default function MemberCardPage() {
           <div className="flex-1 flex flex-col justify-center min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="text-xl">🧑‍🌾</span>
-              {/* เอา truncate ออก */}
-              <span className="font-bold text-base sm:text-lg text-green-900 whitespace-normal break-words">
-                {regName} {regSurname}
-              </span>
+              {/* ชื่อและนามสกุลแยกบรรทัด/เยื้องขวา */}
+              <div className="flex flex-col items-start leading-tight">
+                <div className="font-bold text-base sm:text-lg text-green-900">
+                  {regName}
+                </div>
+                <div className="font-bold text-base sm:text-lg text-green-900 ml-6">
+                  {regSurname}
+                </div>
+              </div>
             </div>
             <span className="inline-block bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded-xl border border-green-300 mb-1">
               {regType}
