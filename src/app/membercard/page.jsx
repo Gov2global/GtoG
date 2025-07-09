@@ -97,24 +97,28 @@ export default function MemberCardPage() {
 
   return (
     <div className="flex justify-center items-center min-h-[70vh] bg-gradient-to-br from-lime-50 via-white to-yellow-50">
-      <Card className="relative max-w-md w-full rounded-3xl border-0 shadow-xl px-0 py-0 overflow-hidden"
+      <Card
+        className="relative w-full max-w-[400px] rounded-3xl border-0 shadow-xl px-0 py-0 overflow-hidden"
         style={{ background: "linear-gradient(120deg, #f9faed 70%, #f4f2e2 100%)" }}
       >
-        {/* Header */}
-        <div className="flex items-center px-6 pt-6 pb-3">
-          {/* Logo มุมซ้าย */}
-          <Image src={LOGO} width={44} height={44} alt="Logo"
-            className="rounded-full border border-green-300 bg-white shadow" />
-          {/* Title */}
-          <div className="ml-3 text-2xl font-bold text-green-800 tracking-tight drop-shadow">
+        {/* Header - Center */}
+        <div className="flex flex-col items-center justify-center pt-5 pb-1">
+          <Image
+            src={LOGO}
+            width={44}
+            height={44}
+            alt="Logo"
+            className="rounded-full border border-green-300 bg-white shadow"
+          />
+          <div className="mt-1 text-xl sm:text-2xl font-bold text-green-800 tracking-tight drop-shadow text-center">
             บัตรสมาชิกเกษตรกร
           </div>
         </div>
-        {/* Content */}
-        <div className="flex flex-row items-stretch px-6 pb-6 gap-4">
+        {/* Main Card Content */}
+        <div className="flex flex-row items-stretch px-6 pb-7 pt-3 gap-4 w-full">
           {/* Profile ซ้าย */}
-          <div className="flex flex-col items-center mr-2">
-            <div className="relative w-[82px] h-[82px] rounded-xl bg-green-100 border-2 border-green-400 overflow-hidden shadow-lg">
+          <div className="flex flex-col items-center justify-center">
+            <div className="relative w-[72px] h-[72px] rounded-xl bg-green-100 border-2 border-green-400 overflow-hidden shadow-lg">
               {profile ? (
                 <Image src={profile} alt="profile" fill style={{ objectFit: "cover" }} />
               ) : (
@@ -143,10 +147,12 @@ export default function MemberCardPage() {
             <div className="text-xs text-gray-400 mt-1">Profile</div>
           </div>
           {/* Main info center */}
-          <div className="flex-1 flex flex-col justify-center">
+          <div className="flex-1 flex flex-col justify-center min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xl">🧑‍🌾</span>
-              <span className="font-bold text-lg text-green-900 truncate">{regName} {regSurname}</span>
+              <span className="font-bold text-base sm:text-lg text-green-900 truncate">
+                {regName} {regSurname}
+              </span>
             </div>
             <span className="inline-block bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded-xl border border-green-300 mb-1">
               {regType}
@@ -160,7 +166,7 @@ export default function MemberCardPage() {
           <div className="flex flex-col items-center justify-end ml-2">
             <div className="bg-white p-1.5 rounded-xl shadow border border-lime-200">
               {regID ? (
-                <QRCode value={regID} size={64} />
+                <QRCode value={regID} size={60} />
               ) : (
                 <span className="text-xs text-red-400">No QR</span>
               )}
