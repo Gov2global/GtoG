@@ -20,48 +20,57 @@ function MemberCardPage() {
   const [member, setMember] = useState(null);
   const [profile, setProfile] = useState("");
   const [uploading, setUploading] = useState(false);
-
-  // เพิ่ม state สำหรับ userId
-  const [userId, setUserId] = useState("");
+  const [error, setError] = useState(""); // error message
 
   useEffect(() => {
-  const fetchMember = async () => {
-    try {
-      await liff.init({ liffId: LIFF_ID });
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
-      }
-      const profile = await liff.getProfile();
-      const lineId = profile.userId;
-      setUserId(lineId);
+    const fetchMember = async () => {
+      try {
+        await liff.init({ liffId: LIFF_ID });
 
-      // ลอง log ดู
-      console.log("LINE Profile:", profile);
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
 
-      // ดึงข้อมูล member ด้วย lineId
-      const res = await fetch(`/api/farmer/get/line-get/${lineId}`);
-      const data = await res.json();
+        const profile = await liff.getProfile();
+        console.log("LINE Profile: ", profile);
 
-      // ลอง log ดู
-      console.log("API member:", data);
+        // เช็ค profile ว่ามี userId มั้ย
+        if (!profile || !profile.userId) {
+          setError("ไม่สามารถดึง Line ID ได้ กรุณาเปิดผ่านแอป LINE และให้สิทธิ์แอปนี้เข้าถึงข้อมูลบัญชี LINE ของคุณ");
+          setLoading(false);
+          return;
+        }
 
-      if (data.success && data.data) {
-        setMember(data.data);
-        setProfile(data.data.regProfile || "");
-      } else {
+        const lineId = profile.userId;
+
+        // fetch member by lineId
+        const res = await fetch(`/api/farmer/get/line-get/${lineId}`);
+        let data;
+        try {
+          data = await res.json();
+        } catch {
+          throw new Error("API response format ผิด");
+        }
+        console.log("API member:", data);
+
+        if (res.ok && data.success && data.data) {
+          setMember(data.data);
+          setProfile(data.data.regProfile || "");
+        } else {
+          setMember(null);
+          setError(data?.message || "ไม่พบข้อมูลสมาชิกของคุณในระบบ");
+        }
+      } catch (err) {
         setMember(null);
+        setError(err?.message || "เกิดข้อผิดพลาดขณะดึงข้อมูล");
+        console.error("LIFF/Fetch error:", err);
+      } finally {
+        setLoading(false);
       }
-
-    } catch (err) {
-      console.error("LIFF/Fetch error:", err);
-      setMember(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchMember();
-}, []);
+    };
+    fetchMember();
+  }, []);
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
@@ -84,8 +93,25 @@ function MemberCardPage() {
   };
 
   if (loading)
-    return <div className="text-center py-8">กำลังโหลดข้อมูล...</div>;
+    return (
+      <div className="text-center py-8 text-gray-500">
+        กำลังโหลดข้อมูล...
+      </div>
+    );
 
+  // กรณีเกิด error
+  if (error)
+    return (
+      <div className="text-center text-red-500 py-8">
+        {error}
+        <br />
+        <Button className="mt-4" onClick={() => window.location.reload()}>
+          ลองใหม่
+        </Button>
+      </div>
+    );
+
+  // กรณีไม่พบ member (แต่ไม่เกิด error จริง)
   if (!member)
     return (
       <div className="text-center text-red-500 py-8">
@@ -94,11 +120,20 @@ function MemberCardPage() {
       </div>
     );
 
-  const createdAt = member.createdAt
+  // ป้องกัน undefined/null ทุกตัว
+  const createdAt = member?.createdAt
     ? dayjs(member.createdAt).format("DD/MM/YYYY")
     : "-";
-  const expiredAt = member.createdAt
+  const expiredAt = member?.createdAt
     ? dayjs(member.createdAt).add(1, "year").format("DD/MM/YYYY")
+    : "-";
+  const regName = member?.regName || "-";
+  const regSurname = member?.regSurname || "";
+  const regType = member?.regType || "-";
+  const regID = member?.regID
+    ? typeof member.regID === "string"
+      ? member.regID
+      : String(member.regID)
     : "-";
 
   return (
@@ -145,20 +180,16 @@ function MemberCardPage() {
           {/* Info + QR Zone */}
           <div className="flex-1 flex flex-col gap-2">
             <div className="font-bold text-lg">
-              {member.regName} {member.regSurname}
+              {regName} {regSurname}
             </div>
-            {/* แสดง Line UserID */}
-            <div className="text-xs text-gray-400 break-all">
-              Line UserID: {userId}
-            </div>
-            <div className="text-sm text-primary">{member.regType}</div>
+            <div className="text-sm text-primary">{regType}</div>
             <div className="text-xs text-gray-500">
               สมัคร: {createdAt}
               <br />
               หมดอายุ: {expiredAt}
             </div>
             <div className="flex justify-end mt-2">
-              <QRCode value={member.regID} size={60} />
+              <QRCode value={regID} size={60} />
             </div>
           </div>
         </CardContent>
