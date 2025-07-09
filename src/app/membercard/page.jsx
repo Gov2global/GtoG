@@ -12,6 +12,10 @@ const LIFF_ID = "2007697520-6KRLnXVP";
 const LOGO = "/logo.jpg";
 const FARMER_ICON = "/farmer-icon.svg";
 
+// เปลี่ยนเป็น pattern จริงได้ภายหลัง (SVG/PNG)
+const CARD_BG_PATTERN =
+  "url('data:image/svg+xml;utf8,<svg width=\"400\" height=\"200\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"60\" cy=\"50\" r=\"30\" fill=\"%23e0ffcb\" fill-opacity=\"0.25\"/><circle cx=\"300\" cy=\"150\" r=\"80\" fill=\"%23c0eec8\" fill-opacity=\"0.13\"/></svg>')";
+
 const uploadToS3 = async (file) => "https://dummyimage.com/200x200/cccccc/ffffff";
 
 export default function MemberCardPage() {
@@ -99,7 +103,14 @@ export default function MemberCardPage() {
     <div className="flex justify-center items-center min-h-[70vh] bg-gradient-to-br from-lime-50 via-white to-yellow-50">
       <Card
         className="relative w-full max-w-[400px] rounded-3xl border-0 shadow-xl px-0 py-0 overflow-hidden"
-        style={{ background: "linear-gradient(120deg, #f9faed 70%, #f4f2e2 100%)" }}
+        style={{
+          background: `
+            linear-gradient(120deg, #f9faed 75%, #f4f2e2 100%),
+            ${CARD_BG_PATTERN}
+          `,
+          boxShadow: "0 12px 32px 0 rgba(108,157,80,0.10)",
+          border: "1.5px solid #e5e6dc",
+        }}
       >
         {/* Header - Center */}
         <div className="flex flex-col items-center justify-center pt-5 pb-1">
@@ -111,7 +122,7 @@ export default function MemberCardPage() {
             className="rounded-full border border-green-300 bg-white shadow"
           />
           <div className="mt-1 text-xl sm:text-2xl font-bold text-green-800 tracking-tight drop-shadow text-center">
-            บัตรสมาชิกเกษตรกร
+            บัตรสมาชิกสหกรณ์ผลไม้คุณภาพ
           </div>
         </div>
         {/* Main Card Content */}
@@ -148,9 +159,10 @@ export default function MemberCardPage() {
           </div>
           {/* Main info center */}
           <div className="flex-1 flex flex-col justify-center min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="text-xl">🧑‍🌾</span>
-              <span className="font-bold text-base sm:text-lg text-green-900 truncate">
+              {/* เอา truncate ออก */}
+              <span className="font-bold text-base sm:text-lg text-green-900 whitespace-normal break-words">
                 {regName} {regSurname}
               </span>
             </div>
