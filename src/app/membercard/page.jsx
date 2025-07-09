@@ -100,7 +100,7 @@ export default function MemberCardPage() {
   return (
     <div className="flex justify-center items-center min-h-[70vh] bg-gradient-to-br from-lime-50 via-white to-yellow-50">
       <Card
-        className="relative w-full max-w-[400px] rounded-3xl border-0 shadow-xl px-0 py-0 overflow-hidden"
+        className="relative w-full max-w-[380px] rounded-3xl border-0 shadow-xl px-0 py-0 overflow-hidden"
         style={{
           background: `
             linear-gradient(120deg, #f9faed 75%, #f4f2e2 100%),
@@ -110,24 +110,24 @@ export default function MemberCardPage() {
           border: "1.5px solid #e5e6dc",
         }}
       >
-        {/* Header - Center */}
-        <div className="flex flex-col items-center justify-center pt-5 pb-1">
+        {/* Header */}
+        <div className="flex flex-col items-center justify-center pt-4 pb-1">
           <Image
             src={LOGO}
-            width={44}
-            height={44}
+            width={42}
+            height={42}
             alt="Logo"
             className="rounded-full border border-green-300 bg-white shadow"
           />
-          <div className="mt-1 text-xl sm:text-2xl font-bold text-green-800 tracking-tight drop-shadow text-center">
+          <div className="mt-1 text-lg sm:text-xl font-bold text-green-800 tracking-tight drop-shadow text-center">
             บัตรสมาชิกสหกรณ์ผลไม้คุณภาพ
           </div>
         </div>
         {/* Main Card Content */}
-        <div className="flex flex-row items-center px-6 pb-7 pt-3 gap-4 w-full">
-          {/* Profile ซ้าย */}
-          <div className="flex flex-col items-center justify-center min-h-[72px]">
-            <div className="relative w-[72px] h-[72px] rounded-xl bg-green-100 border-2 border-green-400 overflow-hidden shadow-lg">
+        <div className="flex flex-row items-center px-4 pb-5 pt-3 gap-3 w-full justify-between">
+          {/* Profile */}
+          <div className="flex flex-col items-center min-w-[80px]">
+            <div className="relative w-[64px] h-[64px] rounded-xl bg-green-100 border-2 border-green-400 overflow-hidden shadow-lg">
               {profile ? (
                 <Image src={profile} alt="profile" fill style={{ objectFit: "cover" }} />
               ) : (
@@ -155,31 +155,23 @@ export default function MemberCardPage() {
             </div>
             <div className="text-xs text-gray-400 mt-1">Profile</div>
           </div>
-          {/* Main info center */}
-          <div className="flex-1 flex flex-col justify-center min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="font-bold text-base sm:text-md text-green-900 whitespace-normal break-words">
-                {regName} {regSurname}
-              </span>
-            </div>
-            <span className="inline-block bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded-xl border border-green-300 mb-1">
+          {/* Main info */}
+          <div className="flex-1 flex flex-col justify-center items-center px-2 min-w-0">
+            <span className="font-bold text-base text-green-900 text-center break-words">{regName} {regSurname}</span>
+            <span className="inline-block bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded-xl border border-green-300 my-1">
               {regType}
             </span>
-            <div className="text-xs text-gray-600 mt-1">
+            <div className="text-xs text-gray-600 text-center">
               <div>สมัคร: <span className="font-medium">{createdAt}</span></div>
               <div>หมดอายุ: <span className="font-medium">{expiredAt}</span></div>
             </div>
           </div>
-          {/* QR code ขวาสุด */}
-          <div className="flex flex-col items-center justify-center min-h-[72px]">
-            <div className="bg-white p-1.5 rounded-xl shadow border border-lime-200 flex items-center justify-center h-[72px] w-[72px]">
-              {regID ? (
-                <QRCode value={regID} size={50} />
-              ) : (
-                <span className="text-xs text-red-400">No QR</span>
-              )}
+          {/* QR Code */}
+          <div className="flex flex-col items-center min-w-[80px]">
+            <div className="bg-white p-1.5 rounded-xl shadow border border-lime-200 flex items-center justify-center h-[64px] w-[64px]">
+              {regID ? <QRCode value={regID} size={44} /> : <span className="text-xs text-red-400">No QR</span>}
             </div>
-            <span className="mt-1 text-xs text-green-800 bg-lime-100 border border-lime-300 px-2 py-0.5 rounded font-bold tracking-widest select-all">
+            <span className="mt-1 text-[11px] text-green-800 bg-lime-100 border border-lime-300 px-2 py-0.5 rounded font-bold tracking-widest select-all">
               {regID || "-"}
             </span>
           </div>
