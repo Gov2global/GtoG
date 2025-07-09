@@ -6,10 +6,7 @@ import { Input } from "../../components/ui/input";
 import Image from "next/image";
 import dayjs from "dayjs";
 import liff from "@line/liff";
-import dynamic from "next/dynamic";
-
-// Import QRCode as client component only (dynamic)
-const QRCode = dynamic(() => import("qrcode.react"), { ssr: false });
+import QRCode from "react-qr-code"; // ⭐️ ใช้ react-qr-code
 
 const LIFF_ID = "2007697520-6KRLnXVP";
 const LOGO = "/logo.jpg";
@@ -77,22 +74,13 @@ export default function MemberCardPage() {
     setUploading(false);
   };
 
-  // --- Format & Safe Fallback ---
+  // Format
   const createdAt = member?.createdAt ? dayjs(member.createdAt).format("DD/MM/YYYY") : "-";
   const expiredAt = member?.createdAt ? dayjs(member.createdAt).add(1, "year").format("DD/MM/YYYY") : "-";
   const regName = member?.regName ?? "-";
   const regSurname = member?.regSurname ?? "";
   const regType = member?.regType ?? "-";
-
-  // --- กรอง regID ไม่ให้ undefined/null/object ---
-  let regID = "NO-ID";
-  if (member?.regID) {
-    regID = typeof member.regID === "string" ? member.regID : String(member.regID);
-    regID = regID.trim() || "NO-ID";
-  }
-
-  // --- Debug log ดูค่า regID (เปิดเฉพาะ dev) ---
-  // console.log("regID", regID, typeof regID, "member", member);
+  const regID = member?.regID ? String(member.regID).trim() : "";
 
   if (loading)
     return (
@@ -121,24 +109,14 @@ export default function MemberCardPage() {
 
   return (
     <div className="flex justify-center items-center min-h-[60vh] bg-gradient-to-br from-lime-100 via-white to-yellow-50">
-      <Card
-        className="relative max-w-sm w-full rounded-2xl border-0 shadow-2xl p-0 overflow-hidden"
+      <Card className="relative max-w-sm w-full rounded-2xl border-0 shadow-2xl p-0 overflow-hidden"
         style={{
           background: "linear-gradient(135deg, #f8faf5 85%, #e3e6cc 100%)",
-        }}
-      >
+        }}>
         {/* LOGO */}
         <div className="flex items-center gap-2 px-6 pt-5 pb-2">
-          <Image
-            src={LOGO}
-            width={38}
-            height={38}
-            alt="Logo"
-            className="rounded-full border border-amber-200 bg-white shadow"
-          />
-          <div className="ml-2 text-lg font-bold text-green-800">
-            บัตรสมาชิกเกษตรกร
-          </div>
+          <Image src={LOGO} width={38} height={38} alt="Logo" className="rounded-full border border-amber-200 bg-white shadow" />
+          <div className="ml-2 text-lg font-bold text-green-800">บัตรสมาชิกเกษตรกร</div>
         </div>
         {/* Content */}
         <div className="relative px-6 pb-7 pt-1">
@@ -146,19 +124,9 @@ export default function MemberCardPage() {
           <div className="flex flex-col items-center mb-4">
             <div className="relative w-[92px] h-[92px] rounded-xl bg-green-100 border-4 border-green-300 overflow-hidden shadow-lg mb-1">
               {profile ? (
-                <Image
-                  src={profile}
-                  alt="profile"
-                  fill
-                  style={{ objectFit: "cover" }}
-                />
+                <Image src={profile} alt="profile" fill style={{ objectFit: "cover" }} />
               ) : (
-                <Image
-                  src={FARMER_ICON}
-                  alt="Farmer Icon"
-                  fill
-                  style={{ objectFit: "contain", opacity: 0.7 }}
-                />
+                <Image src={FARMER_ICON} alt="Farmer Icon" fill style={{ objectFit: "contain", opacity: 0.7 }} />
               )}
               <label className="absolute bottom-1 right-1 z-10">
                 <Input
@@ -198,13 +166,10 @@ export default function MemberCardPage() {
           {/* QR CODE มุมขวาล่าง */}
           <div className="absolute bottom-4 right-5 flex flex-col items-center">
             <div className="bg-white p-2 rounded-xl shadow border border-lime-200">
-              {/* QRCode รับ regID ที่เป็น string เท่านั้น */}
-              {(typeof regID === "string" && regID !== "NO-ID") ? (
+              {regID ? (
                 <QRCode
                   value={regID}
                   size={72}
-                  includeMargin={false}
-                  renderAs="svg"
                   aria-label={`QR code for ${regID}`}
                 />
               ) : (
@@ -212,7 +177,7 @@ export default function MemberCardPage() {
               )}
             </div>
             <span className="mt-2 text-xs text-green-800 bg-lime-100 border border-lime-300 px-2 py-1 rounded font-bold tracking-widest">
-              {regID}
+              {regID || "-"}
             </span>
           </div>
         </div>
