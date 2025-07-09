@@ -1,11 +1,12 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Card, CardContent } from "../../components/ui/card";
+import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import Image from "next/image";
 import dayjs from "dayjs";
 import liff from "@line/liff";
+import QRCode from "qrcode.react"; // ติดตั้ง qrcode.react ด้วย
 
 const LIFF_ID = "2007697520-6KRLnXVP";
 const LOGO = "/logo.jpg";
@@ -82,7 +83,7 @@ export default function MemberCardPage() {
   const regName = typeof member?.regName === "string" ? member.regName : "-";
   const regSurname = typeof member?.regSurname === "string" ? member.regSurname : "";
   const regType = typeof member?.regType === "string" ? member.regType : "-";
-  const regID = typeof member?.regID === "string" ? member.regID : "-"; // <-- เพิ่ม regID
+  const regID = typeof member?.regID === "string" ? member.regID : "-";
 
   if (loading) return <div className="text-center py-12 text-lime-700">🌱 กำลังโหลดข้อมูลสมาชิก...</div>;
   if (error)
@@ -101,74 +102,59 @@ export default function MemberCardPage() {
     );
 
   return (
-    <div className="flex justify-center items-center min-h-[60vh] bg-gradient-to-b from-lime-50 via-white to-stone-100">
-      <Card className="relative max-w-md w-full bg-white/90 shadow-xl rounded-3xl border-0 px-6 py-7 flex gap-5 items-center"
+    <div className="flex justify-center items-center min-h-[60vh] bg-gradient-to-br from-lime-100 via-white to-yellow-50">
+      <Card className="relative max-w-sm w-full rounded-2xl border-0 shadow-2xl p-0 overflow-hidden"
         style={{
-          background: "linear-gradient(120deg, #f6fde9 70%, #e6e5d8 100%)",
-          boxShadow: "0 6px 40px 0 rgba(108,157,80,0.07)"
-        }}
-      >
-        {/* LOGO */}
-        <div className="absolute top-3 left-4">
-          <Image src={LOGO} alt="logo" width={44} height={44} className="rounded-full shadow border border-green-200 bg-white" />
+          background: "linear-gradient(135deg, #f8faf5 85%, #e3e6cc 100%)",
+        }}>
+        {/* Logo + Header */}
+        <div className="flex items-center gap-2 px-6 pt-5 pb-2">
+          <Image src={LOGO} width={38} height={38} alt="Logo" className="rounded-full border border-amber-200 bg-white shadow" />
+          <div className="ml-2 text-lg font-bold text-green-800">บัตรสมาชิกเกษตรกร</div>
         </div>
-        {/* Profile */}
-        <div className="flex flex-col items-center justify-center">
-          <div className="relative w-24 h-24 rounded-full bg-lime-100 border-4 border-green-400 overflow-hidden shadow-inner">
-            {profile ? (
-              <Image
-                src={profile}
-                alt="profile"
-                fill
-                style={{ objectFit: "cover" }}
-                sizes="96px"
-              />
-            ) : (
-              <Image
-                src={FARMER_ICON}
-                alt="Farmer Icon"
-                fill
-                style={{ objectFit: "contain", opacity: 0.7 }}
-                sizes="96px"
-              />
-            )}
-            <label className="absolute bottom-1 right-1">
-              <Input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleUpload}
-                disabled={uploading}
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="p-1 bg-white shadow rounded-full border border-green-400 hover:bg-lime-100"
-                disabled={uploading}
-                aria-label="เปลี่ยนรูป"
-              >
-                <span className="text-lg">📷</span>
-              </Button>
-            </label>
+        {/* Content */}
+        <div className="flex flex-col items-center px-6 pb-7 pt-1 gap-2">
+          {/* Profile (Square) */}
+          <div className="flex flex-col items-center mb-3">
+            <div className="relative w-[98px] h-[98px] rounded-xl bg-green-100 border-4 border-green-300 overflow-hidden shadow-lg">
+              {profile
+                ? <Image src={profile} alt="profile" fill style={{ objectFit: "cover" }} />
+                : <Image src={FARMER_ICON} alt="Farmer Icon" fill style={{ objectFit: "contain", opacity: 0.7 }} />}
+              <label className="absolute bottom-1 right-1 z-10">
+                <Input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="p-1 bg-white/90 shadow rounded-lg border border-green-300 hover:bg-lime-100"
+                  disabled={uploading}
+                  aria-label="เปลี่ยนรูป"
+                >
+                  <span className="text-lg">📷</span>
+                </Button>
+              </label>
+            </div>
+            <div className="text-xs text-stone-400 mt-1">Profile</div>
           </div>
-        </div>
-        {/* Info */}
-        <div className="flex-1 min-w-0 pl-3">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-2xl">🧑‍🌾</span>
-            <span className="font-bold text-xl sm:text-2xl text-green-900 truncate">{regName} {regSurname}</span>
+          {/* QR Code + regID */}
+          <div className="flex flex-col items-center gap-1 mb-3">
+            <div className="bg-white p-2 rounded-xl shadow border border-lime-200">
+              <QRCode value={regID} size={80} />
+            </div>
+            <span className="mt-2 text-sm text-green-800 bg-lime-100 border border-lime-300 px-3 py-1 rounded font-bold tracking-widest">
+              รหัส: {regID}
+            </span>
           </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-xl font-bold tracking-wide border border-green-300">{regType}</span>
-            {regID && (
-              <span className="text-xs bg-lime-200 text-lime-800 px-2 py-1 rounded font-semibold ml-2 tracking-wide border border-lime-300">
-                รหัส: {regID}
-              </span>
-            )}
-          </div>
-          <div className="text-[13px] text-stone-600 mt-2 space-y-1">
-            <span className="block">สมัคร: {createdAt}</span>
-            <span className="block">หมดอายุ: {expiredAt}</span>
+          {/* Info */}
+          <div className="flex flex-col items-center gap-1 w-full">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xl">🧑‍🌾</span>
+              <span className="font-bold text-lg sm:text-xl text-green-900 text-center">{regName} {regSurname}</span>
+            </div>
+            <span className="inline-block bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-xl border border-green-300 mb-1">{regType}</span>
+            <div className="flex flex-col items-center text-[13px] text-stone-600 mt-1">
+              <span className="block">สมัคร: {createdAt}</span>
+              <span className="block">หมดอายุ: {expiredAt}</span>
+            </div>
           </div>
         </div>
       </Card>
