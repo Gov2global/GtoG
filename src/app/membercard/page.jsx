@@ -6,7 +6,7 @@ import { Input } from "../../components/ui/input";
 import Image from "next/image";
 import dayjs from "dayjs";
 import liff from "@line/liff";
-import QRCode from "react-qr-code"; // ⭐️ ใช้ react-qr-code
+import QRCode from "react-qr-code";
 
 const LIFF_ID = "2007697520-6KRLnXVP";
 const LOGO = "/logo.jpg";
@@ -36,14 +36,10 @@ export default function MemberCardPage() {
           return;
         }
         const lineId = profile.userId;
-
         const res = await fetch(`/api/farmer/get/line-get/${lineId}`);
         let data;
-        try {
-          data = await res.json();
-        } catch {
-          throw new Error("API response format ผิด");
-        }
+        try { data = await res.json(); }
+        catch { throw new Error("API response format ผิด"); }
         if (res.ok && data.success && data.data) {
           setMember(data.data);
           setProfile(data.data.regProfile || "");
@@ -68,13 +64,13 @@ export default function MemberCardPage() {
     try {
       const url = await uploadToS3(file);
       setProfile(url);
-    } catch (err) {
+    } catch {
       alert("Upload รูปไม่สำเร็จ");
     }
     setUploading(false);
   };
 
-  // Format
+  // Format & Fallback
   const createdAt = member?.createdAt ? dayjs(member.createdAt).format("DD/MM/YYYY") : "-";
   const expiredAt = member?.createdAt ? dayjs(member.createdAt).add(1, "year").format("DD/MM/YYYY") : "-";
   const regName = member?.regName ?? "-";
@@ -83,46 +79,42 @@ export default function MemberCardPage() {
   const regID = member?.regID ? String(member.regID).trim() : "";
 
   if (loading)
-    return (
-      <div className="text-center py-12 text-lime-700">
-        🌱 กำลังโหลดข้อมูลสมาชิก...
-      </div>
-    );
+    return <div className="text-center py-12 text-lime-700">🌱 กำลังโหลดข้อมูลสมาชิก...</div>;
   if (error)
     return (
       <div className="text-center text-red-500 py-12">
         {error}
-        <Button className="mt-4" onClick={() => window.location.reload()}>
-          ลองใหม่
-        </Button>
+        <Button className="mt-4" onClick={() => window.location.reload()}>ลองใหม่</Button>
       </div>
     );
   if (!member)
     return (
       <div className="text-center text-red-500 py-12">
         ไม่พบข้อมูลสมาชิก <br /> กรุณาตรวจสอบการสมัครหรือลองใหม่
-        <Button className="mt-4" onClick={() => window.location.reload()}>
-          ลองใหม่
-        </Button>
+        <Button className="mt-4" onClick={() => window.location.reload()}>ลองใหม่</Button>
       </div>
     );
 
   return (
-    <div className="flex justify-center items-center min-h-[60vh] bg-gradient-to-br from-lime-100 via-white to-yellow-50">
-      <Card className="relative max-w-sm w-full rounded-2xl border-0 shadow-2xl p-0 overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg, #f8faf5 85%, #e3e6cc 100%)",
-        }}>
-        {/* LOGO */}
-        <div className="flex items-center gap-2 px-6 pt-5 pb-2">
-          <Image src={LOGO} width={38} height={38} alt="Logo" className="rounded-full border border-amber-200 bg-white shadow" />
-          <div className="ml-2 text-lg font-bold text-green-800">บัตรสมาชิกเกษตรกร</div>
+    <div className="flex justify-center items-center min-h-[70vh] bg-gradient-to-br from-lime-50 via-white to-yellow-50">
+      <Card className="relative max-w-md w-full rounded-3xl border-0 shadow-xl px-0 py-0 overflow-hidden"
+        style={{ background: "linear-gradient(120deg, #f9faed 70%, #f4f2e2 100%)" }}
+      >
+        {/* Header */}
+        <div className="flex items-center px-6 pt-6 pb-3">
+          {/* Logo มุมซ้าย */}
+          <Image src={LOGO} width={44} height={44} alt="Logo"
+            className="rounded-full border border-green-300 bg-white shadow" />
+          {/* Title */}
+          <div className="ml-3 text-2xl font-bold text-green-800 tracking-tight drop-shadow">
+            บัตรสมาชิกเกษตรกร
+          </div>
         </div>
         {/* Content */}
-        <div className="relative px-6 pb-7 pt-1">
-          {/* Profile + Info */}
-          <div className="flex flex-col items-center mb-4">
-            <div className="relative w-[92px] h-[92px] rounded-xl bg-green-100 border-4 border-green-300 overflow-hidden shadow-lg mb-1">
+        <div className="flex flex-row items-stretch px-6 pb-6 gap-4">
+          {/* Profile ซ้าย */}
+          <div className="flex flex-col items-center mr-2">
+            <div className="relative w-[82px] h-[82px] rounded-xl bg-green-100 border-2 border-green-400 overflow-hidden shadow-lg">
               {profile ? (
                 <Image src={profile} alt="profile" fill style={{ objectFit: "cover" }} />
               ) : (
@@ -140,7 +132,7 @@ export default function MemberCardPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="p-1 bg-white/90 shadow rounded-lg border border-green-300 hover:bg-lime-100"
+                  className="p-1 bg-white shadow rounded-lg border border-green-400 hover:bg-lime-100"
                   disabled={uploading}
                   aria-label="เปลี่ยนรูป"
                 >
@@ -148,35 +140,32 @@ export default function MemberCardPage() {
                 </Button>
               </label>
             </div>
-            <div className="text-xs text-stone-400 mt-1">Profile</div>
-            <div className="flex items-center gap-2 mt-3">
+            <div className="text-xs text-gray-400 mt-1">Profile</div>
+          </div>
+          {/* Main info center */}
+          <div className="flex-1 flex flex-col justify-center">
+            <div className="flex items-center gap-2 mb-1">
               <span className="text-xl">🧑‍🌾</span>
-              <span className="font-bold text-lg text-green-900">
-                {regName} {regSurname}
-              </span>
+              <span className="font-bold text-lg text-green-900 truncate">{regName} {regSurname}</span>
             </div>
-            <span className="inline-block bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-xl border border-green-300 mt-1">
+            <span className="inline-block bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded-xl border border-green-300 mb-1">
               {regType}
             </span>
-            <div className="flex flex-col items-center text-[13px] text-stone-600 mt-2">
-              <span className="block">สมัคร: {createdAt}</span>
-              <span className="block">หมดอายุ: {expiredAt}</span>
+            <div className="text-xs text-gray-600 mt-1">
+              <div>สมัคร: <span className="font-medium">{createdAt}</span></div>
+              <div>หมดอายุ: <span className="font-medium">{expiredAt}</span></div>
             </div>
           </div>
-          {/* QR CODE มุมขวาล่าง */}
-          <div className="absolute bottom-4 right-5 flex flex-col items-center">
-            <div className="bg-white p-2 rounded-xl shadow border border-lime-200">
+          {/* QR code ขวาสุด */}
+          <div className="flex flex-col items-center justify-end ml-2">
+            <div className="bg-white p-1.5 rounded-xl shadow border border-lime-200">
               {regID ? (
-                <QRCode
-                  value={regID}
-                  size={72}
-                  aria-label={`QR code for ${regID}`}
-                />
+                <QRCode value={regID} size={64} />
               ) : (
                 <span className="text-xs text-red-400">No QR</span>
               )}
             </div>
-            <span className="mt-2 text-xs text-green-800 bg-lime-100 border border-lime-300 px-2 py-1 rounded font-bold tracking-widest">
+            <span className="mt-1 text-xs text-green-800 bg-lime-100 border border-lime-300 px-2 py-0.5 rounded font-bold tracking-widest select-all">
               {regID || "-"}
             </span>
           </div>
