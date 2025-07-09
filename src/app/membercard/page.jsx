@@ -4,7 +4,6 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import Image from "next/image";
-import QRCode from "qrcode.react";
 import dayjs from "dayjs";
 import liff from "@line/liff";
 
@@ -20,31 +19,25 @@ function MemberCardPage() {
   const [member, setMember] = useState(null);
   const [profile, setProfile] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState(""); // error message
+  const [error, setError] = useState(""); 
 
   useEffect(() => {
     const fetchMember = async () => {
       try {
         await liff.init({ liffId: LIFF_ID });
-
         if (!liff.isLoggedIn()) {
           liff.login();
           return;
         }
-
         const profile = await liff.getProfile();
-        console.log("LINE Profile: ", profile);
-
-        // เช็ค profile ว่ามี userId มั้ย
         if (!profile || !profile.userId) {
           setError("ไม่สามารถดึง Line ID ได้ กรุณาเปิดผ่านแอป LINE และให้สิทธิ์แอปนี้เข้าถึงข้อมูลบัญชี LINE ของคุณ");
           setLoading(false);
           return;
         }
-
         const lineId = profile.userId;
 
-        // fetch member by lineId
+        // FETCH API ด้วย lineId
         const res = await fetch(`/api/farmer/get/line-get/${lineId}`);
         let data;
         try {
@@ -52,8 +45,8 @@ function MemberCardPage() {
         } catch {
           throw new Error("API response format ผิด");
         }
-        console.log("API member:", data);
 
+        // **** ต้อง setMember(data.data) เท่านั้น ****
         if (res.ok && data.success && data.data) {
           setMember(data.data);
           setProfile(data.data.regProfile || "");
@@ -64,7 +57,6 @@ function MemberCardPage() {
       } catch (err) {
         setMember(null);
         setError(err?.message || "เกิดข้อผิดพลาดขณะดึงข้อมูล");
-        console.error("LIFF/Fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -79,18 +71,13 @@ function MemberCardPage() {
     try {
       const url = await uploadToS3(file);
       setProfile(url);
-
-      // TODO: PATCH/PUT ไป DB เพื่อบันทึก regProfile จริง
-      // await fetch(`/api/farmer/update/profile`, {
-      //   method: "PATCH",
-      //   body: JSON.stringify({ regLineID: member.regLineID, regProfile: url }),
-      //   headers: { "Content-Type": "application/json" },
-      // });
     } catch (err) {
       alert("Upload รูปไม่สำเร็จ");
     }
     setUploading(false);
   };
+
+  // --- UI Section --- //
 
   if (loading)
     return (
@@ -99,7 +86,6 @@ function MemberCardPage() {
       </div>
     );
 
-  // กรณีเกิด error
   if (error)
     return (
       <div className="text-center text-red-500 py-8">
@@ -111,7 +97,6 @@ function MemberCardPage() {
       </div>
     );
 
-  // กรณีไม่พบ member (แต่ไม่เกิด error จริง)
   if (!member)
     return (
       <div className="text-center text-red-500 py-8">
@@ -120,21 +105,31 @@ function MemberCardPage() {
       </div>
     );
 
-  // ป้องกัน undefined/null ทุกตัว
+  // DEBUG (dev): โชว์ JSON member ทุกครั้ง
+  if (process.env.NODE_ENV !== "production") {
+    return (
+      <div className="p-4">
+        <div className="mb-2 text-lg text-red-700 font-bold">DEBUG: member structure</div>
+        <pre className="bg-gray-100 text-xs p-2 rounded border border-gray-300">
+          {JSON.stringify(member, null, 2)}
+        </pre>
+        <div className="mt-3 text-gray-500">
+          ดูว่าค่า member ถูกหรือไม่?<br />ถ้าเป็น <b>null</b> หรือไม่มี field ที่ต้องการ &rarr; ห้าม render JSX ที่ใช้ field เหล่านั้น
+        </div>
+      </div>
+    );
+  }
+
+  // Extract ข้อมูล (กัน undefined ทุกจุด)
   const createdAt = member?.createdAt
     ? dayjs(member.createdAt).format("DD/MM/YYYY")
     : "-";
   const expiredAt = member?.createdAt
     ? dayjs(member.createdAt).add(1, "year").format("DD/MM/YYYY")
     : "-";
-  const regName = member?.regName || "-";
-  const regSurname = member?.regSurname || "";
-  const regType = member?.regType || "-";
-  const regID = member?.regID
-    ? typeof member.regID === "string"
-      ? member.regID
-      : String(member.regID)
-    : "-";
+  const regName = typeof member?.regName === "string" ? member.regName : "-";
+  const regSurname = typeof member?.regSurname === "string" ? member.regSurname : "";
+  const regType = typeof member?.regType === "string" ? member.regType : "-";
 
   return (
     <div className="flex justify-center py-8">
@@ -177,7 +172,7 @@ function MemberCardPage() {
               </label>
             )}
           </div>
-          {/* Info + QR Zone */}
+          {/* Info Zone */}
           <div className="flex-1 flex flex-col gap-2">
             <div className="font-bold text-lg">
               {regName} {regSurname}
@@ -187,9 +182,6 @@ function MemberCardPage() {
               สมัคร: {createdAt}
               <br />
               หมดอายุ: {expiredAt}
-            </div>
-            <div className="flex justify-end mt-2">
-              <QRCode value={regID} size={60} />
             </div>
           </div>
         </CardContent>
