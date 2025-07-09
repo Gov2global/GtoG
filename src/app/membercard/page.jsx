@@ -12,7 +12,6 @@ const LIFF_ID = "2007697520-6KRLnXVP";
 const LOGO = "/logo.jpg";
 const FARMER_ICON = "/farmer-icon.svg";
 
-// เปลี่ยนเป็น pattern จริงได้ภายหลัง (SVG/PNG)
 const CARD_BG_PATTERN =
   "url('data:image/svg+xml;utf8,<svg width=\"400\" height=\"200\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"60\" cy=\"50\" r=\"30\" fill=\"%23e0ffcb\" fill-opacity=\"0.25\"/><circle cx=\"300\" cy=\"150\" r=\"80\" fill=\"%23c0eec8\" fill-opacity=\"0.13\"/></svg>')";
 
@@ -74,7 +73,6 @@ export default function MemberCardPage() {
     setUploading(false);
   };
 
-  // Format & Fallback
   const createdAt = member?.createdAt ? dayjs(member.createdAt).format("DD/MM/YYYY") : "-";
   const expiredAt = member?.createdAt ? dayjs(member.createdAt).add(1, "year").format("DD/MM/YYYY") : "-";
   const regName = member?.regName ?? "-";
@@ -126,9 +124,9 @@ export default function MemberCardPage() {
           </div>
         </div>
         {/* Main Card Content */}
-        <div className="flex flex-row items-stretch px-6 pb-7 pt-3 gap-4 w-full">
+        <div className="flex flex-row items-center px-6 pb-7 pt-3 gap-4 w-full">
           {/* Profile ซ้าย */}
-          <div className="flex flex-col items-center justify-center">
+          <div className="flex flex-col items-center justify-center min-h-[72px]">
             <div className="relative w-[72px] h-[72px] rounded-xl bg-green-100 border-2 border-green-400 overflow-hidden shadow-lg">
               {profile ? (
                 <Image src={profile} alt="profile" fill style={{ objectFit: "cover" }} />
@@ -173,8 +171,8 @@ export default function MemberCardPage() {
             </div>
           </div>
           {/* QR code ขวาสุด */}
-          <div className="flex flex-col items-center justify-end ml-2">
-            <div className="bg-white p-1.5 rounded-xl shadow border border-lime-200">
+          <div className="flex flex-col items-center justify-center min-h-[72px]">
+            <div className="bg-white p-1.5 rounded-xl shadow border border-lime-200 flex items-center justify-center h-[72px] w-[72px]">
               {regID ? (
                 <QRCode value={regID} size={50} />
               ) : (
