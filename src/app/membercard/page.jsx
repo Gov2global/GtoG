@@ -8,7 +8,7 @@ import dayjs from "dayjs";
 import liff from "@line/liff";
 import dynamic from "next/dynamic";
 
-// Import QRCode as client component only
+// Import QRCode as client component only (dynamic)
 const QRCode = dynamic(() => import("qrcode.react"), { ssr: false });
 
 const LIFF_ID = "2007697520-6KRLnXVP";
@@ -77,16 +77,22 @@ export default function MemberCardPage() {
     setUploading(false);
   };
 
-  // ดึงข้อมูล
+  // --- Format & Safe Fallback ---
   const createdAt = member?.createdAt ? dayjs(member.createdAt).format("DD/MM/YYYY") : "-";
   const expiredAt = member?.createdAt ? dayjs(member.createdAt).add(1, "year").format("DD/MM/YYYY") : "-";
   const regName = member?.regName ?? "-";
   const regSurname = member?.regSurname ?? "";
   const regType = member?.regType ?? "-";
-  const regID = typeof member?.regID === "string" && member.regID.trim() ? member.regID : "NO-ID";
 
-  // Debug log
-  // console.log({ member, regID });
+  // --- กรอง regID ไม่ให้ undefined/null/object ---
+  let regID = "NO-ID";
+  if (member?.regID) {
+    regID = typeof member.regID === "string" ? member.regID : String(member.regID);
+    regID = regID.trim() || "NO-ID";
+  }
+
+  // --- Debug log ดูค่า regID (เปิดเฉพาะ dev) ---
+  // console.log("regID", regID, typeof regID, "member", member);
 
   if (loading)
     return (
@@ -192,8 +198,8 @@ export default function MemberCardPage() {
           {/* QR CODE มุมขวาล่าง */}
           <div className="absolute bottom-4 right-5 flex flex-col items-center">
             <div className="bg-white p-2 rounded-xl shadow border border-lime-200">
-              {/* QRCode รับ regID */}
-              {regID && (
+              {/* QRCode รับ regID ที่เป็น string เท่านั้น */}
+              {(typeof regID === "string" && regID !== "NO-ID") ? (
                 <QRCode
                   value={regID}
                   size={72}
@@ -201,6 +207,8 @@ export default function MemberCardPage() {
                   renderAs="svg"
                   aria-label={`QR code for ${regID}`}
                 />
+              ) : (
+                <span className="text-xs text-red-400">No QR</span>
               )}
             </div>
             <span className="mt-2 text-xs text-green-800 bg-lime-100 border border-lime-300 px-2 py-1 rounded font-bold tracking-widest">
