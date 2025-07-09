@@ -25,36 +25,43 @@ function MemberCardPage() {
   const [userId, setUserId] = useState("");
 
   useEffect(() => {
-    const fetchMember = async () => {
-      try {
-        await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) {
-          liff.login();
-          return;
-        }
-        const profile = await liff.getProfile();
-        const lineId = profile.userId;
-        setUserId(lineId); // set userId หลังจาก getProfile
-
-        // ดึงข้อมูล member ด้วย lineId
-        const res = await fetch(`/api/farmer/get/line-get/${lineId}`);
-        const data = await res.json();
-
-        if (data.success && data.data) {
-          setMember(data.data);
-          setProfile(data.data.regProfile || "");
-        } else {
-          setMember(null);
-        }
-
-      } catch (err) {
-        setMember(null);
-      } finally {
-        setLoading(false);
+  const fetchMember = async () => {
+    try {
+      await liff.init({ liffId: LIFF_ID });
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
       }
-    };
-    fetchMember();
-  }, []);
+      const profile = await liff.getProfile();
+      const lineId = profile.userId;
+      setUserId(lineId);
+
+      // ลอง log ดู
+      console.log("LINE Profile:", profile);
+
+      // ดึงข้อมูล member ด้วย lineId
+      const res = await fetch(`/api/farmer/get/line-get/${lineId}`);
+      const data = await res.json();
+
+      // ลอง log ดู
+      console.log("API member:", data);
+
+      if (data.success && data.data) {
+        setMember(data.data);
+        setProfile(data.data.regProfile || "");
+      } else {
+        setMember(null);
+      }
+
+    } catch (err) {
+      console.error("LIFF/Fetch error:", err);
+      setMember(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchMember();
+}, []);
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];

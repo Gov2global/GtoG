@@ -1,4 +1,4 @@
-// api/farmer/get/line-get/[lineId]/route.js
+// api/farmer/get/line-get/[lineId]
 
 import { connectMongoDB } from "../../../../../../../lib/mongodb";
 import Register from "../../../../../../../models/register";
