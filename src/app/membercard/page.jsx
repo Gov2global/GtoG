@@ -21,6 +21,9 @@ function MemberCardPage() {
   const [profile, setProfile] = useState("");
   const [uploading, setUploading] = useState(false);
 
+  // เพิ่ม state สำหรับ userId
+  const [userId, setUserId] = useState("");
+
   useEffect(() => {
     const fetchMember = async () => {
       try {
@@ -31,6 +34,7 @@ function MemberCardPage() {
         }
         const profile = await liff.getProfile();
         const lineId = profile.userId;
+        setUserId(lineId); // set userId หลังจาก getProfile
 
         // ดึงข้อมูล member ด้วย lineId
         const res = await fetch(`/api/farmer/get/line-get/${lineId}`);
@@ -42,9 +46,6 @@ function MemberCardPage() {
         } else {
           setMember(null);
         }
-
-        // ถ้าต้องการ call richmenu API สามารถเพิ่มฟังก์ชันนี้ทีหลัง (optional)
-        // await fetch("/api/richmenu/set", { method: "POST", ... })
 
       } catch (err) {
         setMember(null);
@@ -138,6 +139,10 @@ function MemberCardPage() {
           <div className="flex-1 flex flex-col gap-2">
             <div className="font-bold text-lg">
               {member.regName} {member.regSurname}
+            </div>
+            {/* แสดง Line UserID */}
+            <div className="text-xs text-gray-400 break-all">
+              Line UserID: {userId}
             </div>
             <div className="text-sm text-primary">{member.regType}</div>
             <div className="text-xs text-gray-500">
