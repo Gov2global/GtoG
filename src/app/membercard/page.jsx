@@ -158,7 +158,7 @@ export default function MemberCardPage() {
           {/* Main info */}
           <div className="flex-1 flex flex-col justify-center items-center min-w-0 px-1">
             <span
-              className="font-bold text-base text-green-900 text-center truncate max-w-[130px] leading-tight"
+              className="font-bold text-base text-green-900 text-center truncate  leading-tight"
               style={{ whiteSpace: "nowrap" }}
               title={regName + " " + regSurname}
             >
@@ -167,7 +167,7 @@ export default function MemberCardPage() {
             <span className="inline-block bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded-xl border border-green-300 mt-1 mb-0">
               {regType}
             </span>
-            <div className="text-xs text-gray-600 text-center leading-tight mt-1">
+            <div className="text-xs text-gray-600  leading-tight mt-1">
               <div>สมัคร: <span className="font-medium">{createdAt}</span></div>
               <div>หมดอายุ: <span className="font-medium">{expiredAt}</span></div>
             </div>
