@@ -111,11 +111,11 @@ export default function MemberCardPage() {
         }}
       >
         {/* Header */}
-        <div className="flex flex-col items-center justify-center pt-4 pb-1">
+        <div className="flex flex-col items-center justify-center pt-3 pb-1">
           <Image
             src={LOGO}
-            width={42}
-            height={42}
+            width={40}
+            height={40}
             alt="Logo"
             className="rounded-full border border-green-300 bg-white shadow"
           />
@@ -124,10 +124,10 @@ export default function MemberCardPage() {
           </div>
         </div>
         {/* Main Card Content */}
-        <div className="flex flex-row items-center px-4 pb-5 pt-3 gap-3 w-full justify-between">
+        <div className="flex flex-row items-center px-4 pb-4 pt-1 gap-2 w-full justify-between">
           {/* Profile */}
-          <div className="flex flex-col items-center min-w-[80px]">
-            <div className="relative w-[64px] h-[64px] rounded-xl bg-green-100 border-2 border-green-400 overflow-hidden shadow-lg">
+          <div className="flex flex-col items-center min-w-[70px]">
+            <div className="relative w-[60px] h-[60px] rounded-xl bg-green-100 border-2 border-green-400 overflow-hidden shadow-lg">
               {profile ? (
                 <Image src={profile} alt="profile" fill style={{ objectFit: "cover" }} />
               ) : (
@@ -156,20 +156,26 @@ export default function MemberCardPage() {
             <div className="text-xs text-gray-400 mt-1">Profile</div>
           </div>
           {/* Main info */}
-          <div className="flex-1 flex flex-col justify-center items-center px-2 min-w-0">
-            <span className="font-bold text-base text-green-900 text-center break-words">{regName} {regSurname}</span>
-            <span className="inline-block bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded-xl border border-green-300 my-1">
+          <div className="flex-1 flex flex-col justify-center items-center min-w-0 px-1">
+            <span
+              className="font-bold text-base text-green-900 text-center truncate max-w-[130px] leading-tight"
+              style={{ whiteSpace: "nowrap" }}
+              title={regName + " " + regSurname}
+            >
+              {regName} {regSurname}
+            </span>
+            <span className="inline-block bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded-xl border border-green-300 mt-1 mb-0">
               {regType}
             </span>
-            <div className="text-xs text-gray-600 text-center">
+            <div className="text-xs text-gray-600 text-center leading-tight mt-1">
               <div>สมัคร: <span className="font-medium">{createdAt}</span></div>
               <div>หมดอายุ: <span className="font-medium">{expiredAt}</span></div>
             </div>
           </div>
           {/* QR Code */}
-          <div className="flex flex-col items-center min-w-[80px]">
-            <div className="bg-white p-1.5 rounded-xl shadow border border-lime-200 flex items-center justify-center h-[64px] w-[64px]">
-              {regID ? <QRCode value={regID} size={44} /> : <span className="text-xs text-red-400">No QR</span>}
+          <div className="flex flex-col items-center min-w-[70px]">
+            <div className="bg-white p-1.5 rounded-xl shadow border border-lime-200 flex items-center justify-center h-[60px] w-[60px]">
+              {regID ? <QRCode value={regID} size={30} /> : <span className="text-xs text-red-400">No QR</span>}
             </div>
             <span className="mt-1 text-[11px] text-green-800 bg-lime-100 border border-lime-300 px-2 py-0.5 rounded font-bold tracking-widest select-all">
               {regID || "-"}
