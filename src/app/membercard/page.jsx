@@ -160,8 +160,6 @@ export default function MemberCardPage() {
           {/* Main info center */}
           <div className="flex-1 flex flex-col justify-center min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="text-xl">🧑‍🌾</span>
-              {/* เอา truncate ออก */}
               <span className="font-bold text-base sm:text-md text-green-900 whitespace-normal break-words">
                 {regName} {regSurname}
               </span>
@@ -178,7 +176,7 @@ export default function MemberCardPage() {
           <div className="flex flex-col items-center justify-end ml-2">
             <div className="bg-white p-1.5 rounded-xl shadow border border-lime-200">
               {regID ? (
-                <QRCode value={regID} size={60} />
+                <QRCode value={regID} size={50} />
               ) : (
                 <span className="text-xs text-red-400">No QR</span>
               )}
