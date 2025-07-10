@@ -1,7 +1,15 @@
 // src/app/api/farmer/chatgpt/route.js
 
 export async function POST(req) {
-  const { message } = await req.json();
+  const { message, image } = await req.json();
+
+  const messages = [
+    { role: "system", content: "คุณคือผู้ช่วย AI ภาษาไทย" },
+    { role: "user", content: [
+        { type: "text", text: message },
+        ...(image ? [{ type: "image_url", image_url: { "url": `data:image/jpeg;base64,${image}` } }] : [])
+      ]},
+  ];
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -10,14 +18,9 @@ export async function POST(req) {
       "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: "คุณคือผู้ช่วย AI ภาษาไทย" },
-        { role: "user", content: message },
-      ],
-      temperature: 0.6,
+      model: "gpt-4-vision-preview", // ต้องใช้ model ที่รองรับภาพ
+      messages,
       max_tokens: 1024,
-      stream: false,
     }),
   });
 

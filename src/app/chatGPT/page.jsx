@@ -1,6 +1,16 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 
+// Helper สำหรับแปลง file เป็น base64
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",")[1]); // remove "data:image/xxx;base64,"
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+}
+
 // Chat Bubble (รองรับข้อความ + รูป)
 const ChatBubble = ({ message, isUser, isTyping, image }) => (
   <div className={`flex ${isUser ? "justify-end" : "justify-start"} my-2`}>
@@ -51,9 +61,15 @@ const ChatInput = ({ onSend, disabled }) => {
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (input.trim() || image) {
-      onSend(input, image);
+      let imageBase64 = null;
+      let imagePreview = null;
+      if (image) {
+        imageBase64 = await toBase64(image);
+        imagePreview = URL.createObjectURL(image);
+      }
+      onSend(input, imageBase64, imagePreview); // ส่งทั้ง base64 (ไป backend) และ preview (โชว์หน้า user)
       setInput("");
       setImage(null);
       setPreview(null);
@@ -115,12 +131,12 @@ function ChatGPTPage() {
   const [isTyping, setIsTyping] = useState(false);
 
   // รองรับทั้งข้อความ+รูป (image)
-  const handleSend = async (text, image) => {
-    if (image) {
+  const handleSend = async (text, imageBase64, imagePreview) => {
+    if (imageBase64) {
       // แสดงรูปในแชทฝั่ง user
       setMessages((msgs) => [
         ...msgs,
-        { text, isUser: true, image: URL.createObjectURL(image) },
+        { text, isUser: true, image: imagePreview },
       ]);
     } else {
       setMessages((msgs) => [...msgs, { text, isUser: true }]);
@@ -128,11 +144,11 @@ function ChatGPTPage() {
     setIsTyping(true);
 
     try {
-      // เรียก API (แนบเฉพาะข้อความ)
+      // เรียก API (ส่งข้อความ + base64 รูป)
       const res = await fetch("/api/farmer/chatgpt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, image: imageBase64 }),
       });
       const data = await res.json();
       const botReply = data.reply || "ขออภัย เกิดข้อผิดพลาด";
