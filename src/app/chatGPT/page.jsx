@@ -113,7 +113,7 @@ function ChatGPTPage() {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <div className="text-xl font-bold p-4 border-b bg-white shadow-sm">
-        ChatGPT
+        ผู้เชี่ยวชาญด้านเกษตรดิจิทัล
       </div>
       <div className="flex-1 overflow-y-auto">
         <ChatMessageList messages={messages} isTyping={isTyping} />
