@@ -23,6 +23,5 @@ export async function POST(req) {
 
   const data = await res.json();
   const botReply = data.choices?.[0]?.message?.content || "ขออภัย ระบบมีปัญหา";
-
   return Response.json({ reply: botReply });
 }
