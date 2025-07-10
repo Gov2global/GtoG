@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 
-// Helper สำหรับแปลง file เป็น base64
+// Helper: แปลง file เป็น base64
 function toBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -16,10 +16,8 @@ const ChatBubble = ({ message, isUser, isTyping, image }) => (
   <div className={`flex ${isUser ? "justify-end" : "justify-start"} my-2`}>
     <div
       className={`rounded-2xl px-4 py-2 max-w-xs shadow break-words
-        ${isUser
-          ? "bg-blue-500 text-white"
-          : "bg-gray-100 text-gray-800"
-        }`}
+        ${isUser ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-800"}
+      `}
     >
       {image && (
         <img src={image} alt="img" className="w-36 rounded mb-2" />
@@ -55,11 +53,56 @@ const ChatMessageList = ({ messages, isTyping }) => {
   );
 };
 
-// Chat Input (เหมือน ChatGPT: แนบ, ถ่าย, วาง, Drag&Drop, Preview, ลบรูป)
+// Chat Input แบบมีปุ่ม +
 const ChatInput = ({ onSend, disabled }) => {
   const [input, setInput] = useState("");
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [showPlusMenu, setShowPlusMenu] = useState(false);
+
+  // Speech to Text
+  const recognitionRef = useRef(null);
+  useEffect(() => {
+    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.lang = "th-TH";
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+
+      recognitionRef.current.onresult = (event) => {
+        const text = event.results[0][0].transcript;
+        setInput((prev) => (prev ? prev + " " + text : text));
+        setIsRecording(false);
+      };
+      recognitionRef.current.onerror = () => setIsRecording(false);
+      recognitionRef.current.onend = () => setIsRecording(false);
+    }
+  }, []);
+
+  const handleMic = () => {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+    } else {
+      recognitionRef.current?.start();
+      setIsRecording(true);
+    }
+  };
+
+  // Show/Hide Popup +
+  const handlePlusClick = () => setShowPlusMenu((v) => !v);
+  // เลือกภาพ
+  const handleAttachFile = () => {
+    setShowPlusMenu(false);
+    document.getElementById("fileInputGallery")?.click();
+  };
+  // ถ่ายภาพ
+  const handleTakePhoto = () => {
+    setShowPlusMenu(false);
+    document.getElementById("fileInputCamera")?.click();
+  };
 
   // Paste image (Ctrl+V)
   const handlePaste = (e) => {
@@ -86,16 +129,7 @@ const ChatInput = ({ onSend, disabled }) => {
     }
   };
 
-  // ถ่ายรูป (มือถือ)
-  const handleTakePhoto = () => {
-    document.getElementById("fileInputCamera")?.click();
-  };
-
-  // แนบไฟล์
-  const handleAttachFile = () => {
-    document.getElementById("fileInputGallery")?.click();
-  };
-
+  // เมื่อเลือก/ถ่ายรูป
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith("image/")) {
@@ -118,8 +152,6 @@ const ChatInput = ({ onSend, disabled }) => {
       setPreview(null);
     }
   };
-
-  // ลบภาพที่แนบ
   const handleRemoveImage = () => {
     setImage(null);
     setPreview(null);
@@ -127,14 +159,41 @@ const ChatInput = ({ onSend, disabled }) => {
 
   return (
     <div
-      className="flex gap-2 p-4 border-t bg-white items-center"
+      className="relative flex gap-2 p-4 border-t bg-[#161618] items-center"
       onPaste={handlePaste}
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
+      style={{ boxShadow: "0 -2px 32px 0 rgba(0,0,0,0.10)" }}
     >
-      {/* ปุ่มแนบ/ถ่ายรูป */}
-      <div className="flex gap-1">
-        {/* ถ่ายภาพ */}
+      {/* ปุ่ม + (Plus) */}
+      <div className="relative">
+        <button
+          onClick={handlePlusClick}
+          disabled={disabled}
+          className="w-8 h-8 flex items-center justify-center bg-[#232324] rounded-full text-2xl text-white hover:bg-[#363638] transition"
+          title="แนบไฟล์หรือถ่ายภาพ"
+        >+</button>
+        {showPlusMenu && (
+          <div className="absolute left-0 bottom-12 z-20 bg-[#232324] rounded-xl shadow-lg py-1 min-w-[140px]">
+            <button
+              onClick={handleAttachFile}
+              className="block w-full text-left px-4 py-2 hover:bg-[#333] text-white"
+            >เลือกภาพจากเครื่อง</button>
+            <button
+              onClick={handleTakePhoto}
+              className="block w-full text-left px-4 py-2 hover:bg-[#333] text-white"
+            >ถ่ายภาพ</button>
+          </div>
+        )}
+        {/* Input File Hidden */}
+        <input
+          type="file"
+          accept="image/*"
+          id="fileInputGallery"
+          className="hidden"
+          onChange={handleImageChange}
+          disabled={disabled}
+        />
         <input
           type="file"
           accept="image/*"
@@ -144,31 +203,8 @@ const ChatInput = ({ onSend, disabled }) => {
           onChange={handleImageChange}
           disabled={disabled}
         />
-        <button
-          type="button"
-          onClick={handleTakePhoto}
-          disabled={disabled}
-          className="bg-gray-200 rounded-full p-2 hover:bg-gray-300 transition"
-          title="ถ่ายภาพ"
-        >📷</button>
-        {/* แนบไฟล์ */}
-        <input
-          type="file"
-          accept="image/*"
-          id="fileInputGallery"
-          className="hidden"
-          onChange={handleImageChange}
-          disabled={disabled}
-        />
-        <button
-          type="button"
-          onClick={handleAttachFile}
-          disabled={disabled}
-          className="bg-gray-200 rounded-full p-2 hover:bg-gray-300 transition"
-          title="แนบภาพ"
-        >🖼️</button>
       </div>
-      {/* Preview Image */}
+      {/* Preview Image (โชว์ใน prompt) */}
       {preview && (
         <div className="relative mx-1">
           <img src={preview} alt="preview" className="w-10 h-10 rounded object-cover" />
@@ -179,17 +215,30 @@ const ChatInput = ({ onSend, disabled }) => {
           >✕</button>
         </div>
       )}
-      {/* ช่องข้อความ */}
-      <input
-        className="flex-1 border rounded-2xl px-4 py-2 outline-none"
-        placeholder="พิมพ์ข้อความ, วางภาพ (Ctrl+V), ลากรูปมาวาง หรือเลือกแนบ/ถ่ายภาพ..."
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && handleSend()}
-        disabled={disabled}
-      />
+      {/* ช่องข้อความ + ปุ่มไมค์ */}
+      <div className="flex flex-1 items-center bg-[#232324] rounded-2xl px-4 py-3">
+        <input
+          className="flex-1 bg-transparent border-0 outline-none text-white placeholder:text-gray-400"
+          style={{ fontSize: 16, minHeight: 28 }}
+          placeholder="พิมพ์ข้อความ, วางภาพ, ลากรูป, หรือกดไมค์พูด..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          disabled={disabled}
+        />
+        {/* ปุ่มไมค์ */}
+        <button
+          type="button"
+          onClick={handleMic}
+          disabled={disabled}
+          className={`ml-2 transition ${isRecording ? "animate-pulse text-green-400" : "text-gray-400 hover:text-white"}`}
+          title="พูดแล้วพิมพ์"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 17c1.933 0 3.5-1.627 3.5-3.5V8.5c0-1.933-1.627-3.5-3.5-3.5S8.5 6.567 8.5 8.5v5c0 1.933 1.627 3.5 3.5 3.5Zm5-3.5a1 1 0 1 0-2 0A5 5 0 0 1 7 13.5a1 1 0 1 0-2 0c0 3.07 2.443 5.525 5.5 5.954V22a1 1 0 1 0 2 0v-2.546c3.057-.43 5.5-2.884 5.5-5.954Z" fill="currentColor"/></svg>
+        </button>
+      </div>
       <button
-        className="bg-blue-500 text-white px-4 py-2 rounded-2xl shadow hover:bg-blue-600 disabled:opacity-50"
+        className="ml-2 bg-blue-500 text-white px-4 py-2 rounded-2xl shadow hover:bg-blue-600 disabled:opacity-50"
         onClick={handleSend}
         disabled={disabled}
       >
@@ -237,7 +286,7 @@ function ChatGPTPage() {
         ]);
         i++;
         if (i <= botReply.length) {
-          setTimeout(reveal, 18); // ปรับ speed ตามชอบ
+          setTimeout(reveal, 18);
         } else {
           setIsTyping(false);
         }
