@@ -1,7 +1,7 @@
 "use client";
 import React, { useRef, useState, useEffect } from "react";
 
-// ActionButton ปุ่ม capsule
+// ActionButton capsule
 function ActionButton({ icon, label, color, onClick }) {
   return (
     <button
@@ -10,8 +10,7 @@ function ActionButton({ icon, label, color, onClick }) {
         rounded-full border border-gray-200
         bg-white shadow-sm
         min-w-[110px] min-h-[48px]
-        px-3 py-2
-        mx-2 my-2
+        px-3 py-2 mx-2 my-2
         hover:shadow-md active:scale-95
         transition
       `}
@@ -24,17 +23,7 @@ function ActionButton({ icon, label, color, onClick }) {
   );
 }
 
-// แปลง file เป็น base64
-function toBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(",")[1]);
-    reader.onerror = (err) => reject(err);
-    reader.readAsDataURL(file);
-  });
-}
-
-// รูป modal ขยาย
+// Modal ขยายรูป
 function ImageModal({ src, alt, onClose }) {
   if (!src) return null;
   return (
@@ -67,14 +56,10 @@ function ImageModal({ src, alt, onClose }) {
   );
 }
 
-// ฟอร์แมตข้อความฝั่งบอท (ใส่เลข, เว้นบรรทัด, bold ฯลฯ)
+// ฟอร์แมตข้อความบอท
 function formatBotReply(text) {
   if (!text) return null;
-  // 1. เปลี่ยน "**หัวข้อ**:" เป็น <b>
-  // 2. เว้นบรรทัดหลังเลข/หัวข้อ
-  // 3. Bullet หรือ "ได้แก่:" ขึ้นบรรทัดใหม่
   return text.split("\n").map((t, i) => {
-    // เปลี่ยน "**....**:" เป็น <b>
     t = t.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
     if (/^\d+\.\s*<b>/.test(t)) return <div key={i} className="mt-2" dangerouslySetInnerHTML={{ __html: t }} />;
     if (/^(\*{1,2}|- )/.test(t)) return <div key={i} dangerouslySetInnerHTML={{ __html: t }} />;
@@ -83,8 +68,8 @@ function formatBotReply(text) {
   });
 }
 
-// Chat bubble
-const ChatBubble = ({ message, isUser, image, isTyping, onImageClick }) => (
+// Chat bubble รองรับหลายรูป
+const ChatBubble = ({ message, isUser, images, isTyping, onImageClick }) => (
   <div className={`flex ${isUser ? "justify-end" : "justify-start"} my-1 sm:my-2 px-1`}>
     <div
       className={`
@@ -97,17 +82,23 @@ const ChatBubble = ({ message, isUser, image, isTyping, onImageClick }) => (
         w-fit
       `}
     >
-      {image && (
-        <img
-          src={image}
-          alt="img"
-          className="w-32 h-auto max-w-full rounded mb-1 cursor-pointer hover:scale-105 transition"
-          onClick={() => onImageClick?.(image)}
-          title="คลิกเพื่อดูภาพใหญ่"
-        />
-      )}
+      {images && images.length > 0 &&
+        <div className="flex flex-wrap gap-2 mb-1">
+          {images.map((img, idx) =>
+            <img
+              key={idx}
+              src={img}
+              alt="img"
+              className="w-24 h-auto max-w-full rounded cursor-pointer hover:scale-105 transition border"
+              onClick={() => onImageClick?.(img)}
+              title="คลิกเพื่อดูภาพใหญ่"
+              style={{ maxHeight: 90 }}
+            />
+          )}
+        </div>
+      }
       {isTyping ? (
-        <span className="italic text-gray-400">กำลังพิมพ์...</span>
+        <span className="italic text-gray-400">ขอผมเปิดตำรา52 สัปดาห์สักครู่ครับ...</span>
       ) : (
         isUser ? message : formatBotReply(message)
       )}
@@ -115,7 +106,7 @@ const ChatBubble = ({ message, isUser, image, isTyping, onImageClick }) => (
   </div>
 );
 
-// แสดงรายการข้อความแชท
+// Chat list
 function ChatMessageList({ messages, isTyping, onImageClick }) {
   const bottomRef = useRef(null);
   useEffect(() => {
@@ -128,7 +119,7 @@ function ChatMessageList({ messages, isTyping, onImageClick }) {
           key={idx}
           message={msg.text}
           isUser={msg.isUser}
-          image={msg.image}
+          images={msg.images}
           isTyping={msg.isTyping}
           onImageClick={onImageClick}
         />
@@ -139,15 +130,42 @@ function ChatMessageList({ messages, isTyping, onImageClick }) {
   );
 }
 
-// InputBar รองรับวาง/แนบ/ถ่าย/drag-drop/voice
+// toBase64 (helper)
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+}
+
+// InputBar รองรับแนบ “หลายรูป”
 function InputBar({ onSend, disabled }) {
   const [input, setInput] = useState("");
-  const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [images, setImages] = useState([]); // [{file, preview}]
   const [isRecording, setIsRecording] = useState(false);
-  const recognitionRef = useRef(null);
+  const [rows, setRows] = useState(1);
 
-  // Voice to Text
+  const recognitionRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  // Auto-grow สูงสุด 8 แถว
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.rows = 1;
+      const maxRows = 8;
+      const calcRows = Math.min(
+        maxRows,
+        Math.max(1, Math.ceil(textarea.scrollHeight / 28))
+      );
+      setRows(calcRows);
+      textarea.rows = calcRows;
+    }
+  }, [input]);
+
+  // Speech Recognition
   useEffect(() => {
     if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -165,28 +183,42 @@ function InputBar({ onSend, disabled }) {
     }
   }, []);
 
-  // วางภาพ (Ctrl+V)
+  // แนบ/วาง/drag drop ได้หลายไฟล์
   function handlePaste(e) {
     const items = e.clipboardData?.items;
     if (items) {
+      let newImages = [];
       for (const item of items) {
         if (item.type.startsWith("image/")) {
           const file = item.getAsFile();
-          setImage(file);
-          setPreview(URL.createObjectURL(file));
+          newImages.push({ file, preview: URL.createObjectURL(file) });
           e.preventDefault();
         }
       }
+      if (newImages.length) setImages(imgs => [...imgs, ...newImages]);
     }
   }
-  // Drag&Drop
   function handleDrop(e) {
     e.preventDefault();
-    const file = e.dataTransfer?.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      setImage(file);
-      setPreview(URL.createObjectURL(file));
+    const files = Array.from(e.dataTransfer?.files || []);
+    const imageFiles = files.filter(f => f.type.startsWith("image/"));
+    if (imageFiles.length) {
+      setImages(imgs =>
+        [...imgs, ...imageFiles.map(f => ({ file: f, preview: URL.createObjectURL(f) }))]
+      );
     }
+  }
+  function handleImageChange(e) {
+    const files = Array.from(e.target.files || []);
+    const imageFiles = files.filter(f => f.type.startsWith("image/"));
+    if (imageFiles.length) {
+      setImages(imgs =>
+        [...imgs, ...imageFiles.map(f => ({ file: f, preview: URL.createObjectURL(f) }))]
+      );
+    }
+  }
+  function handleRemoveImage(idx) {
+    setImages(imgs => imgs.filter((_, i) => i !== idx));
   }
   function handleMic() {
     if (isRecording) {
@@ -197,65 +229,78 @@ function InputBar({ onSend, disabled }) {
       setIsRecording(true);
     }
   }
-  function handleImageChange(e) {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      setImage(file);
-      setPreview(URL.createObjectURL(file));
+  function handleKeyDown(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   }
-  function handleRemoveImage() {
-    setImage(null);
-    setPreview(null);
-  }
-  function handleSend() {
-    if (!input.trim() && !image) return;
-    onSend(input, image, preview);
+  async function handleSend() {
+    if (!input.trim() && images.length === 0) return;
+    // convert images เป็น base64 ทั้งหมด
+    const imageBase64s = await Promise.all(
+      images.map(async img => ({
+        base64: await toBase64(img.file),
+        mime: img.file.type,
+        preview: img.preview,
+      }))
+    );
+    onSend(input, imageBase64s, images.map(img => img.preview));
     setInput("");
-    setImage(null);
-    setPreview(null);
+    setImages([]);
   }
 
   return (
     <div
-      className="fixed bottom-0 inset-x-0 z-10 bg-white border-t flex items-center px-3 py-2"
-      style={{ minHeight: 56 }}
+      className="fixed bottom-0 inset-x-0 z-10 bg-white border-t px-3 py-2"
+      style={{ minHeight: 64 }}
       onPaste={handlePaste}
       onDrop={handleDrop}
       onDragOver={e => e.preventDefault()}
     >
-      <button onClick={() => document.getElementById("fileInputGallery").click()} className="text-gray-400 hover:text-blue-500 mr-1" title="แนบรูป">
-        <svg width="22" height="22" fill="none" viewBox="0 0 22 22"><path d="M3 19L9.54 12.46M9.5 9A2.5 2.5 0 1 0 9.5 4a2.5 2.5 0 0 0 0 5Zm9.5 9l-4-4a3 3 0 1 0-4.5-4.5l-4 4 8.5 8.5Z" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-      </button>
-      <input type="file" accept="image/*" id="fileInputGallery" className="hidden" onChange={handleImageChange} />
-      <button onClick={() => document.getElementById("fileInputCamera").click()} className="text-gray-400 hover:text-green-500 mr-1" title="ถ่ายภาพ">
-        <svg width="22" height="22" fill="none" viewBox="0 0 22 22"><rect x="4" y="7" width="14" height="11" rx="3" stroke="#22c55e" strokeWidth="1.6"/><circle cx="11" cy="13" r="3" stroke="#22c55e" strokeWidth="1.6"/></svg>
-      </button>
-      <input type="file" accept="image/*" capture="environment" id="fileInputCamera" className="hidden" onChange={handleImageChange} />
-      {preview && (
-        <div className="relative mx-1">
-          <img src={preview} alt="preview" className="w-9 h-9 rounded object-cover" />
-          <button onClick={handleRemoveImage} className="absolute -top-1 -right-1 bg-white rounded-full border text-xs px-1">✕</button>
+      {/* Preview รูปเรียงเป็นแถว ด้านบน input */}
+      {images.length > 0 && (
+        <div className="flex gap-2 mb-2">
+          {images.map((img, idx) => (
+            <div key={idx} className="relative w-fit">
+              <img src={img.preview} alt="preview" className="w-16 h-16 rounded-xl object-cover border" />
+              <button onClick={() => handleRemoveImage(idx)}
+                className="absolute -top-1 -right-1 bg-white rounded-full border text-xs px-1">✕</button>
+            </div>
+          ))}
         </div>
       )}
-      <input
-        className="flex-1 border-0 outline-none text-gray-900 text-base bg-transparent placeholder:text-gray-400 px-2"
-        style={{ minHeight: 36 }}
-        placeholder="ถามอะไรได้ให้..."
-        value={input}
-        onChange={e => setInput(e.target.value)}
-        onKeyDown={e => e.key === "Enter" && handleSend()}
-        disabled={disabled}
-      />
-      <button className={`ml-2 text-gray-400 hover:text-blue-600 transition p-1 ${isRecording ? "animate-pulse text-green-500" : ""}`} title="ไมค์" onClick={handleMic} disabled={disabled}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 17c1.933 0 3.5-1.627 3.5-3.5V8.5c0-1.933-1.627-3.5-3.5-3.5S8.5 6.567 8.5 8.5v5c0 1.933 1.627 3.5 3.5 3.5Zm5-3.5a1 1 0 1 0-2 0A5 5 0 0 1 7 13.5a1 1 0 1 0-2 0c0 3.07 2.443 5.525 5.5 5.954V22a1 1 0 1 0 2 0v-2.546c3.057-.43 5.5-2.884 5.5-5.954Z" fill="currentColor"/></svg>
-      </button>
-      <button className="ml-2 bg-blue-500 text-white px-4 py-1 rounded-full shadow hover:bg-blue-600 disabled:opacity-50 min-w-[44px] min-h-[36px] text-base"
-        onClick={handleSend}
-        disabled={disabled || (!input.trim() && !image)}
-        style={{ minHeight: 36 }}>
-        ส่ง
-      </button>
+      <div className="flex items-end bg-[#f5f5f5] rounded-2xl px-2 py-2 min-h-[44px] border border-gray-200">
+        <textarea
+          ref={textareaRef}
+          rows={rows}
+          className="flex-1 bg-transparent border-0 outline-none resize-none text-gray-900 text-base placeholder:text-gray-400 px-1 py-1"
+          style={{ minHeight: 32, maxHeight: 224 }}
+          placeholder="ถามอะไรได้ให้..."
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={disabled}
+        />
+        {/* แนบรูป/ถ่าย/ไมค์/ส่ง */}
+        <button onClick={() => document.getElementById("fileInputGallery").click()} className="text-gray-400 hover:text-blue-500 ml-1" title="แนบรูป" tabIndex={-1}>
+          <svg width="22" height="22" fill="none" viewBox="0 0 22 22"><path d="M3 19L9.54 12.46M9.5 9A2.5 2.5 0 1 0 9.5 4a2.5 2.5 0 0 0 0 5Zm9.5 9l-4-4a3 3 0 1 0-4.5-4.5l-4 4 8.5 8.5Z" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <input type="file" accept="image/*" multiple id="fileInputGallery" className="hidden" onChange={handleImageChange} />
+        <button onClick={() => document.getElementById("fileInputCamera").click()} className="text-gray-400 hover:text-green-500 ml-1" title="ถ่ายภาพ" tabIndex={-1}>
+          <svg width="22" height="22" fill="none" viewBox="0 0 22 22"><rect x="4" y="7" width="14" height="11" rx="3" stroke="#22c55e" strokeWidth="1.6"/><circle cx="11" cy="13" r="3" stroke="#22c55e" strokeWidth="1.6"/></svg>
+        </button>
+        <input type="file" accept="image/*" capture="environment" multiple id="fileInputCamera" className="hidden" onChange={handleImageChange} />
+        <button className={`ml-1 text-gray-400 hover:text-blue-600 transition ${isRecording ? "animate-pulse text-green-500" : ""}`} title="ไมค์" onClick={handleMic} tabIndex={-1} disabled={disabled}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 17c1.933 0 3.5-1.627 3.5-3.5V8.5c0-1.933-1.627-3.5-3.5-3.5S8.5 6.567 8.5 8.5v5c0 1.933 1.627 3.5 3.5 3.5Zm5-3.5a1 1 0 1 0-2 0A5 5 0 0 1 7 13.5a1 1 0 1 0-2 0c0 3.07 2.443 5.525 5.5 5.954V22a1 1 0 1 0 2 0v-2.546c3.057-.43 5.5-2.884 5.5-5.954Z" fill="currentColor"/></svg>
+        </button>
+        <button className="ml-2 bg-blue-500 text-white px-4 py-2 rounded-full shadow hover:bg-blue-600 disabled:opacity-50 min-w-[44px] min-h-[36px] text-base"
+          onClick={handleSend}
+          disabled={disabled || (!input.trim() && images.length === 0)}
+          style={{ minHeight: 36 }}>
+          ส่ง
+        </button>
+      </div>
     </div>
   );
 }
@@ -266,7 +311,7 @@ export default function ChatGPTPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [modalImg, setModalImg] = useState(null);
 
-  // action ตัวอย่าง (เพิ่มเองตาม usecase)
+  // ปุ่ม action demo
   const actions = [
     {
       icon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 19L9.54 12.46M9.5 9A2.5 2.5 0 1 0 9.5 4a2.5 2.5 0 0 0 0 5Zm9.5 9l-4-4a3 3 0 1 0-4.5-4.5l-4 4 8.5 8.5Z" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
@@ -280,29 +325,26 @@ export default function ChatGPTPage() {
       color: "text-orange-500",
       onClick: () => setMessages(msgs => [...msgs, { text: "สรุปข้อความ (Demo)", isUser: true }])
     },
-    // เพิ่มปุ่มอื่นๆ ได้
   ];
 
-  // "กำลังพิมพ์..." & Typing effect
-  async function handleSend(input, image, preview) {
+  // ส่งข้อมูล (รองรับหลายไฟล์)
+  async function handleSend(input, imageBase64s, previews) {
     setMessages(msgs => [
       ...msgs,
-      { text: input, isUser: true, image: preview }
+      { text: input, isUser: true, images: previews }
     ]);
     setIsTyping(true);
 
-    let imageBase64 = null;
-    let mime = null;
-    if (image) {
-      imageBase64 = await toBase64(image);
-      mime = image.type;
-    }
-
+    // ตัวอย่างส่ง backend
+    // imageBase64s = [{base64, mime, preview}, ...]
     try {
       const res = await fetch("/api/farmer/chatgpt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input, image: imageBase64, mime }),
+        body: JSON.stringify({
+          message: input,
+          images: imageBase64s.map(img => ({ base64: img.base64, mime: img.mime }))
+        }),
       });
       const data = await res.json();
       const reply = data.reply || "ขออภัย เกิดข้อผิดพลาด";
@@ -316,7 +358,7 @@ export default function ChatGPTPage() {
         ]);
         i++;
         if (i <= reply.length) {
-          setTimeout(reveal, 13); // ปรับ speed ได้
+          setTimeout(reveal, 13);
         } else {
           setIsTyping(false);
         }
@@ -343,10 +385,10 @@ export default function ChatGPTPage() {
         </span>
         <span className="font-semibold text-base flex-1">ผู้เชี่ยวชาญด้านการเกษตร</span>
       </div>
-      {/* Welcome (กลางจอ) */}
+      {/* Welcome */}
       {isChatEmpty && (
         <div className="flex flex-col items-center justify-center flex-1 w-full pt-24 absolute left-0 top-0 z-10 h-full bg-gray-50">
-          <h2 className="text-lg sm:text-xl font-semibold text-center mb-4 mt-8">มีอะไรให้ฉันช่วยหรือ</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-center mb-4 mt-8">มีอะไรให้บ่าวรับใช้ขอรับ</h2>
           <div className="flex flex-wrap justify-center items-center w-full max-w-xs sm:max-w-sm">
             {actions.map((a, i) => (
               <ActionButton key={i} {...a} />
@@ -354,7 +396,7 @@ export default function ChatGPTPage() {
           </div>
         </div>
       )}
-      {/* Chat Message List (ซ่อนถ้ายังไม่มีแชท) */}
+      {/* Chat */}
       {!isChatEmpty && (
         <div className="flex-1 overflow-y-auto max-h-[calc(100dvh-120px)] mt-10 pt-2">
           <ChatMessageList messages={messages} isTyping={isTyping} onImageClick={setModalImg} />

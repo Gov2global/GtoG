@@ -2,41 +2,38 @@
 
 export async function POST(req) {
   try {
-    const { message, image, mime } = await req.json();
+    const { message, images } = await req.json();
 
-    // System Prompt - ระบุบทบาทให้ชัด
     const systemPrompt =
       "คุณคือผู้เชี่ยวชาญด้านการเกษตรมืออาชีพ หน้าที่ของคุณคือช่วยเหลือ User ในเรื่องนี้อย่างเชี่ยวชาญ โดยใช้ภาษาไทยเท่านั้น";
 
-    // เตรียม messages (รองรับทั้งมีภาพ/ไม่มีภาพ)
     let messages;
-    if (image) {
-      // ถ้ามีภาพ
-      const imageMime = mime || "image/jpeg";
+    if (images && images.length > 0) {
+      const imageContents = images.map(img => ({
+        type: "image_url",
+        image_url: {
+          url: `data:${img.mime};base64,${img.base64}`
+        }
+      }));
+
       messages = [
         { role: "system", content: systemPrompt },
         {
           role: "user",
           content: [
-            { type: "text", text: message || "วิเคราะห์ภาพนี้ให้หน่อย" },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:${imageMime};base64,${image}`,
-              },
-            },
-          ],
-        },
+            { type: "text", text: message || "วิเคราะห์ภาพเหล่านี้ให้หน่อย" },
+            ...imageContents
+          ]
+        }
       ];
     } else {
-      // ข้อความล้วน
       messages = [
         { role: "system", content: systemPrompt },
-        { role: "user", content: message },
+        { role: "user", content: message }
       ];
     }
 
-    // เรียก OpenAI API
+    // เรียก OpenAI
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -44,20 +41,16 @@ export async function POST(req) {
         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o", // หรือ "gpt-4-vision-preview" ถ้ามีสิทธิ์ vision
+        model: "gpt-4o", // หรือ "gpt-4-vision-preview"
         messages,
         max_tokens: 1024,
       }),
     });
 
     const data = await res.json();
-
-    // ดัก error ของ OpenAI API
     if (data.error) {
       return Response.json({ reply: `Error: ${data.error.message}` });
     }
-
-    // ตอบกลับปกติ
     const botReply = data.choices?.[0]?.message?.content || "ขออภัย ระบบมีปัญหา";
     return Response.json({ reply: botReply });
 
