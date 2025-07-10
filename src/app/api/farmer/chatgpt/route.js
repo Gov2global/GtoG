@@ -1,17 +1,20 @@
-
 // src/app/api/farmer/chatgpt/route.js
 
 export async function POST(req) {
   try {
     const { message, image, mime } = await req.json();
 
+    // System Prompt - ระบุบทบาทให้ชัด
+    const systemPrompt =
+      "คุณคือผู้เชี่ยวชาญด้านการเกษตรมืออาชีพ หน้าที่ของคุณคือช่วยเหลือ User ในเรื่องนี้อย่างเชี่ยวชาญ โดยใช้ภาษาไทยเท่านั้น";
+
     // เตรียม messages (รองรับทั้งมีภาพ/ไม่มีภาพ)
     let messages;
     if (image) {
-      // เช็ค mimetype (ถ้าไม่มีส่งมาก็ default เป็น jpeg)
+      // ถ้ามีภาพ
       const imageMime = mime || "image/jpeg";
       messages = [
-        { role: "system", content: "คุณคือผู้ช่วย AI ภาษาไทย" },
+        { role: "system", content: systemPrompt },
         {
           role: "user",
           content: [
@@ -28,7 +31,7 @@ export async function POST(req) {
     } else {
       // ข้อความล้วน
       messages = [
-        { role: "system", content: "คุณคือผู้ช่วย AI ภาษาไทย" },
+        { role: "system", content: systemPrompt },
         { role: "user", content: message },
       ];
     }
@@ -41,7 +44,7 @@ export async function POST(req) {
         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o", // หรือ "gpt-4o" ก็ได้ถ้า account ได้สิทธิ์
+        model: "gpt-4o", // หรือ "gpt-4-vision-preview" ถ้ามีสิทธิ์ vision
         messages,
         max_tokens: 1024,
       }),

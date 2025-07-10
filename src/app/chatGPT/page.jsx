@@ -11,16 +11,49 @@ function toBase64(file) {
   });
 }
 
-// Chat Bubble (ข้อความ + รูป)
-const ChatBubble = ({ message, isUser, isTyping, image }) => (
+// MODAL ดูภาพใหญ่ + ดาวน์โหลด
+function ImageModal({ src, alt, onClose }) {
+  if (!src) return null;
+  return (
+    <div className="fixed z-50 inset-0 bg-black/80 flex items-center justify-center">
+      <div className="relative">
+        <img src={src} alt={alt} className="max-w-[92vw] max-h-[80vh] rounded-xl shadow-2xl border-4 border-white" />
+        <div className="flex justify-end mt-2">
+          <a
+            href={src}
+            download
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-blue-500 text-white px-3 py-1 rounded shadow mr-2"
+          >
+            ดาวน์โหลดภาพ
+          </a>
+          <button
+            onClick={onClose}
+            className="bg-white text-gray-800 px-3 py-1 rounded shadow"
+          >
+            ปิด
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Bubble (ข้อความ + รูป + คลิกดูรูปใหญ่)
+const ChatBubble = ({ message, isUser, isTyping, image, onImageClick }) => (
   <div className={`flex ${isUser ? "justify-end" : "justify-start"} my-2`}>
     <div
-      className={`rounded-2xl px-4 py-2 max-w-xs shadow break-words
-        ${isUser ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-800"}
-      `}
+      className={`rounded-2xl px-4 py-2 max-w-xs shadow break-words ${isUser ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-800"}`}
     >
       {image && (
-        <img src={image} alt="img" className="w-36 rounded mb-2" />
+        <img
+          src={image}
+          alt="img"
+          className="w-36 rounded mb-2 cursor-pointer hover:scale-105 transition"
+          onClick={() => onImageClick?.(image)}
+          title="คลิกเพื่อดูภาพใหญ่"
+        />
       )}
       {isTyping
         ? <span className="italic text-gray-400">กำลังพิมพ์...</span>
@@ -30,12 +63,11 @@ const ChatBubble = ({ message, isUser, isTyping, image }) => (
 );
 
 // Chat Message List
-const ChatMessageList = ({ messages, isTyping }) => {
+const ChatMessageList = ({ messages, isTyping, onImageClick }) => {
   const bottomRef = useRef(null);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
-
   return (
     <div className="flex flex-col gap-2 overflow-y-auto flex-1 px-4 py-2">
       {messages.map((msg, idx) => (
@@ -45,6 +77,7 @@ const ChatMessageList = ({ messages, isTyping }) => {
           isUser={msg.isUser}
           isTyping={msg.isTyping}
           image={msg.image}
+          onImageClick={onImageClick}
         />
       ))}
       {isTyping && <ChatBubble isUser={false} isTyping={true} />}
@@ -53,13 +86,14 @@ const ChatMessageList = ({ messages, isTyping }) => {
   );
 };
 
-// Chat Input แบบมีปุ่ม +
+// Chat Input
 const ChatInput = ({ onSend, disabled }) => {
   const [input, setInput] = useState("");
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [mode, setMode] = useState("chat"); // chat | image
 
   // Speech to Text
   const recognitionRef = useRef(null);
@@ -70,7 +104,6 @@ const ChatInput = ({ onSend, disabled }) => {
       recognitionRef.current.lang = "th-TH";
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
-
       recognitionRef.current.onresult = (event) => {
         const text = event.results[0][0].transcript;
         setInput((prev) => (prev ? prev + " " + text : text));
@@ -80,7 +113,6 @@ const ChatInput = ({ onSend, disabled }) => {
       recognitionRef.current.onend = () => setIsRecording(false);
     }
   }, []);
-
   const handleMic = () => {
     if (isRecording) {
       recognitionRef.current?.stop();
@@ -93,12 +125,10 @@ const ChatInput = ({ onSend, disabled }) => {
 
   // Show/Hide Popup +
   const handlePlusClick = () => setShowPlusMenu((v) => !v);
-  // เลือกภาพ
   const handleAttachFile = () => {
     setShowPlusMenu(false);
     document.getElementById("fileInputGallery")?.click();
   };
-  // ถ่ายภาพ
   const handleTakePhoto = () => {
     setShowPlusMenu(false);
     document.getElementById("fileInputCamera")?.click();
@@ -118,7 +148,6 @@ const ChatInput = ({ onSend, disabled }) => {
       }
     }
   };
-
   // Drag & Drop image
   const handleDrop = (e) => {
     e.preventDefault();
@@ -128,8 +157,6 @@ const ChatInput = ({ onSend, disabled }) => {
       setPreview(URL.createObjectURL(file));
     }
   };
-
-  // เมื่อเลือก/ถ่ายรูป
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith("image/")) {
@@ -139,14 +166,14 @@ const ChatInput = ({ onSend, disabled }) => {
   };
 
   const handleSend = async () => {
-    if (input.trim() || image) {
+    if (input.trim() || image || mode === "image") {
       let imageBase64 = null;
       let imagePreview = null;
       if (image) {
         imageBase64 = await toBase64(image);
         imagePreview = URL.createObjectURL(image);
       }
-      onSend(input, imageBase64, imagePreview);
+      onSend(input, imageBase64, imagePreview, mode);
       setInput("");
       setImage(null);
       setPreview(null);
@@ -185,7 +212,6 @@ const ChatInput = ({ onSend, disabled }) => {
             >ถ่ายภาพ</button>
           </div>
         )}
-        {/* Input File Hidden */}
         <input
           type="file"
           accept="image/*"
@@ -204,7 +230,7 @@ const ChatInput = ({ onSend, disabled }) => {
           disabled={disabled}
         />
       </div>
-      {/* Preview Image (โชว์ใน prompt) */}
+      {/* Preview Image */}
       {preview && (
         <div className="relative mx-1">
           <img src={preview} alt="preview" className="w-10 h-10 rounded object-cover" />
@@ -215,15 +241,26 @@ const ChatInput = ({ onSend, disabled }) => {
           >✕</button>
         </div>
       )}
-      {/* ช่องข้อความ + ปุ่มไมค์ */}
+      {/* ช่องข้อความ + ปุ่มไมค์ + toggle โหมด */}
       <div className="flex flex-1 items-center bg-[#232324] rounded-2xl px-4 py-3">
+        {/* toggle โหมด */}
+        <button
+          className={`mr-2 px-2 rounded font-bold ${mode === "chat" ? "bg-blue-500 text-white" : "bg-gray-700 text-gray-300"}`}
+          onClick={() => setMode("chat")}
+          disabled={disabled}
+        >ถาม</button>
+        <button
+          className={`mr-2 px-2 rounded font-bold ${mode === "image" ? "bg-green-500 text-white" : "bg-gray-700 text-gray-300"}`}
+          onClick={() => setMode("image")}
+          disabled={disabled}
+        >สร้างภาพ</button>
         <input
           className="flex-1 bg-transparent border-0 outline-none text-white placeholder:text-gray-400"
           style={{ fontSize: 16, minHeight: 28 }}
-          placeholder="พิมพ์ข้อความ, วางภาพ, ลากรูป, หรือกดไมค์พูด..."
+          placeholder={mode === "image" ? "พิมพ์รายละเอียดภาพที่อยากให้สร้าง..." : "พิมพ์ข้อความ, วางภาพ, ลากรูป, หรือกดไมค์พูด..."}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSend()}
           disabled={disabled}
         />
         {/* ปุ่มไมค์ */}
@@ -254,62 +291,93 @@ function ChatGPTPage() {
     { text: "สวัสดีค่ะ มีอะไรให้ช่วยไหม", isUser: false },
   ]);
   const [isTyping, setIsTyping] = useState(false);
+  const [modalImg, setModalImg] = useState(null);
 
-  // รองรับทั้งข้อความ+รูป
-  const handleSend = async (text, imageBase64, imagePreview) => {
-    if (imageBase64) {
-      setMessages((msgs) => [
-        ...msgs,
-        { text, isUser: true, image: imagePreview },
-      ]);
-    } else {
-      setMessages((msgs) => [...msgs, { text, isUser: true }]);
-    }
-    setIsTyping(true);
-
-    try {
-      const res = await fetch("/api/farmer/chatgpt", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, image: imageBase64 }),
-      });
-      const data = await res.json();
-      const botReply = data.reply || "ขออภัย เกิดข้อผิดพลาด";
-
-      // Typing effect ทีละตัวอักษร
-      let i = 0;
-      setMessages((msgs) => [...msgs, { text: "", isUser: false }]);
-      const reveal = () => {
-        setMessages((msgs) => [
-          ...msgs.slice(0, -1),
-          { text: botReply.slice(0, i), isUser: false },
+  // รองรับทั้งโหมด chat และ image
+  const handleSend = async (text, imageBase64, imagePreview, mode) => {
+    if (mode === "image") {
+      // DALL·E: สร้างภาพจากข้อความ
+      setMessages(msgs => [...msgs, { text, isUser: true }]);
+      setIsTyping(true);
+      try {
+        const res = await fetch("/api/farmer/chatgpt-creare-img", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: text }),
+        });
+        const data = await res.json();
+        setMessages(msgs => [
+          ...msgs,
+          {
+            text: data.imageUrl ? "ภาพที่สร้างจาก DALL·E-3:" : data.error || "ขออภัย สร้างภาพไม่สำเร็จ",
+            isUser: false,
+            image: data.imageUrl,
+          },
         ]);
-        i++;
-        if (i <= botReply.length) {
-          setTimeout(reveal, 18);
-        } else {
-          setIsTyping(false);
-        }
-      };
-      reveal();
-    } catch {
-      setMessages((msgs) => [
-        ...msgs,
-        { text: "ขออภัย ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้", isUser: false },
-      ]);
+      } catch {
+        setMessages(msgs => [
+          ...msgs,
+          { text: "ขออภัย ไม่สามารถสร้างภาพได้", isUser: false },
+        ]);
+      }
       setIsTyping(false);
+    } else {
+      // ChatGPT: text + vision
+      if (imageBase64) {
+        setMessages(msgs => [...msgs, { text, isUser: true, image: imagePreview }]);
+      } else {
+        setMessages(msgs => [...msgs, { text, isUser: true }]);
+      }
+      setIsTyping(true);
+      try {
+        const res = await fetch("/api/farmer/chatgpt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text, image: imageBase64 }),
+        });
+        const data = await res.json();
+        const botReply = data.reply || "ขออภัย เกิดข้อผิดพลาด";
+        // Typing effect
+        let i = 0;
+        setMessages(msgs => [...msgs, { text: "", isUser: false }]);
+        const reveal = () => {
+          setMessages(msgs => [
+            ...msgs.slice(0, -1),
+            { text: botReply.slice(0, i), isUser: false },
+          ]);
+          i++;
+          if (i <= botReply.length) {
+            setTimeout(reveal, 18);
+          } else {
+            setIsTyping(false);
+          }
+        };
+        reveal();
+      } catch {
+        setMessages(msgs => [
+          ...msgs,
+          { text: "ขออภัย ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้", isUser: false },
+        ]);
+        setIsTyping(false);
+      }
     }
   };
 
   return (
+
     <div className="flex flex-col h-screen bg-gray-50">
       <div className="text-xl font-bold p-4 border-b bg-white shadow-sm">
         ผู้เชี่ยวชาญด้านเกษตรดิจิทัล
       </div>
       <div className="flex-1 overflow-y-auto">
-        <ChatMessageList messages={messages} isTyping={isTyping} />
+        <ChatMessageList
+          messages={messages}
+          isTyping={isTyping}
+          onImageClick={setModalImg}
+        />
       </div>
       <ChatInput onSend={handleSend} disabled={isTyping} />
+      <ImageModal src={modalImg} alt="preview" onClose={() => setModalImg(null)} />
     </div>
   );
 }
