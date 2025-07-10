@@ -16,21 +16,25 @@ function ImageModal({ src, alt, onClose }) {
   if (!src) return null;
   return (
     <div className="fixed z-50 inset-0 bg-black/80 flex items-center justify-center">
-      <div className="relative">
-        <img src={src} alt={alt} className="max-w-[92vw] max-h-[80vh] rounded-xl shadow-2xl border-4 border-white" />
-        <div className="flex justify-end mt-2">
+      <div className="relative max-w-[98vw] w-full px-2">
+        <img
+          src={src}
+          alt={alt}
+          className="max-w-full max-h-[60vh] sm:max-h-[80vh] rounded-xl shadow-2xl border-4 border-white mx-auto"
+        />
+        <div className="flex justify-end mt-3 gap-2">
           <a
             href={src}
             download
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-blue-500 text-white px-3 py-1 rounded shadow mr-2"
+            className="bg-blue-500 text-white px-3 py-1 rounded shadow text-sm"
           >
             ดาวน์โหลดภาพ
           </a>
           <button
             onClick={onClose}
-            className="bg-white text-gray-800 px-3 py-1 rounded shadow"
+            className="bg-white text-gray-800 px-3 py-1 rounded shadow text-sm"
           >
             ปิด
           </button>
@@ -42,17 +46,26 @@ function ImageModal({ src, alt, onClose }) {
 
 // Bubble (ข้อความ + รูป + คลิกดูรูปใหญ่)
 const ChatBubble = ({ message, isUser, isTyping, image, onImageClick }) => (
-  <div className={`flex ${isUser ? "justify-end" : "justify-start"} my-2`}>
+  <div className={`flex ${isUser ? "justify-end" : "justify-start"} my-1 sm:my-2 px-1`}>
     <div
-      className={`rounded-2xl px-4 py-2 max-w-xs shadow break-words ${isUser ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-800"}`}
+      className={`
+        rounded-2xl px-3 py-2
+        max-w-[83vw] sm:max-w-xs
+        shadow break-words
+        ${isUser ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-800"}
+        ${isUser ? "rounded-br-md" : "rounded-bl-md"}
+        text-[15px] sm:text-base
+        w-fit
+      `}
     >
       {image && (
         <img
           src={image}
           alt="img"
-          className="w-36 rounded mb-2 cursor-pointer hover:scale-105 transition"
+          className="w-28 h-auto rounded mb-1 cursor-pointer hover:scale-105 transition"
           onClick={() => onImageClick?.(image)}
           title="คลิกเพื่อดูภาพใหญ่"
+          style={{ maxWidth: "100%" }}
         />
       )}
       {isTyping
@@ -69,7 +82,7 @@ const ChatMessageList = ({ messages, isTyping, onImageClick }) => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
   return (
-    <div className="flex flex-col gap-2 overflow-y-auto flex-1 px-4 py-2">
+    <div className="flex flex-col gap-1 sm:gap-2 overflow-y-auto flex-1 px-0 py-2 sm:px-4 sm:py-2 scrollbar-none">
       {messages.map((msg, idx) => (
         <ChatBubble
           key={idx}
@@ -186,7 +199,7 @@ const ChatInput = ({ onSend, disabled }) => {
 
   return (
     <div
-      className="relative flex gap-2 p-4 border-t bg-[#161618] items-center"
+      className="relative flex gap-2 p-2 sm:p-4 border-t bg-[#161618] items-center"
       onPaste={handlePaste}
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
@@ -197,18 +210,18 @@ const ChatInput = ({ onSend, disabled }) => {
         <button
           onClick={handlePlusClick}
           disabled={disabled}
-          className="w-8 h-8 flex items-center justify-center bg-[#232324] rounded-full text-2xl text-white hover:bg-[#363638] transition"
+          className="w-8 h-8 flex items-center justify-center bg-[#232324] rounded-full text-xl text-white hover:bg-[#363638] transition"
           title="แนบไฟล์หรือถ่ายภาพ"
         >+</button>
         {showPlusMenu && (
           <div className="absolute left-0 bottom-12 z-20 bg-[#232324] rounded-xl shadow-lg py-1 min-w-[140px]">
             <button
               onClick={handleAttachFile}
-              className="block w-full text-left px-4 py-2 hover:bg-[#333] text-white"
+              className="block w-full text-left px-4 py-2 hover:bg-[#333] text-white text-sm"
             >เลือกภาพจากเครื่อง</button>
             <button
               onClick={handleTakePhoto}
-              className="block w-full text-left px-4 py-2 hover:bg-[#333] text-white"
+              className="block w-full text-left px-4 py-2 hover:bg-[#333] text-white text-sm"
             >ถ่ายภาพ</button>
           </div>
         )}
@@ -242,21 +255,23 @@ const ChatInput = ({ onSend, disabled }) => {
         </div>
       )}
       {/* ช่องข้อความ + ปุ่มไมค์ + toggle โหมด */}
-      <div className="flex flex-1 items-center bg-[#232324] rounded-2xl px-4 py-3">
+      <div className="flex flex-1 items-center bg-[#232324] rounded-2xl px-2 sm:px-4 py-2 sm:py-3 min-h-[44px]">
         {/* toggle โหมด */}
         <button
-          className={`mr-2 px-2 rounded font-bold ${mode === "chat" ? "bg-blue-500 text-white" : "bg-gray-700 text-gray-300"}`}
+          className={`mr-1 sm:mr-2 px-2 rounded font-bold min-w-[48px] h-8 ${mode === "chat" ? "bg-blue-500 text-white" : "bg-gray-700 text-gray-300"}`}
           onClick={() => setMode("chat")}
           disabled={disabled}
+          style={{ fontSize: 15 }}
         >ถาม</button>
         <button
-          className={`mr-2 px-2 rounded font-bold ${mode === "image" ? "bg-green-500 text-white" : "bg-gray-700 text-gray-300"}`}
+          className={`mr-1 sm:mr-2 px-2 rounded font-bold min-w-[48px] h-8 ${mode === "image" ? "bg-green-500 text-white" : "bg-gray-700 text-gray-300"}`}
           onClick={() => setMode("image")}
           disabled={disabled}
+          style={{ fontSize: 15 }}
         >สร้างภาพ</button>
         <input
-          className="flex-1 bg-transparent border-0 outline-none text-white placeholder:text-gray-400"
-          style={{ fontSize: 16, minHeight: 28 }}
+          className="flex-1 bg-transparent border-0 outline-none text-white placeholder:text-gray-400 text-[15px] sm:text-base min-w-0"
+          style={{ minHeight: 28 }}
           placeholder={mode === "image" ? "พิมพ์รายละเอียดภาพที่อยากให้สร้าง..." : "พิมพ์ข้อความ, วางภาพ, ลากรูป, หรือกดไมค์พูด..."}
           value={input}
           onChange={e => setInput(e.target.value)}
@@ -275,9 +290,10 @@ const ChatInput = ({ onSend, disabled }) => {
         </button>
       </div>
       <button
-        className="ml-2 bg-blue-500 text-white px-4 py-2 rounded-2xl shadow hover:bg-blue-600 disabled:opacity-50"
+        className="ml-1 sm:ml-2 bg-blue-500 text-white px-3 py-2 rounded-2xl shadow hover:bg-blue-600 disabled:opacity-50 min-w-[52px] h-10 text-base"
         onClick={handleSend}
         disabled={disabled}
+        style={{ minHeight: 40 }}
       >
         Send
       </button>
@@ -364,12 +380,11 @@ function ChatGPTPage() {
   };
 
   return (
-
-    <div className="flex flex-col h-screen bg-gray-50">
-      <div className="text-xl font-bold p-4 border-b bg-white shadow-sm">
+    <div className="flex flex-col h-screen min-h-screen bg-gray-50 max-w-full mx-auto">
+      <div className="text-lg sm:text-xl font-bold p-3 sm:p-4 border-b bg-white shadow-sm">
         ผู้เชี่ยวชาญด้านเกษตรดิจิทัล
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto max-h-[calc(100vh-120px)]">
         <ChatMessageList
           messages={messages}
           isTyping={isTyping}
