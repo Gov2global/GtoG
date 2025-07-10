@@ -52,31 +52,35 @@ const richMenuBody = {
   chatBarText: "เกษตรกร",
     areas: [
     {
-      bounds: { x: 882, y: 1124, width: 532, height: 252 },
+      bounds: { x: 321, y: 1094, width: 574, height: 293 },
       action: { type: "message", text: "เช็คภาระกิจ" }
     },
     {
-      bounds: { x: 1523, y: 1124, width: 532, height: 252 },
+      bounds: { x: 987, y: 1094, width: 640, height:293 },
       action: { type: "message", text: "ลงทะเบียนเข้าร่วม GAP" }
     },
     {
-      bounds: { x: 2154, y: 1124, width: 532, height: 252 },
+      bounds: { x:1643, y: 1094, width: 558, height: 293 },
+      action: { type: "message", text: "ผู้ช่วยส่วนตัว" }
+    },
+    {
+      bounds: { x:2222, y: 1094, width: 486, height: 293 },
       action: { type: "message", text: "ติดต่อเจ้าหน้าที่" }
     },
     {
-      bounds: { x: 449, y: 1464, width: 470, height: 252 },
+      bounds: { x: 276, y: 1451, width: 484, height: 293 },
       action: { type: "uri", uri: "https://liff.line.me/2007697520-6KRLnXVP" } 
     },
     {
-      bounds: { x: 958, y: 1464, width: 380, height: 252 },
+      bounds: { x: 800, y: 1451, width: 490, height: 293 },
       action: { type: "message", text: "แจ้งผลผลิต" }
     },
  {
-      bounds: { x: 1524, y: 1464, width: 532, height: 252 },
+      bounds: { x: 1396, y: 1451, width: 603, height: 293 },
       action: { type: "message", text: "ขอเงินสนับสนุน" }
     },
     {
-      bounds: { x: 2154, y: 1464, width: 532, height: 252},
+      bounds: { x: 2117, y: 1451, width: 695, height: 293},
       action: { type: "message", text: "สั่งซื้อผลิตภัณฑ์ปุ๋ย ยา" }
     }
   ]
