@@ -1,17 +1,22 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 
-// Chat Bubble
-const ChatBubble = ({ message, isUser, isTyping }) => (
+// Chat Bubble (รองรับข้อความ + รูป)
+const ChatBubble = ({ message, isUser, isTyping, image }) => (
   <div className={`flex ${isUser ? "justify-end" : "justify-start"} my-2`}>
     <div
-      className={`rounded-2xl px-4 py-2 max-w-xs shadow
+      className={`rounded-2xl px-4 py-2 max-w-xs shadow break-words
         ${isUser
           ? "bg-blue-500 text-white"
           : "bg-gray-100 text-gray-800"
         }`}
     >
-      {isTyping ? <span className="italic text-gray-400">กำลังพิมพ์...</span> : message}
+      {image && (
+        <img src={image} alt="img" className="w-36 rounded mb-2" />
+      )}
+      {isTyping
+        ? <span className="italic text-gray-400">กำลังพิมพ์...</span>
+        : message}
     </div>
   </div>
 );
@@ -26,7 +31,13 @@ const ChatMessageList = ({ messages, isTyping }) => {
   return (
     <div className="flex flex-col gap-2 overflow-y-auto flex-1 px-4 py-2">
       {messages.map((msg, idx) => (
-        <ChatBubble key={idx} message={msg.text} isUser={msg.isUser} />
+        <ChatBubble
+          key={idx}
+          message={msg.text}
+          isUser={msg.isUser}
+          isTyping={msg.isTyping}
+          image={msg.image}
+        />
       ))}
       {isTyping && <ChatBubble isUser={false} isTyping={true} />}
       <div ref={bottomRef} />
@@ -34,16 +45,49 @@ const ChatMessageList = ({ messages, isTyping }) => {
   );
 };
 
+// Chat Input (แนบภาพ + preview)
 const ChatInput = ({ onSend, disabled }) => {
   const [input, setInput] = useState("");
+  const [image, setImage] = useState(null);
+  const [preview, setPreview] = useState(null);
+
   const handleSend = () => {
-    if (input.trim()) {
-      onSend(input);
+    if (input.trim() || image) {
+      onSend(input, image);
       setInput("");
+      setImage(null);
+      setPreview(null);
     }
   };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImage(file);
+      setPreview(URL.createObjectURL(file));
+    }
+  };
+
   return (
-    <div className="flex gap-2 p-4 border-t bg-white">
+    <div className="flex gap-2 p-4 border-t bg-white items-center">
+      {/* ปุ่มแนบรูป */}
+      <label className="cursor-pointer flex items-center">
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageChange}
+          disabled={disabled}
+        />
+        <span className="bg-gray-200 rounded-full p-2 hover:bg-gray-300 transition">
+          📷
+        </span>
+      </label>
+      {/* Preview Image */}
+      {preview && (
+        <img src={preview} alt="preview" className="w-10 h-10 rounded object-cover mx-1" />
+      )}
+      {/* ช่องข้อความ */}
       <input
         className="flex-1 border rounded-2xl px-4 py-2 outline-none"
         placeholder="พิมพ์ข้อความ..."
@@ -70,13 +114,21 @@ function ChatGPTPage() {
   ]);
   const [isTyping, setIsTyping] = useState(false);
 
-  // ดึงข้อความจาก OpenAI API ผ่าน /api/chat (แทน mock)
-  const handleSend = async (text) => {
-    setMessages((msgs) => [...msgs, { text, isUser: true }]);
+  // รองรับทั้งข้อความ+รูป (image)
+  const handleSend = async (text, image) => {
+    if (image) {
+      // แสดงรูปในแชทฝั่ง user
+      setMessages((msgs) => [
+        ...msgs,
+        { text, isUser: true, image: URL.createObjectURL(image) },
+      ]);
+    } else {
+      setMessages((msgs) => [...msgs, { text, isUser: true }]);
+    }
     setIsTyping(true);
 
     try {
-      // เรียก API
+      // เรียก API (แนบเฉพาะข้อความ)
       const res = await fetch("/api/farmer/chatgpt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
