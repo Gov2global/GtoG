@@ -276,7 +276,7 @@ function InputBar({ onSend, disabled }) {
           rows={rows}
           className="flex-1 bg-transparent border-0 outline-none resize-none text-gray-900 text-base placeholder:text-gray-400 px-1 py-1"
           style={{ minHeight: 32, maxHeight: 224 }}
-          placeholder="ถามอะไรได้ให้..."
+          placeholder="AI พร้อมช่วยคุณเรื่องเกษตร พิมพ์มาเลยครับ"
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -383,12 +383,22 @@ export default function ChatGPTPage() {
         <span className="mr-2">
           <svg width="22" height="22" fill="none"><rect width="18" height="2" x="3" y="5" fill="#444"/><rect width="13" height="2" x="3" y="10" fill="#444"/><rect width="18" height="2" x="3" y="15" fill="#444"/></svg>
         </span>
-        <span className="font-semibold text-base flex-1">ผู้เชี่ยวชาญด้านการเกษตร</span>
+        <span className="font-semibold text-base flex-1">ผู้ช่วยเกษตรอัจฉริยะ</span>
       </div>
       {/* Welcome */}
       {isChatEmpty && (
         <div className="flex flex-col items-center justify-center flex-1 w-full pt-24 absolute left-0 top-0 z-10 h-full bg-gray-50">
-          <h2 className="text-lg sm:text-xl font-semibold text-center mb-4 mt-8">มีอะไรให้บ่าวรับใช้ขอรับ</h2>
+           <div className="flex flex-col items-center pt-10 pb-6">
+            <img
+              src="/logo.jpg" // ใส่โลโก้/Avatar ที่ public/logo.jpg
+              alt="Bigboss Avatar"
+              className="w-20 h-20 rounded-full shadow-xl border-4 border-white mb-3 object-cover"
+            />
+            <h2 className="text-lg sm:text-xl font-semibold text-center mb-4 mt-2">ผู้ช่วยอัจฉริยะด้านการเกษตร ยินดีให้บริการครับ</h2>
+            <p>จะด้านโรค หรือด้านมลง เราก็เคียงข้างคุณทุกฤดู</p>
+
+        </div>
+          
           <div className="flex flex-wrap justify-center items-center w-full max-w-xs sm:max-w-sm">
             {actions.map((a, i) => (
               <ActionButton key={i} {...a} />
