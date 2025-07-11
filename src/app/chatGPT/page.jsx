@@ -394,7 +394,7 @@ export default function ChatGPTPage() {
               alt="Bigboss Avatar"
               className="w-20 h-20 rounded-full shadow-xl border-4 border-white mb-3 object-cover"
             />
-            <h2 className="text-lg sm:text-xl font-semibold text-center mb-4 mt-2">ผู้ช่วยอัจฉริยะด้านการเกษตร ยินดีให้บริการครับ</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-center mb-1 mt-2">ผู้ช่วยอัจฉริยะด้านการเกษตร ยินดีให้บริการครับ</h2>
             <p>จะด้านโรค หรือด้านมลง เราก็เคียงข้างคุณทุกฤดู</p>
 
         </div>
