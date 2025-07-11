@@ -1,7 +1,8 @@
 "use client";
 import React, { useRef, useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
-// ActionButton capsule
+// ===== ActionButton capsule =====
 function ActionButton({ icon, label, color, onClick }) {
   return (
     <button
@@ -13,17 +14,19 @@ function ActionButton({ icon, label, color, onClick }) {
         px-3 py-2 mx-2 my-2
         hover:shadow-md active:scale-95
         transition
+        ${color}
       `}
       onClick={onClick}
       style={{ fontSize: 15 }}
+      type="button"
     >
-      <span className={`mb-0.5 text-xl ${color}`}>{icon}</span>
+      <span className={`mb-0.5 text-xl`}>{icon}</span>
       <span className="text-xs font-medium text-gray-700">{label}</span>
     </button>
   );
 }
 
-// Modal ขยายรูป
+// ===== Modal ขยายรูป =====
 function ImageModal({ src, alt, onClose }) {
   if (!src) return null;
   return (
@@ -56,57 +59,89 @@ function ImageModal({ src, alt, onClose }) {
   );
 }
 
-// ฟอร์แมตข้อความบอท
+// ===== ฟอร์แมตข้อความบอท (อ่านง่าย, มี bullet, หัวข้อ) =====
 function formatBotReply(text) {
   if (!text) return null;
-  return text.split("\n").map((t, i) => {
-    t = t.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
-    if (/^\d+\.\s*<b>/.test(t)) return <div key={i} className="mt-2" dangerouslySetInnerHTML={{ __html: t }} />;
-    if (/^(\*{1,2}|- )/.test(t)) return <div key={i} dangerouslySetInnerHTML={{ __html: t }} />;
-    if (/^(\s)*(ได้แก่|ตัวอย่างเช่น)/.test(t)) return <div key={i} className="mt-2">{t}</div>;
-    return <div key={i} dangerouslySetInnerHTML={{ __html: t }} />;
-  });
+  return (
+    <div
+      className="whitespace-pre-line leading-relaxed break-words text-[15px] sm:text-base"
+      style={{ wordBreak: 'keep-all', lineBreak: 'strict' }}
+    >
+      {text.split("\n").map((t, i) => {
+        t = t.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+        if (/^\d+\./.test(t) || /^- /.test(t) || /^• /.test(t))
+          return <div key={i} className="pl-1 mt-1" dangerouslySetInnerHTML={{ __html: t }} />;
+        if (/^โรครุเรียน|ปัญหา|วิธีแก้|หมายเหตุ/.test(t))
+          return <div key={i} className="font-bold text-base mt-3">{t}</div>;
+        return <div key={i} dangerouslySetInnerHTML={{ __html: t }} />;
+      })}
+    </div>
+  );
 }
 
-// Chat bubble รองรับหลายรูป
-const ChatBubble = ({ message, isUser, images, isTyping, onImageClick }) => (
-  <div className={`flex ${isUser ? "justify-end" : "justify-start"} my-1 sm:my-2 px-1`}>
-    <div
-      className={`
-        rounded-2xl px-3 py-2
-        max-w-[90vw] sm:max-w-md
-        shadow break-all
-        ${isUser ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-800"}
-        ${isUser ? "rounded-br-md" : "rounded-bl-md"}
-        text-[15px] sm:text-base
-        w-fit
-      `}
-    >
-      {images && images.length > 0 &&
-        <div className="flex flex-wrap gap-2 mb-1">
-          {images.map((img, idx) =>
-            <img
-              key={idx}
-              src={img}
-              alt="img"
-              className="w-24 h-auto max-w-full rounded cursor-pointer hover:scale-105 transition border"
-              onClick={() => onImageClick?.(img)}
-              title="คลิกเพื่อดูภาพใหญ่"
-              style={{ maxHeight: 90 }}
-            />
-          )}
-        </div>
-      }
-      {isTyping ? (
-        <span className="italic text-gray-400">ขอผมเปิดตำรา52 สัปดาห์สักครู่ครับ...</span>
-      ) : (
-        isUser ? message : formatBotReply(message)
-      )}
-    </div>
-  </div>
-);
 
-// Chat list
+// ===== Typing Animation Bubble (framer-motion) =====
+function TypingBubble() {
+  return (
+    <motion.div
+      className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-2xl w-fit shadow"
+      initial={{ opacity: 0.5, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.2 }}
+    >
+      <span className="text-gray-400">กำลังค้นตำราวิชาการเกษตรให้ครับ</span>
+      <motion.span
+        animate={{ opacity: [0.2, 1, 0.2] }}
+        transition={{ repeat: Infinity, duration: 1 }}
+        className="dot"
+        style={{ fontSize: 32, lineHeight: "1" }}
+      >
+        ...
+      </motion.span>
+    </motion.div>
+  );
+}
+
+// ===== Chat bubble รองรับหลายรูป & Typing bubble =====
+const ChatBubble = ({ message, isUser, images, isTyping, onImageClick }) => {
+  return (
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} my-1 sm:my-2 px-1`}>
+      <div
+        className={`
+          rounded-2xl px-3 py-2
+          max-w-[90vw] sm:max-w-md
+          shadow break-all
+          ${isUser ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-800"}
+          ${isUser ? "rounded-br-md" : "rounded-bl-md"}
+          w-fit relative
+        `}
+      >
+        {images && images.length > 0 &&
+          <div className="flex flex-wrap gap-2 mb-1">
+            {images.map((img, idx) =>
+              <img
+                key={idx}
+                src={img}
+                alt="img"
+                className="w-24 h-auto max-w-full rounded cursor-pointer hover:scale-105 transition border"
+                onClick={() => onImageClick?.(img)}
+                title="คลิกเพื่อดูภาพใหญ่"
+                style={{ maxHeight: 90 }}
+              />
+            )}
+          </div>
+        }
+        {isTyping ? (
+          <TypingBubble />
+        ) : (
+          isUser ? <span className="whitespace-pre-line">{message}</span> : formatBotReply(message)
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ===== Chat list =====
 function ChatMessageList({ messages, isTyping, onImageClick }) {
   const bottomRef = useRef(null);
   useEffect(() => {
@@ -140,17 +175,15 @@ function toBase64(file) {
   });
 }
 
-// InputBar รองรับแนบ “หลายรูป”
+// ===== InputBar รองรับแนบ “หลายรูป” =====
 function InputBar({ onSend, disabled }) {
   const [input, setInput] = useState("");
   const [images, setImages] = useState([]); // [{file, preview}]
   const [isRecording, setIsRecording] = useState(false);
   const [rows, setRows] = useState(1);
-
   const recognitionRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // Auto-grow สูงสุด 8 แถว
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -183,7 +216,6 @@ function InputBar({ onSend, disabled }) {
     }
   }, []);
 
-  // แนบ/วาง/drag drop ได้หลายไฟล์
   function handlePaste(e) {
     const items = e.clipboardData?.items;
     if (items) {
@@ -237,7 +269,6 @@ function InputBar({ onSend, disabled }) {
   }
   async function handleSend() {
     if (!input.trim() && images.length === 0) return;
-    // convert images เป็น base64 ทั้งหมด
     const imageBase64s = await Promise.all(
       images.map(async img => ({
         base64: await toBase64(img.file),
@@ -305,7 +336,7 @@ function InputBar({ onSend, disabled }) {
   );
 }
 
-// Main
+// ===== MAIN =====
 export default function ChatGPTPage() {
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -313,18 +344,18 @@ export default function ChatGPTPage() {
 
   // ปุ่ม action demo
   const actions = [
-    {
-      icon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 19L9.54 12.46M9.5 9A2.5 2.5 0 1 0 9.5 4a2.5 2.5 0 0 0 0 5Zm9.5 9l-4-4a3 3 0 1 0-4.5-4.5l-4 4 8.5 8.5Z" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-      label: "สร้างภาพ",
-      color: "text-green-500",
-      onClick: () => setMessages(msgs => [...msgs, { text: "สร้างภาพ (Demo)", isUser: true }])
-    },
-    {
-      icon: <svg width="22" height="22" fill="none"><rect width="16" height="18" x="3" y="3" rx="3" stroke="#ea580c" strokeWidth="1.6"/><path d="M7 8h6M7 12h2" stroke="#ea580c" strokeWidth="1.6" strokeLinecap="round"/></svg>,
-      label: "สรุปข้อความ",
-      color: "text-orange-500",
-      onClick: () => setMessages(msgs => [...msgs, { text: "สรุปข้อความ (Demo)", isUser: true }])
-    },
+    // {
+    //   icon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 19L9.54 12.46M9.5 9A2.5 2.5 0 1 0 9.5 4a2.5 2.5 0 0 0 0 5Zm9.5 9l-4-4a3 3 0 1 0-4.5-4.5l-4 4 8.5 8.5Z" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+    //   label: "สร้างภาพ",
+    //   color: "text-green-500",
+    //   onClick: () => setMessages(msgs => [...msgs, { text: "สร้างภาพ (Demo)", isUser: true }])
+    // },
+    // {
+    //   icon: <svg width="22" height="22" fill="none"><rect width="16" height="18" x="3" y="3" rx="3" stroke="#ea580c" strokeWidth="1.6"/><path d="M7 8h6M7 12h2" stroke="#ea580c" strokeWidth="1.6" strokeLinecap="round"/></svg>,
+    //   label: "สรุปข้อความ",
+    //   color: "text-orange-500",
+    //   onClick: () => setMessages(msgs => [...msgs, { text: "สรุปข้อความ (Demo)", isUser: true }])
+    // },
   ];
 
   // ส่งข้อมูล (รองรับหลายไฟล์)
@@ -336,7 +367,6 @@ export default function ChatGPTPage() {
     setIsTyping(true);
 
     // ตัวอย่างส่ง backend
-    // imageBase64s = [{base64, mime, preview}, ...]
     try {
       const res = await fetch("/api/farmer/chatgpt", {
         method: "POST",
@@ -348,7 +378,6 @@ export default function ChatGPTPage() {
       });
       const data = await res.json();
       const reply = data.reply || "ขออภัย เกิดข้อผิดพลาด";
-      // Typing effect
       let i = 0;
       setMessages(msgs => [...msgs, { text: "", isUser: false }]);
       function reveal() {
@@ -373,7 +402,6 @@ export default function ChatGPTPage() {
     }
   }
 
-  // Welcome
   const isChatEmpty = messages.length === 0;
 
   return (
@@ -388,15 +416,14 @@ export default function ChatGPTPage() {
       {/* Welcome */}
       {isChatEmpty && (
         <div className="flex flex-col items-center justify-center flex-1 w-full pt-24 absolute left-0 top-0 z-10 h-full bg-gray-50">
-           <div className="flex flex-col items-center pt-10 pb-6">
+          <div className="flex flex-col items-center pt-10 pb-6">
             <img
-              src="/logo.jpg" // ใส่โลโก้/Avatar ที่ public/logo.jpg
+              src="/logo.jpg"
               alt="Bigboss Avatar"
               className="w-20 h-20 rounded-full shadow-xl border-4 border-white mb-3 object-cover"
             />
             <h2 className="text-lg sm:text-xl font-semibold text-center mb-1 mt-2">ผู้ช่วยอัจฉริยะด้านการเกษตร ยินดีให้บริการครับ</h2>
-        </div>
-          
+          </div>
           <div className="flex flex-wrap justify-center items-center w-full max-w-xs sm:max-w-sm">
             {actions.map((a, i) => (
               <ActionButton key={i} {...a} />
