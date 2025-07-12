@@ -17,7 +17,7 @@ const regGAPSchema = new mongoose.Schema(
     fruitType: { type: [String] },
     urlMAP: { type: String },
     document: { type: [String] },
-    documentOther: { type: [String] },
+    documentOther: { type: [String] },   // รองรับ array
     demandFarmer: { type: [String] }
   },
   { timestamps: true }

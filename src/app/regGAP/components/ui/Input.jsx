@@ -2,16 +2,29 @@
 "use client";
 import React from "react";
 
-export default function ModernInput({ label, value, onChange, placeholder, type = "text" }) {
+// components/ui/Input.js
+export default function ModernInput({
+  label,
+  name,
+  value,
+  onChange,
+  className = "",
+  inputClassName = "",
+  ...props
+}) {
   return (
-    <div className="w-full mb-4">
-      <label className="block text-sm font-semibold text-gray-700 mb-1">{label}</label>
+    <div className={className}>
+      {label && (
+        <label className="block mb-1.5 text-gray-700 font-medium">
+          {label}
+        </label>
+      )}
       <input
-        type={type}
+        name={name}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 shadow-sm transition duration-200"
+        onChange={e => onChange(e.target.value)}
+        className={`w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:border-lime-500 focus:ring-2 focus:ring-lime-200 outline-none transition shadow-sm bg-white text-gray-800 text-base ${inputClassName}`}
+        {...props}
       />
     </div>
   );
