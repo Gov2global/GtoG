@@ -57,7 +57,7 @@ function RegisterGAPpage() {
           });
 
           // --- ดึงข้อมูลลงทะเบียน (ถ้ามี) ---
-          fetch(`/api/farmer/get/register/${profile.userId}`)
+          fetch(`/api/farmer/get/register`)
             .then(res => res.json())
             .then(result => {
               if (result.success && result.data) {
@@ -263,16 +263,9 @@ function RegisterGAPpage() {
                 />
                 <ModernInput
                   label="Line User ID"
-                  name="regLineID"
-                  value={form.regLineID}
-                  onChange={v => handleChange("regLineID", v)}
-                  disabled
-                />
-                <ModernInput
-                  label="ชื่อบน LINE"
                   name="regProfile"
                   value={form.regProfile || regProfile}
-                  onChange={v => handleChange("regProfile", v)}
+                  onChange={v => handleChange("regLineID", v)}
                   disabled
                 />
               </div>

@@ -57,7 +57,7 @@ const richMenuBody = {
     },
     {
       bounds: { x: 987, y: 1094, width: 640, height:293 },
-      action: { type: "message", text: "ลงทะเบียนเข้าร่วม GAP" }
+      action: { type: "uri", uri: "https://liff.line.me/2007697520-m4qMPp1k" } 
     },
     {
       bounds: { x:1643, y: 1094, width: 558, height: 293 },
