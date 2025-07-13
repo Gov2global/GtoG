@@ -484,7 +484,6 @@ const handleSubmitDirect = async (gapID) => {
               <div><b>รหัส GAP:</b> {pendingGapID || "กำลังสร้าง..."}</div>
               <div><b>ชื่อ-นามสกุล:</b> {form.regName} {form.regSurname}</div>
               <div><b>เบอร์โทร:</b> {form.regTel || "-"}</div>
-              {/* <div><b>Line User ID:</b> {form.regLineID || "-"}</div> */}
               <div><b>Profire LINE:</b> {form.regProfile || regProfile || "-"}</div>
               <div><b>ชื่อฟาร์ม:</b> {form.farmName || "-"}</div>
               <div><b>ชนิดพืช:</b> {form.fruitType}</div>
