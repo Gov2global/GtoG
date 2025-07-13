@@ -533,6 +533,5 @@ const handleSubmitDirect = async (gapID) => {
       )}
     </div>
   );
-}
 
 export default RegisterGAPpage;
