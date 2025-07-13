@@ -44,41 +44,38 @@ function RegisterGAPpage() {
 
   // --- Init LIFF + Autofill from backend ---
   useEffect(() => {
-  liff.init({ liffId: "2007697520-m4qMPp1k" }).then(() => {
-    if (liff.isLoggedIn()) {
-      liff.getProfile().then(profile => {
-        setRegLineID(profile.userId);
-        setRegProfile(profile.displayName);
+    liff.init({ liffId: "2007697520-m4qMPp1k" }).then(() => {
+      if (liff.isLoggedIn()) {
+        liff.getProfile().then(profile => {
+          setRegLineID(profile.userId);
+          setRegProfile(profile.displayName);
 
-        // ✅ ดึงข้อมูลที่ถูกต้อง!
-        fetch(`/api/farmer/get/line-get/${profile.userId}`)
-          .then(res => res.json())
-          .then(result => {
-            if (result.success && result.data) {
-              setForm(prev => ({
-                ...prev,
-                regName: result.data.regName || "",
-                regSurname: result.data.regSurname || "",
-                regTel: result.data.regTel || "",
-                regLineID: result.data.regLineID || profile.userId,
-                regProfile: result.data.regProfile || profile.displayName,
-              }));
-            } else {
-              setForm(prev => ({
-                ...prev,
-                regLineID: profile.userId,
-                regProfile: profile.displayName,
-              }));
-            }
-          });
-      });
-    } else {
-      liff.login();
-    }
-  });
-}, []);
-
-
+          fetch(`/api/farmer/get/line-get/${profile.userId}`)
+            .then(res => res.json())
+            .then(result => {
+              if (result.success && result.data) {
+                setForm(prev => ({
+                  ...prev,
+                  regName: result.data.regName || "",
+                  regSurname: result.data.regSurname || "",
+                  regTel: result.data.regTel || "",
+                  regLineID: result.data.regLineID || profile.userId,
+                  regProfile: result.data.regProfile || profile.displayName,
+                }));
+              } else {
+                setForm(prev => ({
+                  ...prev,
+                  regLineID: profile.userId,
+                  regProfile: profile.displayName,
+                }));
+              }
+            });
+        });
+      } else {
+        liff.login();
+      }
+    });
+  }, []);
 
   // --- Fetch provinceData ---
   useEffect(() => {
@@ -149,95 +146,56 @@ function RegisterGAPpage() {
   };
 
   // --- Submit จริง ---
-// --- Submit จริง ---
-const handleSubmitDirect = async (gapID) => {
-  const fullForm = {
-    ...form,
-    gapID,
-    document: Array.isArray(form.document) ? form.document : [],
-    documentOther: Array.isArray(form.documentOther) ? form.documentOther : [],
-    demandFarmer: Array.isArray(form.demandFarmer) ? form.demandFarmer : [],
-    province: selectedProvince,
-    district: selectedDistrict,
-    sub_district: selectedSubDistrict,
-  };
+  const handleSubmitDirect = async (gapID) => {
+    const fullForm = {
+      ...form,
+      gapID,
+      document: Array.isArray(form.document) ? form.document : [],
+      documentOther: Array.isArray(form.documentOther) ? form.documentOther : [],
+      demandFarmer: Array.isArray(form.demandFarmer) ? form.demandFarmer : [],
+      province: selectedProvince,
+      district: selectedDistrict,
+      sub_district: selectedSubDistrict,
+    };
 
-  try {
-    const res = await fetch("/api/farmer/submit/regGAP", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(fullForm)
-    });
-    const result = await res.json();
-    if (result.success) {
-      alert("ลงทะเบียนสำเร็จ! รหัสของคุณ: " + gapID);
-      setForm({
-        regName: "",
-        regSurname: "",
-        regTel: "",
-        regLineID: regLineID,
-        regProfile: regProfile,
-        farmName: "",
-        fruitType: "",
-        addressDetail: "",
-        urlMAP: "",
-        document: [],
-        documentOther: [],
-        demandFarmer: [],
-        province: "",
-        district: "",
-        sub_district: "",
+    try {
+      const res = await fetch("/api/farmer/submit/regGAP", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(fullForm)
       });
-      setSelectedProvince("");
-      setSelectedDistrict("");
-      setSelectedSubDistrict("");
-      return true;
-    } else {
-      alert("เกิดข้อผิดพลาด: " + (result.error || "ไม่สามารถลงทะเบียนได้"));
+      const result = await res.json();
+      if (result.success) {
+        alert("ลงทะเบียนสำเร็จ! รหัสของคุณ: " + gapID);
+        setForm({
+          regName: "",
+          regSurname: "",
+          regTel: "",
+          regLineID: regLineID,
+          regProfile: regProfile,
+          farmName: "",
+          fruitType: "",
+          addressDetail: "",
+          urlMAP: "",
+          document: [],
+          documentOther: [],
+          demandFarmer: [],
+          province: "",
+          district: "",
+          sub_district: "",
+        });
+        setSelectedProvince("");
+        setSelectedDistrict("");
+        setSelectedSubDistrict("");
+        return true;
+      } else {
+        alert("เกิดข้อผิดพลาด: " + (result.error || "ไม่สามารถลงทะเบียนได้"));
+        return false;
+      }
+    } catch (err) {
+      alert("เกิดข้อผิดพลาดขณะส่งข้อมูล: " + err.message);
       return false;
     }
-  } catch (err) {
-    alert("เกิดข้อผิดพลาดขณะส่งข้อมูล: " + err.message);
-    return false;
-  }
-};
-
-
-
-    fetch("/api/farmer/submit/regGAP", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(fullForm)
-    })
-      .then(res => res.json())
-      .then(result => {
-        if (result.success) {
-          alert("ลงทะเบียนสำเร็จ! รหัสของคุณ: " + gapID);
-          setForm({
-            regName: "",
-            regSurname: "",
-            regTel: "",
-            regLineID: regLineID, // ยังเก็บไว้เพื่อ autofill ต่อ
-            regProfile: regProfile,
-            farmName: "",
-            fruitType: "",
-            addressDetail: "",
-            urlMAP: "",
-            document: [],
-            documentOther: [],
-            demandFarmer: [],
-            province: "",
-            district: "",
-            sub_district: "",
-          });
-          setSelectedProvince("");
-          setSelectedDistrict("");
-          setSelectedSubDistrict("");
-        } else {
-          alert("เกิดข้อผิดพลาด: " + (result.error || "ไม่สามารถลงทะเบียนได้"));
-        }
-      })
-      .catch(err => alert("เกิดข้อผิดพลาดขณะส่งข้อมูล: " + err.message));
   };
 
   // --- ตรวจสอบใบสมัคร (Preview) ---
@@ -429,7 +387,6 @@ const handleSubmitDirect = async (gapID) => {
                 isMulti
                 required
               />
-
               {Array.isArray(form.document) && form.document.includes("อื่น") && (
                 <ModernInput
                   label="โปรดระบุเอกสารสิทธิ์อื่นๆ"
@@ -535,5 +492,6 @@ const handleSubmitDirect = async (gapID) => {
       )}
     </div>
   );
+}
 
 export default RegisterGAPpage;
