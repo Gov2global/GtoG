@@ -443,7 +443,7 @@ function RegisterGAPpage() {
               <div><b>รหัส GAP:</b> {pendingGapID || "กำลังสร้าง..."}</div>
               <div><b>ชื่อ-นามสกุล:</b> {form.regName} {form.regSurname}</div>
               <div><b>เบอร์โทร:</b> {form.regTel || "-"}</div>
-              <div><b>Profile LINE:</b> {form.regProfile || regProfile || "-"}</div>
+              <div><b>ชื่อโปรไฟล์:</b> {form.regProfile || regProfile || "-"}</div>
               <div><b>ชื่อฟาร์ม:</b> {form.farmName || "-"}</div>
               <div><b>ชนิดพืช:</b> {form.fruitType}</div>
               <div><b>ที่อยู่:</b> {[form.addressDetail, selectedSubDistrict, selectedDistrict, selectedProvince].filter(Boolean).join(" ")}</div>
