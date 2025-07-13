@@ -44,47 +44,41 @@ function RegisterGAPpage() {
 
   // --- Init LIFF + Autofill from backend ---
   useEffect(() => {
-    liff.init({ liffId: "2007697520-m4qMPp1k" }).then(() => {
-      if (liff.isLoggedIn()) {
-        liff.getProfile().then(profile => {
-          setRegLineID(profile.userId);
-          setRegProfile(profile.displayName);
-          // เรียก backend set RichMenu (ไม่กระทบ UX)
-          fetch("/api/farmer/line/line-rich-menu-farmer", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: profile.userId }),
-          });
+  liff.init({ liffId: "2007697520-m4qMPp1k" }).then(() => {
+    if (liff.isLoggedIn()) {
+      liff.getProfile().then(profile => {
+        setRegLineID(profile.userId);
+        setRegProfile(profile.displayName);
 
-          // --- ดึงข้อมูลลงทะเบียน (ถ้ามี) ---
-          fetch(`/api/farmer/get/register`)
-            .then(res => res.json())
-            .then(result => {
-              if (result.success && result.data) {
-                // ถ้ามี user ในระบบ, autofill ข้อมูล
-                setForm(prev => ({
-                  ...prev,
-                  regName: result.data.regName || "",
-                  regSurname: result.data.regSurname || "",
-                  regTel: result.data.regTel || "",
-                  regLineID: profile.userId,
-                  regProfile: result.data.regProfile || profile.displayName,
-                }));
-              } else {
-                // ไม่มีในระบบ, set regLineID+regProfile อย่างเดียว
-                setForm(prev => ({
-                  ...prev,
-                  regLineID: profile.userId,
-                  regProfile: profile.displayName,
-                }));
-              }
-            });
-        });
-      } else {
-        liff.login();
-      }
-    });
-  }, []);
+        // ✅ ดึงข้อมูลที่ถูกต้อง!
+        fetch(`/api/farmer/get/line-get/${profile.userId}`)
+          .then(res => res.json())
+          .then(result => {
+            if (result.success && result.data) {
+              setForm(prev => ({
+                ...prev,
+                regName: result.data.regName || "",
+                regSurname: result.data.regSurname || "",
+                regTel: result.data.regTel || "",
+                regLineID: result.data.regLineID || profile.userId,
+                regProfile: result.data.regProfile || profile.displayName,
+              }));
+            } else {
+              setForm(prev => ({
+                ...prev,
+                regLineID: profile.userId,
+                regProfile: profile.displayName,
+              }));
+            }
+          });
+      });
+    } else {
+      liff.login();
+    }
+  });
+}, []);
+
+
 
   // --- Fetch provinceData ---
   useEffect(() => {
