@@ -149,17 +149,58 @@ function RegisterGAPpage() {
   };
 
   // --- Submit จริง ---
-  const handleSubmitDirect = async (gapID) => {
-    const fullForm = {
-      ...form,
-      gapID,
-      document: Array.isArray(form.document) ? form.document : [],
-      documentOther: Array.isArray(form.documentOther) ? form.documentOther : [],
-      demandFarmer: Array.isArray(form.demandFarmer) ? form.demandFarmer : [],
-      province: selectedProvince,
-      district: selectedDistrict,
-      sub_district: selectedSubDistrict,
-    };
+const handleSubmitDirect = async (gapID) => {
+  const fullForm = {
+    ...form,
+    gapID,
+    document: Array.isArray(form.document) ? form.document : [],
+    documentOther: Array.isArray(form.documentOther) ? form.documentOther : [],
+    demandFarmer: Array.isArray(form.demandFarmer) ? form.demandFarmer : [],
+    province: selectedProvince,
+    district: selectedDistrict,
+    sub_district: selectedSubDistrict,
+  };
+
+  try {
+    const res = await fetch("/api/farmer/submit/regGAP", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fullForm)
+    });
+    const result = await res.json();
+    if (result.success) {
+      alert("ลงทะเบียนสำเร็จ! รหัสของคุณ: " + gapID);
+      setForm({
+        regName: "",
+        regSurname: "",
+        regTel: "",
+        regLineID: regLineID,
+        regProfile: regProfile,
+        farmName: "",
+        fruitType: "",
+        addressDetail: "",
+        urlMAP: "",
+        document: [],
+        documentOther: [],
+        demandFarmer: [],
+        province: "",
+        district: "",
+        sub_district: "",
+      });
+      setSelectedProvince("");
+      setSelectedDistrict("");
+      setSelectedSubDistrict("");
+      return true;
+    } else {
+      alert("เกิดข้อผิดพลาด: " + (result.error || "ไม่สามารถลงทะเบียนได้"));
+      return false;
+    }
+  } catch (err) {
+    alert("เกิดข้อผิดพลาดขณะส่งข้อมูล: " + err.message);
+    return false;
+  }
+};
+
 
     fetch("/api/farmer/submit/regGAP", {
       method: "POST",
@@ -477,11 +518,16 @@ function RegisterGAPpage() {
               <Button variant="outline" onClick={() => setPreviewMode(false)}>แก้ไข</Button>
               <Button
                 className="bg-green-600 text-white"
-                onClick={() => {
+                onClick={async () => {
                   setPreviewMode(false);
-                  handleSubmitDirect(pendingGapID);
+                  const success = await handleSubmitDirect(pendingGapID);
+                  if (success && liff && typeof liff.closeWindow === "function") {
+                    liff.closeWindow();
+                  }
                 }}
-              >ยืนยันส่งข้อมูล</Button>
+              >
+                ยืนยันส่งข้อมูล
+              </Button>
             </div>
           </div>
         </div>
