@@ -14,7 +14,7 @@ const regGAPSchema = new mongoose.Schema(
     sub_district: { type: String },
     addressDetail: { type: String },
     farmName: { type: String },
-    fruitType: { type: [String] },
+    fruitType: { type: String },
     urlMAP: { type: String },
     document: { type: [String] },
     documentOther: { type: [String] },   // รองรับ array
