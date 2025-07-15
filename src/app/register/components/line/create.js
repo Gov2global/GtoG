@@ -61,7 +61,7 @@ const richMenuBody = {
     },
     {
       bounds: { x:1643, y: 1094, width: 558, height: 293 },
-      action: { type: "message", text: "ผู้ช่วยส่วนตัว" }
+      action: { type: "uri", uri: "https://liff.line.me/2007697520-RkBMgYlp" } 
     },
     {
       bounds: { x:2222, y: 1094, width: 486, height: 293 },
@@ -73,15 +73,19 @@ const richMenuBody = {
     },
     {
       bounds: { x: 800, y: 1451, width: 490, height: 293 },
-      action: { type: "message", text: "แจ้งผลผลิต" }
+      action: { type: "uri", uri: "https://liff.line.me/2007697520-eb5NJ0jD" } //แจ้งผลผลิต
     },
  {
       bounds: { x: 1396, y: 1451, width: 603, height: 293 },
-      action: { type: "message", text: "ขอเงินสนับสนุน" }
+      action: { type: "uri", uri: "https://liff.line.me/2007697520-JzdQxW3y" } 
     },
     {
       bounds: { x: 2117, y: 1451, width: 695, height: 293},
       action: { type: "message", text: "สั่งซื้อผลิตภัณฑ์ปุ๋ย ยา" }
+    },
+    {
+      bounds: { x: 2222, y: 634, width: 486, height: 293},
+      action: { type: "message", text: "Hello Bot" }
     }
   ]
 };

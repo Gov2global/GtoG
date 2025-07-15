@@ -94,7 +94,7 @@ const MONGO_URI = process.env.MONGODB_URI;
 
 // --- RichMenu IDs ---
 const REGISTER_MENU_ID = 'richmenu-830e0f0a946983883149cf2c5b811304';      // ยังไม่สมัคร
-const MEMBER_MENU_ID_FARMER = 'richmenu-63df01156d9f84b2d90b05a04b3e34d3'; // สมัครแล้ว (เกษตรกร)
+const MEMBER_MENU_ID_FARMER = 'richmenu-18f73008af491c6da72bfb7cd172a8b0'; // สมัครแล้ว (เกษตรกร)
 
 // --- Mongoose Model ---
 const registerSchema = new mongoose.Schema({
