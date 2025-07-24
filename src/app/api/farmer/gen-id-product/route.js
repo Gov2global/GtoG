@@ -21,22 +21,31 @@ export async function POST(req) {
   const yy = String(now.getFullYear()).slice(-2);
   const dateCode = `${dd}${mm}${yy}`;
 
-  // หาจำนวนที่มีในวันนั้น
+  // นับจำนวนของวันนี้
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  const count = await Product.countDocuments({
+  const count = await ProductReport.countDocuments({
     createdAt: { $gte: todayStart, $lte: todayEnd }
   });
 
-  // running = count+1
   const running = pad(count + 1, 3);
   const proID = `PRO-${dateCode}${running}`;
 
-  // --- Save ---
-  const doc = await Product.create({
+  // Safety: แปลง area เป็น number, plantTypes เป็น string[]
+  const dataToSave = {
     ...body,
     proID,
-  });
+    areaRai: Number(body.areaRai) || 0,
+    areaNgan: Number(body.areaNgan) || 0,
+    areaWa: Number(body.areaWa) || 0,
+    plantTypes: Array.isArray(body.plantTypes)
+      ? body.plantTypes.map((x) => (typeof x === "string" ? x : x.value || ""))
+      : [],
+    regLineID: body.regLineID || "",
+  };
+
+  // --- Save ---
+  const doc = await ProductReport.create(dataToSave);
 
   return NextResponse.json({ success: true, proID, data: doc });
 }

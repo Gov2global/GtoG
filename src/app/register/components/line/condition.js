@@ -93,7 +93,7 @@ const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 const MONGO_URI = process.env.MONGODB_URI;
 
 // --- RichMenu IDs ---
-const REGISTER_MENU_ID = 'richmenu-830e0f0a946983883149cf2c5b811304';      // ยังไม่สมัคร
+const REGISTER_MENU_ID = 'richmenu-fc4e718786460aae6d82a6b4626492ec';      // ยังไม่สมัคร
 const MEMBER_MENU_ID_FARMER = 'richmenu-18f73008af491c6da72bfb7cd172a8b0'; // สมัครแล้ว (เกษตรกร)
 
 // --- Mongoose Model ---

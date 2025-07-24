@@ -1,9 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { FaSeedling } from "react-icons/fa";
+import liff from "@line/liff";
 
-// ⭐️ ใช้ dynamic import (no SSR) แทน import ปกติ
+// ⭐️ Dynamic import
 const CreatableSelect = dynamic(
   () => import("react-select/creatable"),
   { ssr: false }
@@ -62,19 +63,40 @@ export default function ProductPage() {
     estimate: "",
     period: "",
     note: "",
+    regLineID: "",
   });
-
   const [loading, setLoading] = useState(false);
 
+  // โหลดโปรไฟล์จาก LINE ครั้งแรก (ไม่ clear ทับหลัง submit)
+  useEffect(() => {
+    liff.init({ liffId: "2007697520-eb5NJ0jD" }).then(() => {
+      if (liff.isLoggedIn()) {
+        liff.getProfile().then(profile => {
+          setFormData(f => ({
+            ...f,
+            regLineID: profile.userId,
+            fullName: f.fullName || profile.displayName, // กรอกเองจะไม่ทับ
+          }));
+        });
+      } else {
+        liff.login();
+      }
+    });
+  }, []);
+
+  // ใช้ function แบบ callback เพื่อแน่ใจว่า regLineID ไม่หลุดหลัง clear form
   const handleChange = (field) => (e) => {
-    setFormData({ ...formData, [field]: e.target.value });
+    setFormData(f => ({
+      ...f,
+      [field]: e.target.value,
+    }));
   };
 
   const handlePlantTypesChange = (selected) => {
-    setFormData({
-      ...formData,
+    setFormData(f => ({
+      ...f,
       plantTypes: selected || [],
-    });
+    }));
   };
 
   function calculateTotalAreaSqm() {
@@ -93,6 +115,7 @@ export default function ProductPage() {
         ...formData,
         plantTypes: formData.plantTypes.map((p) => p.value),
       };
+      console.log("===> payload ส่งไป API", payload); // Debug เช็ค regLineID
 
       const res = await fetch("/api/farmer/gen-id-product", {
         method: "POST",
@@ -104,8 +127,9 @@ export default function ProductPage() {
 
       if (res.ok && data.success) {
         alert("บันทึกสำเร็จ! รหัสแจ้งผลผลิต: " + data.proID);
-        setFormData({
-          fullName: "",
+        // เคลียร์เฉพาะช่องที่ผู้ใช้กรอก เพิ่ม regLineID + fullName จาก state เดิม
+        setFormData(f => ({
+          ...f,
           phone: "",
           farmName: "",
           plantTypes: [],
@@ -115,7 +139,8 @@ export default function ProductPage() {
           estimate: "",
           period: "",
           note: "",
-        });
+          // regLineID, fullName คงค่าเดิมไว้
+        }));
       } else {
         alert("บันทึกไม่สำเร็จ กรุณาลองใหม่");
       }
@@ -276,6 +301,8 @@ export default function ProductPage() {
             rows={3}
           />
         </div>
+        {/* Hidden input เผื่อ debug regLineID */}
+        <input type="hidden" value={formData.regLineID} name="regLineID" />
         <button
           type="submit"
           disabled={loading}

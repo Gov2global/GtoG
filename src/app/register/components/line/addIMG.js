@@ -3,10 +3,10 @@ const fs = require('fs');
 const path = require('path');
 
 const channelAccessToken = 'ZTaeR+B5PFNxv6Aye7iTYX9nLUqL52zPvvcu/x0r1Ej5vMBGno/xvMCq9nUYXt3TpqsZ9zo3UMjFlABu+f6VpNrelGI6RlRyVVr2mrNNP5c24rspXi4CJWQBIfk5kpi1C5EtQ1srjQ9eg+YHdVoENAdB04t89/1O/w1cDnyilFU='; // โหลดจาก .env จะดีกว่า
-const richMenuId = 'richmenu-3a1ce68002fc603aed9872e912dca5a6';
+const richMenuId = 'richmenu-03a50b97013f60699a60830f034cee26';
 
 // ✅ ให้ path เป็น absolute
-const imagePath = path.resolve(__dirname, '../../../../../public/richmenu/AW-richmenu-เกษตรกร-01.jpg');
+const imagePath = path.resolve(__dirname, '../../../../../public/richmenu/AW-richmenu_Limit Acc.jpg');
 
 if (!fs.existsSync(imagePath)) {
   console.error('❌ ไม่พบไฟล์:', imagePath);

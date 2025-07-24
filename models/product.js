@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 const productReportSchema = new mongoose.Schema(
   {
     proID: { type: String, required: true, unique: true }, // รหัส
+    regLineID: { type: String },
     fullName: { type: String, required: true },
     phone: { type: String, required: true },
     farmName: { type: String, required: true },
