@@ -60,12 +60,12 @@ function ImageModal({ src, alt, onClose }) {
 }
 
 // ===== ฟอร์แมตข้อความบอท (อ่านง่าย, มี bullet, หัวข้อ) =====
-function formatBotReply(text) {
+function formatBotReply(text, textSize = 15) {
   if (!text) return null;
   return (
     <div
-      className="whitespace-pre-line leading-relaxed break-words text-[15px] sm:text-base"
-      style={{ wordBreak: 'keep-all', lineBreak: 'strict' }}
+      className="whitespace-pre-line leading-relaxed break-words"
+      style={{ fontSize: textSize, wordBreak: 'keep-all', lineBreak: 'strict' }}
     >
       {text.split("\n").map((t, i) => {
         t = t.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
@@ -79,15 +79,15 @@ function formatBotReply(text) {
   );
 }
 
-
 // ===== Typing Animation Bubble (framer-motion) =====
-function TypingBubble() {
+function TypingBubble({ textSize = 15 }) {
   return (
     <motion.div
       className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-2xl w-fit shadow"
       initial={{ opacity: 0.5, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.2 }}
+      style={{ fontSize: textSize }}
     >
       <span className="text-gray-400">กำลังค้นตำราวิชาการเกษตรให้ครับ</span>
       <motion.span
@@ -103,7 +103,7 @@ function TypingBubble() {
 }
 
 // ===== Chat bubble รองรับหลายรูป & Typing bubble =====
-const ChatBubble = ({ message, isUser, images, isTyping, onImageClick }) => {
+const ChatBubble = ({ message, isUser, images, isTyping, onImageClick, textSize }) => {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} my-1 sm:my-2 px-1`}>
       <div
@@ -132,9 +132,11 @@ const ChatBubble = ({ message, isUser, images, isTyping, onImageClick }) => {
           </div>
         }
         {isTyping ? (
-          <TypingBubble />
+          <TypingBubble textSize={textSize} />
         ) : (
-          isUser ? <span className="whitespace-pre-line">{message}</span> : formatBotReply(message)
+          isUser
+            ? <span className="whitespace-pre-line" style={{ fontSize: textSize }}>{message}</span>
+            : formatBotReply(message, textSize)
         )}
       </div>
     </div>
@@ -142,7 +144,7 @@ const ChatBubble = ({ message, isUser, images, isTyping, onImageClick }) => {
 };
 
 // ===== Chat list =====
-function ChatMessageList({ messages, isTyping, onImageClick }) {
+function ChatMessageList({ messages, isTyping, onImageClick, textSize }) {
   const bottomRef = useRef(null);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -157,9 +159,10 @@ function ChatMessageList({ messages, isTyping, onImageClick }) {
           images={msg.images}
           isTyping={msg.isTyping}
           onImageClick={onImageClick}
+          textSize={textSize}
         />
       ))}
-      {isTyping && <ChatBubble isUser={false} isTyping={true} />}
+      {isTyping && <ChatBubble isUser={false} isTyping={true} textSize={textSize} />}
       <div ref={bottomRef} />
     </div>
   );
@@ -336,13 +339,14 @@ function InputBar({ onSend, disabled }) {
   );
 }
 
-// ===== MAIN =====
+// ===== MAIN COMPONENT (Default export) =====
 export default function ChatGPTPage() {
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [modalImg, setModalImg] = useState(null);
+  const [textSize, setTextSize] = useState(15);
 
-  // ปุ่ม action demo
+  // ปุ่ม action demo (ปิดไว้ ถ้าอยากโชว์ปุ่มให้ uncomment)
   const actions = [
     // {
     //   icon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 19L9.54 12.46M9.5 9A2.5 2.5 0 1 0 9.5 4a2.5 2.5 0 0 0 0 5Zm9.5 9l-4-4a3 3 0 1 0-4.5-4.5l-4 4 8.5 8.5Z" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
@@ -407,11 +411,13 @@ export default function ChatGPTPage() {
   return (
     <div className="flex flex-col h-dvh min-h-screen bg-gray-50 w-full max-w-full mx-auto">
       {/* Top Bar */}
-      <div className="flex items-center w-full mb-5 px-3 pt-3 pb-2 border-b bg-white shadow-sm fixed top-0 left-0 z-20" style={{ minHeight: 48 }}>
+      <div className="flex gap-1 fixed top-0 left-0 w-full bg-white z-30 px-3 pt-2 pb-2 border-b shadow-sm items-center" style={{ minHeight: 48 }}>
         <span className="mr-2">
           <svg width="22" height="22" fill="none"><rect width="18" height="2" x="3" y="5" fill="#444"/><rect width="13" height="2" x="3" y="10" fill="#444"/><rect width="18" height="2" x="3" y="15" fill="#444"/></svg>
         </span>
         <span className="font-semibold text-base flex-1">ผู้ช่วยเกษตรอัจฉริยะ</span>
+        <button onClick={() => setTextSize(s => Math.max(12, s - 1))} className="text-sm px-2">A−</button>
+        <button onClick={() => setTextSize(s => Math.min(28, s + 1))} className="text-sm px-2">A+</button>
       </div>
       {/* Welcome */}
       {isChatEmpty && (
@@ -434,7 +440,7 @@ export default function ChatGPTPage() {
       {/* Chat */}
       {!isChatEmpty && (
         <div className="flex-1 overflow-y-auto max-h-[calc(100dvh-120px)] mt-10 pt-2">
-          <ChatMessageList messages={messages} isTyping={isTyping} onImageClick={setModalImg} />
+          <ChatMessageList messages={messages} isTyping={isTyping} onImageClick={setModalImg} textSize={textSize} />
         </div>
       )}
       <InputBar onSend={handleSend} disabled={isTyping} />
