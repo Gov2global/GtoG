@@ -1,53 +1,61 @@
 // src/app/api/farmer/chatgpt/route.js
 export async function POST(req) {
   try {
-    const { message, images } = await req.json();
+    const { history } = await req.json();
 
     const systemPrompt = `
       คุณคือปราชญ์เกษตรผู้มีประสบการณ์กว่า 50 ปี
-      - ช่วยแนะนำ ตอบคำถาม และวิเคราะห์ปัญหาทางการเกษตร
-      - ตอบด้วยความรู้ลึกซึ้ง ร้อยเรียงคำตอบอย่างผู้มีประสบการณ์
-      - เมื่อมีภาพและคำถาม ให้เชื่อมโยง วิเคราะห์แบบองค์รวม
-      - อธิบายเนื้อหาให้เข้าใจง่าย เหมือนถ่ายทอดความรู้ให้คนรุ่นใหม่
-      - ตอบภาษาไทย สุภาพ จริงใจ
-      - หากข้อมูลไม่พอ ให้ถามกลับแบบชี้แนะ
-      - หากพบจุดเด่น/จุดอ่อน ให้สรุปให้ครบถ้วน
+      - วิเคราะห์ “อาการในภาพ” ว่าเกิดจาก โรค แมลง สัตว์ศัตรูพืช หรือปัจจัยแวดล้อมใด
+      - อธิบายชนิดของโรค/แมลง/สาเหตุ พร้อมสาเหตุ ปัจจัยที่กระตุ้น หรือสภาพอากาศ/อุณหภูมิที่เสี่ยง
+      - ยกตัวอย่างวิธีสังเกตลักษณะเฉพาะที่แยกแยะโรคกับแมลงและปัจจัยอื่น
+      - แนะนำการจัดการป้องกัน-แก้ไขเบื้องต้น (ธรรมชาติ/เคมี/ชีวภาพ)
+      - ตอบภาษาไทย สุภาพ ละเอียด ชี้จุดที่ควรสังเกตและเตือนผู้ใช้งาน
+      - ถ้ามีข้อมูลไม่พอ ให้แจ้งให้ชัดเจนว่าต้องการข้อมูลเพิ่มหรือให้ผู้ใช้อัพโหลดภาพชัดเจนขึ้น
+      - หาก user มีประวัติหรือ context ก่อนหน้า ให้ตอบต่อเนื่องกับบทสนทนา
     `;
 
-    let messages;
-    if (images && images.length > 0) {
-      const imageContents = images.map(img => ({
-        type: "image_url",
-        image_url: {
-          url: `data:${img.mime};base64,${img.base64}`
+    // Helper: filter เฉพาะ image mime type
+    const filterImage = (img) =>
+      img &&
+      typeof img.mime === "string" &&
+      img.mime.startsWith("image/") &&
+      typeof img.base64 === "string" &&
+      img.base64.length > 0;
+
+    // ---- Build messages array ----
+    let messages = [
+      { role: "system", content: systemPrompt },
+      ...(history?.map(item => {
+        if (item.role === "user" && Array.isArray(item.images) && item.images.length > 0) {
+          const imageContents = item.images
+            .filter(filterImage)
+            .map(img => ({
+              type: "image_url",
+              image_url: { url: `data:${img.mime};base64,${img.base64}` }
+            }));
+
+          // ถ้าไม่มีรูป valid เลย fallback เป็นข้อความปกติ
+          if (imageContents.length === 0) {
+            return { role: "user", content: item.content || "" };
+          }
+          // ถ้า user ไม่พิมพ์ข้อความ ให้ gen คำถามให้อัตโนมัติ
+          const userText = item.content?.trim()
+            ? item.content
+            : "โปรดวิเคราะห์ภาพนี้: แจ้งว่าเกิดโรค แมลง หรือปัจจัยอะไร มีช่วงอุณหภูมิหรือสภาพแวดล้อมอะไรที่เกี่ยวข้อง พร้อมวิธีป้องกัน/แก้ไข";
+          return {
+            role: "user",
+            content: [
+              { type: "text", text: userText },
+              ...imageContents
+            ]
+          };
         }
-      }));
+        // ปกติ (ไม่มีรูป)
+        return { role: item.role, content: item.content || "" };
+      }) || [])
+    ];
 
-      messages = [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: message
-                ? `โปรดวิเคราะห์ภาพและข้อมูลต่อไปนี้โดยเชื่อมโยงกันในบริบทเดียว: ${message}`
-                : "โปรดวิเคราะห์ภาพเหล่านี้ พร้อมร้อยเรียงเนื้อหาวิเคราะห์ให้เชื่อมโยงกันเป็นองค์รวม"
-            },
-            ...imageContents
-          ]
-        }
-      ];
-    } else {
-      messages = [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: message }
-      ];
-    }
-
-    // ใช้ gpt-4o สำหรับทุกกรณี
-    const model = "gpt-4o";
-
+    // เรียก OpenAI API
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -55,19 +63,17 @@ export async function POST(req) {
         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model,
+        model: "gpt-4o",
         messages,
-        max_tokens: 1200,
-        temperature: 0.3, // ตอบเนื้อหาเชื่อมโยง ร้อยเรียงขึ้นเล็กน้อย
+        max_tokens: 1400,
+        temperature: 0.25,
       }),
     });
 
     const data = await res.json();
-
     if (data.error) {
       return Response.json({ reply: `Error: ${data.error.message}` });
     }
-
     const botReply = data.choices?.[0]?.message?.content || "ขออภัย ระบบมีปัญหา";
     return Response.json({ reply: botReply });
 

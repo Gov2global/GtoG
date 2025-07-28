@@ -4,11 +4,9 @@ import dynamic from "next/dynamic";
 import { FaSeedling } from "react-icons/fa";
 import liff from "@line/liff";
 
-// ⭐️ Dynamic import
-const CreatableSelect = dynamic(
-  () => import("react-select/creatable"),
-  { ssr: false }
-);
+const CreatableSelect = dynamic(() => import("react-select/creatable"), {
+  ssr: false,
+});
 
 const PLANT_OPTIONS = [
   { value: "ทุเรียน", label: "ทุเรียน" },
@@ -27,15 +25,7 @@ const colors = {
   btn: "#FFD46B",
 };
 
-function ModernInput({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  ringColor = "amber",
-  ...rest
-}) {
+function ModernInput({ label, value, onChange, placeholder, type = "text", ringColor = "amber", ...rest }) {
   return (
     <div>
       <label className="block mb-1 text-[#355030] font-medium">{label}</label>
@@ -67,33 +57,57 @@ export default function ProductPage() {
   });
   const [loading, setLoading] = useState(false);
 
-  // โหลดโปรไฟล์จาก LINE ครั้งแรก (ไม่ clear ทับหลัง submit)
   useEffect(() => {
-    liff.init({ liffId: "2007697520-eb5NJ0jD" }).then(() => {
-      if (liff.isLoggedIn()) {
-        liff.getProfile().then(profile => {
-          setFormData(f => ({
-            ...f,
-            regLineID: profile.userId,
-            fullName: f.fullName || profile.displayName, // กรอกเองจะไม่ทับ
-          }));
-        });
-      } else {
+    async function init() {
+      await liff.init({ liffId: "2007697520-eb5NJ0jD" });
+
+      if (!liff.isLoggedIn()) {
         liff.login();
+        return;
       }
-    });
+
+      const profile = await liff.getProfile();
+      const lineID = profile.userId;
+
+      setFormData((f) => ({ ...f, regLineID: lineID }));
+
+      try {
+        const res = await fetch("/api/farmer/get/register");
+        const result = await res.json();
+
+        if (result.success && Array.isArray(result.data)) {
+          const found = result.data.find((item) => item.regLineID === lineID);
+
+          if (found) {
+            setFormData((f) => ({
+              ...f,
+              fullName: `${found.regName} ${found.regSurname}`,
+              phone: found.regTel,
+            }));
+          } else {
+            setFormData((f) => ({
+              ...f,
+              fullName: profile.displayName,
+            }));
+          }
+        }
+      } catch (err) {
+        console.error("❌ Error fetching register:", err);
+      }
+    }
+
+    init();
   }, []);
 
-  // ใช้ function แบบ callback เพื่อแน่ใจว่า regLineID ไม่หลุดหลัง clear form
   const handleChange = (field) => (e) => {
-    setFormData(f => ({
+    setFormData((f) => ({
       ...f,
       [field]: e.target.value,
     }));
   };
 
   const handlePlantTypesChange = (selected) => {
-    setFormData(f => ({
+    setFormData((f) => ({
       ...f,
       plantTypes: selected || [],
     }));
@@ -115,7 +129,6 @@ export default function ProductPage() {
         ...formData,
         plantTypes: formData.plantTypes.map((p) => p.value),
       };
-      console.log("===> payload ส่งไป API", payload); // Debug เช็ค regLineID
 
       const res = await fetch("/api/farmer/gen-id-product", {
         method: "POST",
@@ -127,8 +140,7 @@ export default function ProductPage() {
 
       if (res.ok && data.success) {
         alert("บันทึกสำเร็จ! รหัสแจ้งผลผลิต: " + data.proID);
-        // เคลียร์เฉพาะช่องที่ผู้ใช้กรอก เพิ่ม regLineID + fullName จาก state เดิม
-        setFormData(f => ({
+        setFormData((f) => ({
           ...f,
           phone: "",
           farmName: "",
@@ -139,7 +151,6 @@ export default function ProductPage() {
           estimate: "",
           period: "",
           note: "",
-          // regLineID, fullName คงค่าเดิมไว้
         }));
       } else {
         alert("บันทึกไม่สำเร็จ กรุณาลองใหม่");
@@ -194,39 +205,17 @@ export default function ProductPage() {
   return (
     <div style={{ background: colors.bg, minHeight: "100vh", padding: 24 }}>
       <form style={cardStyle} onSubmit={handleSubmit}>
-        <h1
-          className="text-2xl font-bold mb-5 text-center flex items-center justify-center gap-2"
-          style={{ color: colors.main }}
-        >
+        <h1 className="text-2xl font-bold mb-5 text-center flex items-center justify-center gap-2" style={{ color: colors.main }}>
           <FaSeedling className="text-[#5A9352] text-3xl drop-shadow-sm" />
           แจ้งผลผลิต
         </h1>
         <div className="grid grid-cols-1 gap-3 mb-4">
-          <ModernInput
-            label="ชื่อ-สกุล"
-            value={formData.fullName}
-            onChange={handleChange("fullName")}
-            placeholder="ระบุชื่อ-สกุล"
-          />
-          <ModernInput
-            label="เบอร์โทรศัพท์"
-            value={formData.phone}
-            onChange={handleChange("phone")}
-            placeholder="08xxxxxxxx"
-            type="tel"
-            maxLength={10}
-          />
+          <ModernInput label="ชื่อ-สกุล" value={formData.fullName} onChange={handleChange("fullName")} placeholder="ระบุชื่อ-สกุล" />
+          <ModernInput label="เบอร์โทรศัพท์" value={formData.phone} onChange={handleChange("phone")} placeholder="08xxxxxxxx" type="tel" maxLength={10} />
         </div>
-        <ModernInput
-          label="ชื่อสวน"
-          value={formData.farmName}
-          onChange={handleChange("farmName")}
-          placeholder="ระบุชื่อสวน"
-        />
+        <ModernInput label="ชื่อสวน" value={formData.farmName} onChange={handleChange("farmName")} placeholder="ระบุชื่อสวน" />
         <div className="mt-4 mb-1">
-          <div className="block mb-1 text-[#355030] font-medium">
-            พืชที่แจ้งผลผลิต
-          </div>
+          <div className="block mb-1 text-[#355030] font-medium">พืชที่แจ้งผลผลิต</div>
           <CreatableSelect
             isMulti
             options={PLANT_OPTIONS}
@@ -240,59 +229,24 @@ export default function ProductPage() {
           />
         </div>
         <div className="mt-4">
-          <div className="block mb-1 text-[#355030] font-medium">
-            พื้นที่ปลูก
-          </div>
+          <div className="block mb-1 text-[#355030] font-medium">พื้นที่ปลูก</div>
           <div className="grid grid-cols-3 gap-4">
-            <ModernInput
-              label="ไร่"
-              value={formData.areaRai}
-              onChange={handleChange("areaRai")}
-              placeholder="0"
-              type="number"
-            />
-            <ModernInput
-              label="งาน"
-              value={formData.areaNgan}
-              onChange={handleChange("areaNgan")}
-              placeholder="0"
-              type="number"
-            />
-            <ModernInput
-              label="ตารางวา"
-              value={formData.areaWa}
-              onChange={handleChange("areaWa")}
-              placeholder="0"
-              type="number"
-            />
+            <ModernInput label="ไร่" value={formData.areaRai} onChange={handleChange("areaRai")} placeholder="0" type="number" />
+            <ModernInput label="งาน" value={formData.areaNgan} onChange={handleChange("areaNgan")} placeholder="0" type="number" />
+            <ModernInput label="ตารางวา" value={formData.areaWa} onChange={handleChange("areaWa")} placeholder="0" type="number" />
           </div>
           <p className="text-sm text-[#355030] mt-2">
-            🧮 รวมพื้นที่ทั้งหมด:{" "}
-            <strong>{calculateTotalAreaSqm()}</strong> ตารางเมตร
+            🧮 รวมพื้นที่ทั้งหมด: <strong>{calculateTotalAreaSqm()}</strong> ตารางเมตร
           </p>
         </div>
         <div className="mt-4">
-          <ModernInput
-            label="ประมาณผลผลิต (กก. หรือ ต้น)"
-            value={formData.estimate}
-            onChange={handleChange("estimate")}
-            placeholder="เช่น 1000 กก. หรือ 50 ต้น"
-            type="text"
-          />
+          <ModernInput label="ประมาณผลผลิต (กก. หรือ ต้น)" value={formData.estimate} onChange={handleChange("estimate")} placeholder="เช่น 1000 กก. หรือ 50 ต้น" type="text" />
         </div>
         <div className="mt-4">
-          <ModernInput
-            label="ช่วงเวลาที่เก็บเกี่ยว"
-            value={formData.period}
-            onChange={handleChange("period")}
-            placeholder="เช่น สิงหาคม - กันยายน"
-            type="text"
-          />
+          <ModernInput label="ช่วงเวลาที่เก็บเกี่ยว" value={formData.period} onChange={handleChange("period")} placeholder="เช่น สิงหาคม - กันยายน" type="text" />
         </div>
         <div className="mt-4 mb-2">
-          <label className="block mb-1 text-[#355030] font-medium">
-            หมายเหตุ
-          </label>
+          <label className="block mb-1 text-[#355030] font-medium">หมายเหตุ</label>
           <textarea
             className="w-full rounded-xl border px-3 py-2 text-[#355030] shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
             value={formData.note}
@@ -301,7 +255,6 @@ export default function ProductPage() {
             rows={3}
           />
         </div>
-        {/* Hidden input เผื่อ debug regLineID */}
         <input type="hidden" value={formData.regLineID} name="regLineID" />
         <button
           type="submit"
@@ -317,7 +270,7 @@ export default function ProductPage() {
             fontSize: 18,
             boxShadow: "0 2px 10px 0 rgba(180,160,40,0.08)",
             opacity: loading ? 0.6 : 1,
-            cursor: loading ? "not-allowed" : "pointer"
+            cursor: loading ? "not-allowed" : "pointer",
           }}
         >
           {loading ? "กำลังส่งข้อมูล..." : "ส่งข้อมูล"}

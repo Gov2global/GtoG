@@ -6,16 +6,7 @@ import { motion } from "framer-motion";
 function ActionButton({ icon, label, color, onClick }) {
   return (
     <button
-      className={`
-        flex flex-col items-center justify-center
-        rounded-full border border-gray-200
-        bg-white shadow-sm
-        min-w-[110px] min-h-[48px]
-        px-3 py-2 mx-2 my-2
-        hover:shadow-md active:scale-95
-        transition
-        ${color}
-      `}
+      className={`flex flex-col items-center justify-center rounded-full border border-gray-200 bg-white shadow-sm min-w-[110px] min-h-[48px] px-3 py-2 mx-2 my-2 hover:shadow-md active:scale-95 transition ${color}`}
       onClick={onClick}
       style={{ fontSize: 15 }}
       type="button"
@@ -65,7 +56,7 @@ function formatBotReply(text, textSize = 15) {
   return (
     <div
       className="whitespace-pre-line leading-relaxed break-words"
-      style={{ fontSize: textSize, wordBreak: 'keep-all', lineBreak: 'strict' }}
+      style={{ fontSize: textSize, wordBreak: "keep-all", lineBreak: "strict" }}
     >
       {text.split("\n").map((t, i) => {
         t = t.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
@@ -116,9 +107,9 @@ const ChatBubble = ({ message, isUser, images, isTyping, onImageClick, textSize 
           w-fit relative
         `}
       >
-        {images && images.length > 0 &&
+        {images && images.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-1">
-            {images.map((img, idx) =>
+            {images.map((img, idx) => (
               <img
                 key={idx}
                 src={img}
@@ -128,16 +119,14 @@ const ChatBubble = ({ message, isUser, images, isTyping, onImageClick, textSize 
                 title="คลิกเพื่อดูภาพใหญ่"
                 style={{ maxHeight: 90 }}
               />
-            )}
+            ))}
           </div>
-        }
+        )}
         {isTyping ? (
           <TypingBubble textSize={textSize} />
-        ) : (
-          isUser
-            ? <span className="whitespace-pre-line" style={{ fontSize: textSize }}>{message}</span>
-            : formatBotReply(message, textSize)
-        )}
+        ) : isUser
+          ? <span className="whitespace-pre-line" style={{ fontSize: textSize }}>{message}</span>
+          : formatBotReply(message, textSize)}
       </div>
     </div>
   );
@@ -272,13 +261,16 @@ function InputBar({ onSend, disabled }) {
   }
   async function handleSend() {
     if (!input.trim() && images.length === 0) return;
-    const imageBase64s = await Promise.all(
-      images.map(async img => ({
-        base64: await toBase64(img.file),
-        mime: img.file.type,
-        preview: img.preview,
-      }))
-    );
+      const imageBase64s = await Promise.all(
+        images.map(async img => {
+          const type = img.file.type && img.file.type.startsWith("image/") ? img.file.type : "image/jpeg";
+          return {
+            base64: await toBase64(img.file),
+            mime: type,
+            preview: img.preview,
+          };
+        })
+      );
     onSend(input, imageBase64s, images.map(img => img.preview));
     setInput("");
     setImages([]);
@@ -346,51 +338,37 @@ export default function ChatGPTPage() {
   const [modalImg, setModalImg] = useState(null);
   const [textSize, setTextSize] = useState(15);
 
-  // ปุ่ม action demo (ปิดไว้ ถ้าอยากโชว์ปุ่มให้ uncomment)
-  const actions = [
-    // {
-    //   icon: <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 19L9.54 12.46M9.5 9A2.5 2.5 0 1 0 9.5 4a2.5 2.5 0 0 0 0 5Zm9.5 9l-4-4a3 3 0 1 0-4.5-4.5l-4 4 8.5 8.5Z" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-    //   label: "สร้างภาพ",
-    //   color: "text-green-500",
-    //   onClick: () => setMessages(msgs => [...msgs, { text: "สร้างภาพ (Demo)", isUser: true }])
-    // },
-    // {
-    //   icon: <svg width="22" height="22" fill="none"><rect width="16" height="18" x="3" y="3" rx="3" stroke="#ea580c" strokeWidth="1.6"/><path d="M7 8h6M7 12h2" stroke="#ea580c" strokeWidth="1.6" strokeLinecap="round"/></svg>,
-    //   label: "สรุปข้อความ",
-    //   color: "text-orange-500",
-    //   onClick: () => setMessages(msgs => [...msgs, { text: "สรุปข้อความ (Demo)", isUser: true }])
-    // },
-  ];
-
-  // ส่งข้อมูล (รองรับหลายไฟล์)
+  // ส่งข้อมูล (รองรับหลายไฟล์ + context)
   async function handleSend(input, imageBase64s, previews) {
-    setMessages(msgs => [
-      ...msgs,
+    const nextMessages = [
+      ...messages,
       { text: input, isUser: true, images: previews }
-    ]);
+    ];
+    setMessages(nextMessages);
     setIsTyping(true);
 
-    // ตัวอย่างส่ง backend
     try {
       const res = await fetch("/api/farmer/chatgpt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: input,
-          images: imageBase64s.map(img => ({ base64: img.base64, mime: img.mime }))
+          history: nextMessages.map(m => ({
+            role: m.isUser ? "user" : "assistant",
+            content: m.text,
+            images: m.images || [],
+          }))
         }),
       });
       const data = await res.json();
-      const reply = data.reply || "ขออภัย เกิดข้อผิดพลาด";
       let i = 0;
       setMessages(msgs => [...msgs, { text: "", isUser: false }]);
       function reveal() {
         setMessages(msgs => [
           ...msgs.slice(0, -1),
-          { text: reply.slice(0, i), isUser: false }
+          { text: data.reply.slice(0, i), isUser: false }
         ]);
         i++;
-        if (i <= reply.length) {
+        if (i <= data.reply.length) {
           setTimeout(reveal, 13);
         } else {
           setIsTyping(false);
@@ -429,11 +407,6 @@ export default function ChatGPTPage() {
               className="w-20 h-20 rounded-full shadow-xl border-4 border-white mb-3 object-cover"
             />
             <h2 className="text-lg sm:text-xl font-semibold text-center mb-1 mt-2">ผู้ช่วยอัจฉริยะด้านการเกษตร ยินดีให้บริการครับ</h2>
-          </div>
-          <div className="flex flex-wrap justify-center items-center w-full max-w-xs sm:max-w-sm">
-            {actions.map((a, i) => (
-              <ActionButton key={i} {...a} />
-            ))}
           </div>
         </div>
       )}
