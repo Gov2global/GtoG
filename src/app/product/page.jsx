@@ -56,6 +56,7 @@ export default function ProductPage() {
     regLineID: "",
   });
   const [loading, setLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
 
   useEffect(() => {
     async function init() {
@@ -93,6 +94,8 @@ export default function ProductPage() {
         }
       } catch (err) {
         console.error("❌ Error fetching register:", err);
+      } finally {
+        setIsFetching(false);
       }
     }
 
@@ -140,18 +143,19 @@ export default function ProductPage() {
 
       if (res.ok && data.success) {
         alert("บันทึกสำเร็จ! รหัสแจ้งผลผลิต: " + data.proID);
-        setFormData((f) => ({
-          ...f,
-          phone: "",
-          farmName: "",
-          plantTypes: [],
-          areaRai: "",
-          areaNgan: "",
-          areaWa: "",
-          estimate: "",
-          period: "",
-          note: "",
-        }));
+
+        // ✅ ส่งข้อความไป Line OA
+        if (liff.isApiAvailable("sendMessages")) {
+          await liff.sendMessages([
+            {
+              type: "text",
+              text: `📦 แจ้งผลผลิตสำเร็จ\n\nชื่อ: ${formData.fullName}\nเบอร์: ${formData.phone}\nสวน: ${formData.farmName}\nพืช: ${formData.plantTypes.map(p => p.label).join(", ")}\nพื้นที่: ${calculateTotalAreaSqm()} ตร.ม.\nรหัสแจ้งผลผลิต: ${data.proID}`,
+            },
+          ]);
+        }
+
+        // ✅ ปิด LIFF
+        liff.closeWindow();
       } else {
         alert("บันทึกไม่สำเร็จ กรุณาลองใหม่");
       }
@@ -202,6 +206,14 @@ export default function ProductPage() {
     }),
   };
 
+  if (isFetching) {
+    return (
+      <div style={{ background: colors.bg, minHeight: "100vh", padding: 24 }}>
+        <div className="text-center text-lg text-[#355030]">กำลังโหลดข้อมูลผู้ใช้จาก LINE...</div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ background: colors.bg, minHeight: "100vh", padding: 24 }}>
       <form style={cardStyle} onSubmit={handleSubmit}>
@@ -225,7 +237,7 @@ export default function ProductPage() {
             classNamePrefix="react-select"
             styles={customSelectStyles}
             noOptionsMessage={() => "ไม่พบข้อมูล"}
-            formatCreateLabel={(inputValue) => `➕ เพิ่ม "${inputValue}"`}
+            formatCreateLabel={(inputValue) => `➕ เพิ่ม \"${inputValue}\"`}
           />
         </div>
         <div className="mt-4">
