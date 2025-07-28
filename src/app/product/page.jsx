@@ -144,17 +144,33 @@ export default function ProductPage() {
       if (res.ok && data.success) {
         alert("บันทึกสำเร็จ! รหัสแจ้งผลผลิต: " + data.proID);
 
-        // ✅ ส่งข้อความไป Line OA
         if (liff.isApiAvailable("sendMessages")) {
           await liff.sendMessages([
             {
-              type: "text",
-              text: `📦 แจ้งผลผลิตสำเร็จ\n\nชื่อ: ${formData.fullName}\nเบอร์: ${formData.phone}\nสวน: ${formData.farmName}\nพืช: ${formData.plantTypes.map(p => p.label).join(", ")}\nพื้นที่: ${calculateTotalAreaSqm()} ตร.ม.\nรหัสแจ้งผลผลิต: ${data.proID}`,
+              type: "flex",
+              altText: "แจ้งผลผลิตสำเร็จ",
+              contents: {
+                type: "bubble",
+                body: {
+                  type: "box",
+                  layout: "vertical",
+                  spacing: "sm",
+                  contents: [
+                    { type: "text", text: "📦 แจ้งผลผลิตสำเร็จ", weight: "bold", size: "lg", color: "#6FA471" },
+                    { type: "separator", margin: "md" },
+                    { type: "text", text: `👤 ${formData.fullName}`, size: "md" },
+                    { type: "text", text: `📞 ${formData.phone}`, size: "md" },
+                    { type: "text", text: `🌿 ${formData.farmName}`, size: "md" },
+                    { type: "text", text: `🪴 ${formData.plantTypes.map(p => p.label).join(", ")}`, size: "md" },
+                    { type: "text", text: `📐 พื้นที่ ${calculateTotalAreaSqm()} ตร.ม.`, size: "md" },
+                    { type: "text", text: `🆔 ${data.proID}`, size: "md", color: "#555" },
+                  ],
+                },
+              },
             },
           ]);
         }
 
-        // ✅ ปิด LIFF
         liff.closeWindow();
       } else {
         alert("บันทึกไม่สำเร็จ กรุณาลองใหม่");
@@ -206,15 +222,7 @@ export default function ProductPage() {
     }),
   };
 
-  if (isFetching) {
-    return (
-      <div style={{ background: colors.bg, minHeight: "100vh", padding: 24 }}>
-        <div className="text-center text-lg text-[#355030]">กำลังโหลดข้อมูลผู้ใช้จาก LINE...</div>
-      </div>
-    );
-  }
-
-  return (
+   return (
     <div style={{ background: colors.bg, minHeight: "100vh", padding: 24 }}>
       <form style={cardStyle} onSubmit={handleSubmit}>
         <h1 className="text-2xl font-bold mb-5 text-center flex items-center justify-center gap-2" style={{ color: colors.main }}>
@@ -237,7 +245,7 @@ export default function ProductPage() {
             classNamePrefix="react-select"
             styles={customSelectStyles}
             noOptionsMessage={() => "ไม่พบข้อมูล"}
-            formatCreateLabel={(inputValue) => `➕ เพิ่ม \"${inputValue}\"`}
+            formatCreateLabel={(inputValue) => `➕ เพิ่ม "${inputValue}"`}
           />
         </div>
         <div className="mt-4">
