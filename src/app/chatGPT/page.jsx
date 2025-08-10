@@ -339,7 +339,8 @@ export default function ChatGPTPage() {
   const [textSize, setTextSize] = useState(15);
 
   // ส่งข้อมูล (รองรับหลายไฟล์ + context)
-  async function handleSend(input, imageBase64s, previews) {
+ async function handleSend(input, imageBase64s, previews) {
+    // แสดงข้อความผู้ใช้ทันที
     const nextMessages = [
       ...messages,
       { text: input, isUser: true, images: previews }
@@ -352,15 +353,24 @@ export default function ChatGPTPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          history: nextMessages.map(m => ({
-            role: m.isUser ? "user" : "assistant",
-            content: m.text,
-            images: m.images || [],
-          }))
+          history: [
+            ...messages.map(m => ({
+              role: m.isUser ? "user" : "assistant",
+              content: m.text,
+              images: []
+            })),
+            {
+              role: "user",
+              content: input,
+              images: imageBase64s // ส่งภาพเป็น { mime, base64 }
+            }
+          ]
         }),
       });
+
       const data = await res.json();
       let i = 0;
+
       setMessages(msgs => [...msgs, { text: "", isUser: false }]);
       function reveal() {
         setMessages(msgs => [
@@ -375,6 +385,7 @@ export default function ChatGPTPage() {
         }
       }
       reveal();
+
     } catch {
       setMessages(msgs => [
         ...msgs,

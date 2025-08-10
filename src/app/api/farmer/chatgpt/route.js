@@ -1,4 +1,3 @@
-// src/app/api/farmer/chatgpt/route.js
 export async function POST(req) {
   try {
     const { history } = await req.json();
@@ -14,7 +13,6 @@ export async function POST(req) {
       - หาก user มีประวัติหรือ context ก่อนหน้า ให้ตอบต่อเนื่องกับบทสนทนา
     `;
 
-    // Helper: filter เฉพาะ image mime type
     const filterImage = (img) =>
       img &&
       typeof img.mime === "string" &&
@@ -22,7 +20,6 @@ export async function POST(req) {
       typeof img.base64 === "string" &&
       img.base64.length > 0;
 
-    // ---- Build messages array ----
     let messages = [
       { role: "system", content: systemPrompt },
       ...(history?.map(item => {
@@ -34,14 +31,14 @@ export async function POST(req) {
               image_url: { url: `data:${img.mime};base64,${img.base64}` }
             }));
 
-          // ถ้าไม่มีรูป valid เลย fallback เป็นข้อความปกติ
           if (imageContents.length === 0) {
             return { role: "user", content: item.content || "" };
           }
-          // ถ้า user ไม่พิมพ์ข้อความ ให้ gen คำถามให้อัตโนมัติ
+
           const userText = item.content?.trim()
             ? item.content
             : "โปรดวิเคราะห์ภาพนี้: แจ้งว่าเกิดโรค แมลง หรือปัจจัยอะไร มีช่วงอุณหภูมิหรือสภาพแวดล้อมอะไรที่เกี่ยวข้อง พร้อมวิธีป้องกัน/แก้ไข";
+
           return {
             role: "user",
             content: [
@@ -50,12 +47,11 @@ export async function POST(req) {
             ]
           };
         }
-        // ปกติ (ไม่มีรูป)
+
         return { role: item.role, content: item.content || "" };
       }) || [])
     ];
 
-    // เรียก OpenAI API
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -71,13 +67,17 @@ export async function POST(req) {
     });
 
     const data = await res.json();
+
     if (data.error) {
+      console.error("OpenAI API Error:", data.error);
       return Response.json({ reply: `Error: ${data.error.message}` });
     }
+
     const botReply = data.choices?.[0]?.message?.content || "ขออภัย ระบบมีปัญหา";
     return Response.json({ reply: botReply });
 
   } catch (err) {
+    console.error("Server Error:", err);
     return Response.json({ reply: "ขออภัย ระบบมีปัญหาภายใน (server error)" });
   }
 }

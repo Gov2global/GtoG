@@ -162,7 +162,7 @@ const userIds = [
   // 'U5983c706a6ffcd70fc5dcc7d7a416c64', //เจษฎา
   // 'U4c0a522f20072235dbd786f567e65794',
   // 'U41254dc5b5e5b65a2c488ac224013cfc', //ชาลี
-  'U90b5bc2c98532383d958117761f0a10e', ///wan U90b5bc2c98532383d958117761f0a10e
+  // 'U90b5bc2c98532383d958117761f0a10e', ///wan U90b5bc2c98532383d958117761f0a10e
   // 'U142a9703f5a958f2c0c60d6f46e1b464',//pam 
   // 'U2c6f36e1a490028e4931cce1bc246b70', //คุณแมว
   // 'Ud462431558778ef57c64345ed664ea13',
@@ -182,7 +182,9 @@ const userIds = [
   // 'U234b8c4a6df292583a828b6260e86489',// รังสรรค์ มณีรัตน์
   // 'U41254dc5b5e5b65a2c488ac224013cfc',//เกษตร  ใจดี
   // 'U9522cc6ee5337c62188de55406470c41', //Dhhd Shdh
-  'Ucaf64698f8074f90cb676cacbfbb9ae6' //JoeSF
+  // 'Ucaf64698f8074f90cb676cacbfbb9ae6', //JoeSF
+  // 'U3541771420558f3a0464800cc8853fa1', 
+  'Ucc62ebd20b5becbb1f39fe2fa8bba40f' //กู้เกียรติ ชัยวัณณคุปต์
   
 ];
 
