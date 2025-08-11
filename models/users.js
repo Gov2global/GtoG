@@ -1,0 +1,86 @@
+import mongoose from 'mongoose'
+import bcrypt from 'bcryptjs'
+
+// --- Roles ที่รองรับ: ใช้ให้ตรงกับฝั่ง UI/RBAC ---
+export const ROLES = ['admin', 'educational', 'local', 'government', 'private', 'farmer']
+
+const usersSchema = new mongoose.Schema(
+  {
+    username: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 3,
+      maxlength: 50,
+      lowercase: true, // normalize เพื่อความ unique
+      unique: true,
+      index: true,
+      immutable: true, // ไม่ให้แก้ username หลังสร้าง
+    },
+    password: {
+      type: String,
+      required: true,
+      select: false, // ไม่ดึงออกมาโดย default
+    },
+    name: { type: String, required: true, trim: true },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      unique: true,
+      index: true,
+      match: /[^@\s]+@[^@\s]+\.[^@\s]+/, // ตรวจสอบรูปแบบ email เบื้องต้น
+    },
+    phone: { type: String, required: true, trim: true },
+    role: {
+      type: String,
+      required: true,
+      lowercase: true,
+      enum: ROLES,
+      index: true,
+    },
+    isActive: { type: Boolean, default: true, index: true },
+
+    // เก็บ sessionId ไว้ชั่วคราว (ถ้าใช้ session store แยก สามารถลบ field นี้ได้)
+    sessionId: { type: String, select: false },
+
+    // ข้อมูลเสริมที่มีประโยชน์ในการทำงานจริง
+    lastLoginAt: { type: Date },
+    failedLoginAttempts: { type: Number, default: 0 },
+  },
+  {
+    timestamps: true,
+    versionKey: false,
+    toJSON: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        ret.id = ret._id?.toString()
+        delete ret._id
+        delete ret.password // ปิดข้อมูลสำคัญเสมอ
+        delete ret.sessionId
+        return ret
+      },
+    },
+  }
+)
+
+// --- Index เพิ่มเติม ---
+usersSchema.index({ name: 'text' }) // สำหรับค้นหาชื่อแบบ full-text
+
+// --- Hash password อัตโนมัติ ---
+usersSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next()
+  const salt = await bcrypt.genSalt(12)
+  this.password = await bcrypt.hash(this.password, salt)
+  next()
+})
+
+// --- Method สำหรับเช็ค password ---
+usersSchema.methods.comparePassword = function (plain) {
+  return bcrypt.compare(plain, this.password)
+}
+
+// --- สร้าง/ใช้โมเดล (กันซ้ำตอน HMR ของ Next.js) ---
+const Users = mongoose.models.Users || mongoose.model('Users', usersSchema, 'Users')
+export default Users
