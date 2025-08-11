@@ -1,20 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState, startTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function AdminLoginPage() {
   const router = useRouter()
-  const [identifier, setIdentifier] = useState('') // email หรือ username
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false) // 👈 toggle ดู/ซ่อน
+  const [showPassword, setShowPassword] = useState(false)
   const [remember, setRemember] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // ✅ prefetch เมนู เพื่อให้เปลี่ยนหน้าไวขึ้น
+  useEffect(() => {
+    router.prefetch('/admin/menu')
+  }, [router])
 
   const onSubmit = async (e) => {
     e.preventDefault()
@@ -28,17 +33,20 @@ export default function AdminLoginPage() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data?.message || 'เข้าสู่ระบบไม่สำเร็จ')
-      router.replace('/admin/menu')
+
+      // ✅ ทำ navigation ใน transition ให้ UI ไม่ค้าง
+      startTransition(() => {
+        router.replace('/admin/menu')
+      })
     } catch (err) {
       setError(err.message)
-    } finally {
       setLoading(false)
     }
   }
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-100 via-white to-neutral-200 dark:from-neutral-900 dark:via-neutral-950 dark:to-neutral-800">
-      <div className="w-full max-w-sm relative rounded-3xl shadow-2xl border border-neutral-100 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/80 backdrop-blur-xl p-8 flex flex-col gap-6 transition-all duration-300">
+      <div className="w-full max-w-sm relative rounded-3xl shadow-2xl border border-neutral-100 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/80 backdrop-blur-xl p-8 flex flex-col gap-6">
         {/* Logo */}
         <div className="flex justify-center mb-2">
           <div className="rounded-full bg-white dark:bg-neutral-900 shadow-md p-2 w-24 h-24 flex items-center justify-center -mt-20 border-4 border-white dark:border-neutral-900">
@@ -47,9 +55,7 @@ export default function AdminLoginPage() {
         </div>
 
         <div className="text-center mt-2">
-          <h1 className="text-2xl font-extrabold tracking-tight text-neutral-900 dark:text-white drop-shadow-sm">
-            Welcome back!
-          </h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-neutral-900 dark:text-white">Welcome back!</h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Sign in to your account</p>
         </div>
 
@@ -61,10 +67,10 @@ export default function AdminLoginPage() {
             required
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
-            className="rounded-xl border border-neutral-300 dark:border-neutral-700 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-700 shadow-sm bg-white/70 dark:bg-neutral-900/70 transition"
+            disabled={loading} // ✅
+            className="rounded-xl"
           />
 
-          {/* Password + toggle show/hide */}
           <div className="relative">
             <Input
               type={showPassword ? 'text' : 'password'}
@@ -73,13 +79,15 @@ export default function AdminLoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="rounded-xl border border-neutral-300 dark:border-neutral-700 px-4 py-2 pr-10 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-700 shadow-sm bg-white/70 dark:bg-neutral-900/70 transition"
+              disabled={loading} // ✅
+              className="rounded-xl pr-10"
               aria-label="Password"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute inset-y-0 right-2 flex items-center rounded-md px-2 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              disabled={loading} // ✅
+              className="absolute inset-y-0 right-2 flex items-center rounded-md px-2 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 focus:outline-none"
               aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
               aria-pressed={showPassword}
               title={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
@@ -94,13 +102,12 @@ export default function AdminLoginPage() {
                 type="checkbox"
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
-                className="accent-blue-500 focus:outline-none transition"
+                disabled={loading} // ✅
+                className="accent-blue-500"
               />
               Remember me
             </label>
-            <Link href="/forgot-password" className="text-sm text-blue-500 hover:underline hover:text-blue-600 transition">
-              Forgot?
-            </Link>
+            <Link href="/forgot-password" className="text-sm text-blue-500 hover:underline">Forgot?</Link>
           </div>
 
           {error && (
@@ -109,12 +116,8 @@ export default function AdminLoginPage() {
             </div>
           )}
 
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full font-bold h-11 text-base rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-lg hover:scale-[1.03] hover:bg-neutral-700 dark:hover:bg-neutral-100 transition-all duration-200"
-          >
-            {loading ? 'Signing in…' : 'Sign In'}
+          <Button type="submit" disabled={loading} className="w-full h-11 rounded-xl">
+            {loading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> กำลังเข้าสู่ระบบ…</>) : 'Sign In'}
           </Button>
         </form>
       </div>
