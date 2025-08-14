@@ -1,9 +1,11 @@
 "use client";
 import React, { useMemo, useState, useCallback } from "react";
 import Link from "next/link";
-import Dashboard from "../../admin/farmer/components/Dashboard"; // ✅ ใช้คอมโพเนนต์จริง
+import Dashboard from "../../admin/farmer/components/Dashboard";
+import DataInformation from "../farmer/components/DataInformation";
 import { Menu, LayoutDashboard, Calendar, Users as UsersIcon, X, ArrowLeft } from "lucide-react";
 
+/* --------- Buttons / Items --------- */
 function TabButton({ id, activeTab, setActiveTab, children }) {
   const isActive = activeTab === id;
   return (
@@ -16,7 +18,7 @@ function TabButton({ id, activeTab, setActiveTab, children }) {
       onKeyDown={(e) => {
         if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
           e.preventDefault();
-          const order = ["dashboard", "date", "users"];
+          const order = ["dashboard", "data", "users"];
           const idx = order.indexOf(activeTab);
           const next = e.key === "ArrowRight" ? (idx + 1) % order.length : (idx - 1 + order.length) % order.length;
           setActiveTab(order[next]);
@@ -46,7 +48,7 @@ function SideNavItem({ id, icon: Icon, label, activeTab, setActiveTab }) {
       onKeyDown={(e) => {
         if (e.key === "ArrowDown" || e.key === "ArrowUp") {
           e.preventDefault();
-          const order = ["dashboard", "date", "users"];
+          const order = ["dashboard", "data", "users"];
           const idx = order.indexOf(activeTab);
           const next = e.key === "ArrowDown" ? (idx + 1) % order.length : (idx - 1 + order.length) % order.length;
           setActiveTab(order[next]);
@@ -73,7 +75,7 @@ function KpiCard({ label, value, sub }) {
   );
 }
 
-/** 🔧 DateSection: รับ/อัปเดตช่วงวันที่จาก Parent */
+/* --------- (ตัวอย่าง) Date Section ถ้ายังต้องใช้ที่อื่น --------- */
 function DateSection({ start, end, setStart, setEnd }) {
   const valid = useMemo(() => (start && end ? new Date(start) <= new Date(end) : true), [start, end]);
 
@@ -138,6 +140,7 @@ function DateSection({ start, end, setStart, setEnd }) {
   );
 }
 
+/* --------- Users (ตัวอย่าง) --------- */
 function UsersSection() {
   const [q, setQ] = useState("");
   const users = [
@@ -215,6 +218,7 @@ function UsersSection() {
   );
 }
 
+/* --------- Page --------- */
 export default function FarmerPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [start, setStart] = useState("");
@@ -225,12 +229,15 @@ export default function FarmerPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header — เต็มจอ */}
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="w-full px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-
-            <button className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-xl border" onClick={() => setNavOpen(true)} aria-label="เปิดเมนู">
+            <button
+              className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-xl border"
+              onClick={() => setNavOpen(true)}
+              aria-label="เปิดเมนู"
+            >
               <Menu className="h-4 w-4" />
             </button>
             <div className="h-9 w-9 rounded-2xl bg-black text-white grid place-items-center font-bold">F</div>
@@ -240,21 +247,19 @@ export default function FarmerPage() {
             </div>
           </div>
 
-          {/* Tabs (mobile only, desktop ใช้ SideNav) */}
+          {/* Tabs (มือถือ) */}
           <nav role="tablist" aria-label="Main sections" className="md:hidden flex items-center gap-2 bg-gray-100 p-1 rounded-2xl">
             <TabButton id="dashboard" activeTab={activeTab} setActiveTab={setActiveTab}>Dashboard</TabButton>
-            <TabButton id="date" activeTab={activeTab} setActiveTab={setActiveTab}>Date</TabButton>
+            <TabButton id="data" activeTab={activeTab} setActiveTab={setActiveTab}>Data</TabButton>
             <TabButton id="users" activeTab={activeTab} setActiveTab={setActiveTab}>Users</TabButton>
           </nav>
         </div>
       </header>
 
-      {/* Layout */}
-      <div className="max-w-6xl mx-auto flex">
-        {/* Overlay for mobile */}
-        {navOpen && (
-          <div className="fixed inset-0 z-40 bg-black/30 md:hidden" onClick={closeNav} aria-hidden="true" />
-        )}
+      {/* Layout — เต็มจอ */}
+      <div className="flex w-full">
+        {/* Overlay (mobile) */}
+        {navOpen && <div className="fixed inset-0 z-40 bg-black/30 md:hidden" onClick={closeNav} aria-hidden="true" />}
 
         {/* Sidebar */}
         <aside
@@ -271,22 +276,27 @@ export default function FarmerPage() {
                 <X className="h-4 w-4" />
               </button>
             </div>
-            {/* Back link in sidebar */}
-            <Link href="/admin/menu"  className="mb-4 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition">
+
+            <Link
+              href="/admin/menu"
+              className="mb-4 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition"
+            >
               <ArrowLeft className="h-4 w-4" /> กลับไป
             </Link>
+
             <div className="hidden md:block text-xs text-gray-500 mb-2">เมนู</div>
             <div role="tablist" aria-orientation="vertical" className="space-y-1">
               <SideNavItem id="dashboard" icon={LayoutDashboard} label="Dashboard" activeTab={activeTab} setActiveTab={setActiveTab} />
-              <SideNavItem id="date" icon={Calendar} label="Date" activeTab={activeTab} setActiveTab={setActiveTab} />
+              <SideNavItem id="data" icon={Calendar} label="Data" activeTab={activeTab} setActiveTab={setActiveTab} />
               <SideNavItem id="users" icon={UsersIcon} label="Users" activeTab={activeTab} setActiveTab={setActiveTab} />
             </div>
+
             <div className="mt-auto pt-4 text-[11px] text-gray-500">v1.0 • © Farmer</div>
           </div>
         </aside>
 
         {/* Content */}
-        <main className="flex-1 px-4 py-6 md:ml-6">
+        <main className="flex-1 min-w-0 px-4 py-6">
           <section
             id="panel-dashboard"
             role="tabpanel"
@@ -298,13 +308,14 @@ export default function FarmerPage() {
           </section>
 
           <section
-            id="panel-date"
+            id="panel-data"
             role="tabpanel"
-            aria-labelledby="sidenav-date"
-            hidden={activeTab !== "date"}
+            aria-labelledby="sidenav-data"
+            hidden={activeTab !== "data"}
             className="animate-in fade-in slide-in-from-bottom-2 duration-200"
           >
-            <DateSection start={start} end={end} setStart={setStart} setEnd={setEnd} />
+            {/* ใช้หน้า DataInformation แบบเต็มความกว้าง */}
+            <DataInformation />
           </section>
 
           <section
