@@ -16,7 +16,7 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // ✅ Prefetch หน้าหลังล็อกอินเพื่อลดดีเลย์ตอนเปลี่ยนหน้า
+  // Prefetch หน้าหลังล็อกอินเพื่อลดดีเลย์ตอนเปลี่ยนหน้า
   useEffect(() => {
     router.prefetch('/admin/menu')
   }, [router])
@@ -47,15 +47,18 @@ export default function AdminLoginPage() {
         throw new Error(data?.message || 'เข้าสู่ระบบไม่สำเร็จ')
       }
 
-      // ✅ เปลี่ยนหน้าแล้ว refresh ให้ Server Components เห็นคุกกี้ใหม่ทันที
+      // สำเร็จ: นำทางทันที แล้ว "ไม่" ปลด loading
+      // เพื่อกันการกดซ้ำ/กดคีย์ซ้ำระหว่างกำลังสลับหน้า
       router.replace('/admin/menu')
       router.refresh()
+      return // ❗️ ออกจากฟังก์ชันทันที (ไม่ setLoading(false))
     } catch (err) {
+      // ล้มเหลว: แสดง error และค่อยปลด loading
       if (err?.name === 'AbortError') setError('การเชื่อมต่อช้า กรุณาลองใหม่อีกครั้ง')
       else setError(err?.message || 'เกิดข้อผิดพลาด')
+      setLoading(false)
     } finally {
       clearTimeout(timeout)
-      setLoading(false)
     }
   }
 
@@ -81,7 +84,14 @@ export default function AdminLoginPage() {
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Sign in to your account</p>
         </div>
 
-        <form className="flex flex-col gap-4" autoComplete="off" onSubmit={onSubmit} noValidate>
+        {/* inert จะทำให้ทั้งฟอร์ม "ไม่โต้ตอบได้" ระหว่างโหลด (เบราว์เซอร์ที่รองรับ) */}
+          <form
+            className={`flex flex-col gap-4 ${disabled ? 'pointer-events-none' : ''}`}
+            autoComplete="off"
+            onSubmit={onSubmit}
+            noValidate
+            inert={disabled} // ✅ เป็น boolean แล้ว
+          >
           <Input
             type="text"
             placeholder="Email or Username"
@@ -137,7 +147,11 @@ export default function AdminLoginPage() {
           </div>
 
           {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+            <div
+              className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+              role="alert"
+              aria-live="polite"
+            >
               {error}
             </div>
           )}
