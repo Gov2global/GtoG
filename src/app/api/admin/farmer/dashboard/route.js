@@ -40,7 +40,7 @@ export async function GET(req) {
 
     const other = Math.max(total - renterCaretaker - owner, 0);
 
-    // 🔹 รวมตามจังหวัด/อำเภอ
+    // รวมตามจังหวัด/อำเภอ
     const byProvince = await Register.aggregate([
       { $match: base },
       {
@@ -57,7 +57,7 @@ export async function GET(req) {
         $group: {
           _id: "$_id.province",
           total: { $sum: "$count" },
-          districts: { $push: { name: "$_id.district", count: "$count" } }, // <- ห้ามพิมพ์เป็น "$._id.district"
+          districts: { $push: { name: "$_id.district", count: "$count" } },
         },
       },
       {
@@ -71,6 +71,40 @@ export async function GET(req) {
       { $sort: { province: 1 } },
     ]);
 
+    // รวมตามชนิดพืช (regPlant เป็นรหัสเช่น "PLA001"; รองรับ string/array/ค่าว่าง)
+    const byPlant = await Register.aggregate([
+      { $match: base },
+      {
+        $addFields: {
+          _plantArr: {
+            $cond: [{ $isArray: "$regPlant" }, "$regPlant", ["$regPlant"]],
+          },
+        },
+      },
+      { $unwind: { path: "$_plantArr", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          plantId: {
+            $cond: [
+              { $ifNull: ["$_plantArr", false] },
+              { $toString: "$_plantArr" }, // normalize เป็น string เสมอ
+              "none",
+            ],
+          },
+        },
+      },
+      { $group: { _id: "$plantId", count: { $sum: 1 } } },
+      {
+        $project: { _id: 0, plantId: "$_id", count: 1 },
+      },
+      { $sort: { count: -1 } },
+    ]);
+
+    const byPlantWithPercent = byPlant.map((r) => ({
+      ...r,
+      percent: pct(r.count, total),
+    }));
+
     return NextResponse.json({
       total,
       renterCaretaker,
@@ -81,7 +115,8 @@ export async function GET(req) {
         owner: pct(owner, total),
         other: pct(other, total),
       },
-      byProvince, // 👈 ส่งให้ UI
+      byProvince,
+      byPlant: byPlantWithPercent,
     });
   } catch (err) {
     console.error("DASHBOARD_API_ERROR:", err);

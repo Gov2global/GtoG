@@ -1,6 +1,8 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
+import Link from "next/link";
 import Dashboard from "../../admin/farmer/components/Dashboard"; // ✅ ใช้คอมโพเนนต์จริง
+import { Menu, LayoutDashboard, Calendar, Users as UsersIcon, X, ArrowLeft } from "lucide-react";
 
 function TabButton({ id, activeTab, setActiveTab, children }) {
   const isActive = activeTab === id;
@@ -16,8 +18,7 @@ function TabButton({ id, activeTab, setActiveTab, children }) {
           e.preventDefault();
           const order = ["dashboard", "date", "users"];
           const idx = order.indexOf(activeTab);
-          const next =
-            e.key === "ArrowRight" ? (idx + 1) % order.length : (idx - 1 + order.length) % order.length;
+          const next = e.key === "ArrowRight" ? (idx + 1) % order.length : (idx - 1 + order.length) % order.length;
           setActiveTab(order[next]);
         }
       }}
@@ -29,6 +30,35 @@ function TabButton({ id, activeTab, setActiveTab, children }) {
       }
     >
       {children}
+    </button>
+  );
+}
+
+function SideNavItem({ id, icon: Icon, label, activeTab, setActiveTab }) {
+  const isActive = activeTab === id;
+  return (
+    <button
+      role="tab"
+      aria-selected={isActive}
+      aria-controls={`panel-${id}`}
+      id={`sidenav-${id}`}
+      onClick={() => setActiveTab(id)}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault();
+          const order = ["dashboard", "date", "users"];
+          const idx = order.indexOf(activeTab);
+          const next = e.key === "ArrowDown" ? (idx + 1) % order.length : (idx - 1 + order.length) % order.length;
+          setActiveTab(order[next]);
+        }
+      }}
+      className={
+        "w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition outline-none focus:ring-2 focus:ring-offset-2 " +
+        (isActive ? "bg-black text-white focus:ring-black" : "text-gray-700 hover:bg-gray-100 focus:ring-gray-400")
+      }
+    >
+      <Icon className="h-4 w-4" />
+      <span className="truncate">{label}</span>
     </button>
   );
 }
@@ -86,7 +116,6 @@ function DateSection({ start, end, setStart, setEnd }) {
               )}
             </div>
           </div>
-          {/* ไม่ต้อง onClick ก็ได้ — Dashboard จะ re-fetch อัตโนมัติเมื่อ start/end เปลี่ยน */}
           <button
             disabled={!start || !end || !valid}
             className="mt-4 inline-flex items-center justify-center rounded-xl bg-black px-4 py-2 text-white disabled:opacity-40"
@@ -188,16 +217,22 @@ function UsersSection() {
 
 export default function FarmerPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
-  // ⬇️ state กลางสำหรับช่วงวันที่ ใช้ร่วมกันระหว่าง Date และ Dashboard
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
+  const [navOpen, setNavOpen] = useState(false);
+
+  const closeNav = useCallback(() => setNavOpen(false), []);
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-100">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
+
+            <button className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-xl border" onClick={() => setNavOpen(true)} aria-label="เปิดเมนู">
+              <Menu className="h-4 w-4" />
+            </button>
             <div className="h-9 w-9 rounded-2xl bg-black text-white grid place-items-center font-bold">F</div>
             <div>
               <div className="text-sm text-gray-500">Farmer App</div>
@@ -205,8 +240,8 @@ export default function FarmerPage() {
             </div>
           </div>
 
-          {/* Tabs */}
-          <nav role="tablist" aria-label="Main sections" className="hidden md:flex items-center gap-2 bg-gray-100 p-1 rounded-2xl">
+          {/* Tabs (mobile only, desktop ใช้ SideNav) */}
+          <nav role="tablist" aria-label="Main sections" className="md:hidden flex items-center gap-2 bg-gray-100 p-1 rounded-2xl">
             <TabButton id="dashboard" activeTab={activeTab} setActiveTab={setActiveTab}>Dashboard</TabButton>
             <TabButton id="date" activeTab={activeTab} setActiveTab={setActiveTab}>Date</TabButton>
             <TabButton id="users" activeTab={activeTab} setActiveTab={setActiveTab}>Users</TabButton>
@@ -214,48 +249,75 @@ export default function FarmerPage() {
         </div>
       </header>
 
-      {/* Mobile Tabs */}
-      <div className="md:hidden sticky top-[57px] z-10 bg-white/80 backdrop-blur border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-2 overflow-x-auto">
-          <TabButton id="dashboard" activeTab={activeTab} setActiveTab={setActiveTab}>Dashboard</TabButton>
-          <TabButton id="date" activeTab={activeTab} setActiveTab={setActiveTab}>Date</TabButton>
-          <TabButton id="users" activeTab={activeTab} setActiveTab={setActiveTab}>Users</TabButton>
-        </div>
+      {/* Layout */}
+      <div className="max-w-6xl mx-auto flex">
+        {/* Overlay for mobile */}
+        {navOpen && (
+          <div className="fixed inset-0 z-40 bg-black/30 md:hidden" onClick={closeNav} aria-hidden="true" />
+        )}
+
+        {/* Sidebar */}
+        <aside
+          className={
+            "fixed md:static z-50 md:z-auto inset-y-0 left-0 transform md:transform-none transition-transform duration-200 " +
+            (navOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0")
+          }
+          aria-label="เมนูหลัก"
+        >
+          <div className="h-full w-64 bg-white border-r border-gray-100 p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-4 md:hidden">
+              <div className="font-semibold">เมนู</div>
+              <button className="inline-flex items-center justify-center h-8 w-8 rounded-xl border" onClick={closeNav} aria-label="ปิดเมนู">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {/* Back link in sidebar */}
+            <Link href="/admin/menu"  className="mb-4 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition">
+              <ArrowLeft className="h-4 w-4" /> กลับไป
+            </Link>
+            <div className="hidden md:block text-xs text-gray-500 mb-2">เมนู</div>
+            <div role="tablist" aria-orientation="vertical" className="space-y-1">
+              <SideNavItem id="dashboard" icon={LayoutDashboard} label="Dashboard" activeTab={activeTab} setActiveTab={setActiveTab} />
+              <SideNavItem id="date" icon={Calendar} label="Date" activeTab={activeTab} setActiveTab={setActiveTab} />
+              <SideNavItem id="users" icon={UsersIcon} label="Users" activeTab={activeTab} setActiveTab={setActiveTab} />
+            </div>
+            <div className="mt-auto pt-4 text-[11px] text-gray-500">v1.0 • © Farmer</div>
+          </div>
+        </aside>
+
+        {/* Content */}
+        <main className="flex-1 px-4 py-6 md:ml-6">
+          <section
+            id="panel-dashboard"
+            role="tabpanel"
+            aria-labelledby="sidenav-dashboard"
+            hidden={activeTab !== "dashboard"}
+            className="animate-in fade-in slide-in-from-bottom-2 duration-200"
+          >
+            <Dashboard start={start} end={end} />
+          </section>
+
+          <section
+            id="panel-date"
+            role="tabpanel"
+            aria-labelledby="sidenav-date"
+            hidden={activeTab !== "date"}
+            className="animate-in fade-in slide-in-from-bottom-2 duration-200"
+          >
+            <DateSection start={start} end={end} setStart={setStart} setEnd={setEnd} />
+          </section>
+
+          <section
+            id="panel-users"
+            role="tabpanel"
+            aria-labelledby="sidenav-users"
+            hidden={activeTab !== "users"}
+            className="animate-in fade-in slide-in-from-bottom-2 duration-200"
+          >
+            <UsersSection />
+          </section>
+        </main>
       </div>
-
-      {/* Content */}
-      <main className="max-w-6xl mx-auto px-4 py-6">
-        {/* ✅ ใช้ Dashboard จริง + ส่งช่วงวันที่ไปกรอง API */}
-        <section
-          id="panel-dashboard"
-          role="tabpanel"
-          aria-labelledby="tab-dashboard"
-          hidden={activeTab !== "dashboard"}
-          className="animate-in fade-in slide-in-from-bottom-2 duration-200"
-        >
-          <Dashboard start={start} end={end} />
-        </section>
-
-        <section
-          id="panel-date"
-          role="tabpanel"
-          aria-labelledby="tab-date"
-          hidden={activeTab !== "date"}
-          className="animate-in fade-in slide-in-from-bottom-2 duration-200"
-        >
-          <DateSection start={start} end={end} setStart={setStart} setEnd={setEnd} />
-        </section>
-
-        <section
-          id="panel-users"
-          role="tabpanel"
-          aria-labelledby="tab-users"
-          hidden={activeTab !== "users"}
-          className="animate-in fade-in slide-in-from-bottom-2 duration-200"
-        >
-          <UsersSection />
-        </section>
-      </main>
     </div>
   );
 }
