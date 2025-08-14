@@ -1,11 +1,6 @@
-"use client"
+"use client";
 import React, { useMemo, useState } from "react";
-
-// Single-file, production-ready demo component
-// - TailwindCSS utility classes for styling
-// - Simple tab switcher (no external UI libs required)
-// - 3 sections: Dashboard, Date, Users
-// - Accessible keyboard navigation
+import Dashboard from "../../admin/farmer/components/Dashboard"; // ✅ ใช้คอมโพเนนต์จริง
 
 function TabButton({ id, activeTab, setActiveTab, children }) {
   const isActive = activeTab === id;
@@ -21,7 +16,8 @@ function TabButton({ id, activeTab, setActiveTab, children }) {
           e.preventDefault();
           const order = ["dashboard", "date", "users"];
           const idx = order.indexOf(activeTab);
-          const next = e.key === "ArrowRight" ? (idx + 1) % order.length : (idx - 1 + order.length) % order.length;
+          const next =
+            e.key === "ArrowRight" ? (idx + 1) % order.length : (idx - 1 + order.length) % order.length;
           setActiveTab(order[next]);
         }
       }}
@@ -47,78 +43,14 @@ function KpiCard({ label, value, sub }) {
   );
 }
 
-function DashboardSection() {
-  return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">Farmer Dashboard</h2>
-          <p className="text-sm text-gray-500">ภาพรวมผลผลิตและออเดอร์ล่าสุด</p>
-        </div>
-        <div className="text-xs text-gray-500">Updated just now</div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="ผลผลิต (กก.)" value="1,240" sub="+8% จากสัปดาห์ก่อน" />
-        <KpiCard label="ออเดอร์" value="86" sub="-3% WoW" />
-        <KpiCard label="รายได้ (฿)" value="152,400" sub="+12% MoM" />
-        <KpiCard label="สต๊อกคงเหลือ" value="420" sub="กก." />
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium">รายการล่าสุด</h3>
-            <button className="text-sm underline">ดูทั้งหมด</button>
-          </div>
-          <ul className="mt-4 divide-y divide-gray-100">
-            {[
-              { id: 1, item: "มะเขือเทศ", qty: 120, buyer: "ตลาด A" },
-              { id: 2, item: "แตงกวา", qty: 80, buyer: "ร้าน B" },
-              { id: 3, item: "พริก", qty: 60, buyer: "ตลาด C" },
-            ].map((r) => (
-              <li key={r.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{r.item}</div>
-                  <div className="text-xs text-gray-500">ผู้ซื้อ: {r.buyer}</div>
-                </div>
-                <div className="text-sm">{r.qty} กก.</div>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
-          <h3 className="font-medium">การแจ้งเตือน</h3>
-          <ul className="mt-3 space-y-3 text-sm">
-            <li className="flex items-start gap-3">
-              <span className="mt-1 h-2.5 w-2.5 rounded-full bg-yellow-400" aria-hidden />
-              <span>สต๊อก <b>ผักชี</b> ต่ำกว่า 50 กก.</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="mt-1 h-2.5 w-2.5 rounded-full bg-red-500" aria-hidden />
-              <span>ออเดอร์ #A-102 ชำระเงินล่าช้า</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="mt-1 h-2.5 w-2.5 rounded-full bg-green-500" aria-hidden />
-              <span>เก็บเกี่ยว <b>คะน้า</b> เสร็จสิ้น</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DateSection() {
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
-
+/** 🔧 DateSection: รับ/อัปเดตช่วงวันที่จาก Parent */
+function DateSection({ start, end, setStart, setEnd }) {
   const valid = useMemo(() => (start && end ? new Date(start) <= new Date(end) : true), [start, end]);
 
   return (
     <div>
       <h2 className="text-xl font-semibold mb-2">Date</h2>
-      <p className="text-sm text-gray-500 mb-6">เลือกช่วงวันที่เพื่อกรองข้อมูลผลผลิต/ออเดอร์</p>
+      <p className="text-sm text-gray-500 mb-6">เลือกช่วงวันที่เพื่อกรองข้อมูล</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
@@ -145,17 +77,16 @@ function DateSection() {
             <div className="mt-1 text-sm text-gray-500">
               {start && end ? (
                 valid ? (
-                  <>
-                    ช่วงวันที่ <b>{start}</b> ถึง <b>{end}</b>
-                  </>
+                  <>ช่วงวันที่ <b>{start}</b> ถึง <b>{end}</b></>
                 ) : (
-                  <span className="text-red-600">วันที่เริ่มต้นต้องน้อยกว่าหรือเท่ากับวันสิ้นสุด</span>
+                  <span className="text-red-600">วันที่เริ่มต้นต้อง ≤ วันสิ้นสุด</span>
                 )
               ) : (
                 <span>ยังไม่เลือกช่วงวันที่</span>
               )}
             </div>
           </div>
+          {/* ไม่ต้อง onClick ก็ได้ — Dashboard จะ re-fetch อัตโนมัติเมื่อ start/end เปลี่ยน */}
           <button
             disabled={!start || !end || !valid}
             className="mt-4 inline-flex items-center justify-center rounded-xl bg-black px-4 py-2 text-white disabled:opacity-40"
@@ -167,7 +98,7 @@ function DateSection() {
 
       <div className="mt-6 rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
         <h3 className="font-medium">ข้อมูลตามช่วงวันที่</h3>
-        <p className="text-sm text-gray-500">(ใส่ผลลัพธ์จริงจาก API ได้ภายหลัง)</p>
+        <p className="text-sm text-gray-500">ผลลัพธ์จะสะท้อนในแท็บ Dashboard</p>
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <KpiCard label="ผลผลิตรวม (กก.)" value="—" />
           <KpiCard label="ออเดอร์รวม" value="—" />
@@ -227,9 +158,7 @@ function UsersSection() {
                     <span
                       className={
                         "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs " +
-                        (u.status === "active"
-                          ? "bg-green-50 text-green-700"
-                          : "bg-gray-100 text-gray-600")
+                        (u.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600")
                       }
                     >
                       <span className={`h-2 w-2 rounded-full ${u.status === "active" ? "bg-green-500" : "bg-gray-400"}`} />
@@ -259,6 +188,9 @@ function UsersSection() {
 
 export default function FarmerPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
+  // ⬇️ state กลางสำหรับช่วงวันที่ ใช้ร่วมกันระหว่าง Date และ Dashboard
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -274,20 +206,10 @@ export default function FarmerPage() {
           </div>
 
           {/* Tabs */}
-          <nav
-            role="tablist"
-            aria-label="Main sections"
-            className="hidden md:flex items-center gap-2 bg-gray-100 p-1 rounded-2xl"
-          >
-            <TabButton id="dashboard" activeTab={activeTab} setActiveTab={setActiveTab}>
-              Dashboard
-            </TabButton>
-            <TabButton id="date" activeTab={activeTab} setActiveTab={setActiveTab}>
-              Date
-            </TabButton>
-            <TabButton id="users" activeTab={activeTab} setActiveTab={setActiveTab}>
-              Users
-            </TabButton>
+          <nav role="tablist" aria-label="Main sections" className="hidden md:flex items-center gap-2 bg-gray-100 p-1 rounded-2xl">
+            <TabButton id="dashboard" activeTab={activeTab} setActiveTab={setActiveTab}>Dashboard</TabButton>
+            <TabButton id="date" activeTab={activeTab} setActiveTab={setActiveTab}>Date</TabButton>
+            <TabButton id="users" activeTab={activeTab} setActiveTab={setActiveTab}>Users</TabButton>
           </nav>
         </div>
       </header>
@@ -295,20 +217,15 @@ export default function FarmerPage() {
       {/* Mobile Tabs */}
       <div className="md:hidden sticky top-[57px] z-10 bg-white/80 backdrop-blur border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-2 overflow-x-auto">
-          <TabButton id="dashboard" activeTab={activeTab} setActiveTab={setActiveTab}>
-            Dashboard
-          </TabButton>
-          <TabButton id="date" activeTab={activeTab} setActiveTab={setActiveTab}>
-            Date
-          </TabButton>
-          <TabButton id="users" activeTab={activeTab} setActiveTab={setActiveTab}>
-            Users
-          </TabButton>
+          <TabButton id="dashboard" activeTab={activeTab} setActiveTab={setActiveTab}>Dashboard</TabButton>
+          <TabButton id="date" activeTab={activeTab} setActiveTab={setActiveTab}>Date</TabButton>
+          <TabButton id="users" activeTab={activeTab} setActiveTab={setActiveTab}>Users</TabButton>
         </div>
       </div>
 
       {/* Content */}
       <main className="max-w-6xl mx-auto px-4 py-6">
+        {/* ✅ ใช้ Dashboard จริง + ส่งช่วงวันที่ไปกรอง API */}
         <section
           id="panel-dashboard"
           role="tabpanel"
@@ -316,8 +233,9 @@ export default function FarmerPage() {
           hidden={activeTab !== "dashboard"}
           className="animate-in fade-in slide-in-from-bottom-2 duration-200"
         >
-          <DashboardSection />
+          <Dashboard start={start} end={end} />
         </section>
+
         <section
           id="panel-date"
           role="tabpanel"
@@ -325,8 +243,9 @@ export default function FarmerPage() {
           hidden={activeTab !== "date"}
           className="animate-in fade-in slide-in-from-bottom-2 duration-200"
         >
-          <DateSection />
+          <DateSection start={start} end={end} setStart={setStart} setEnd={setEnd} />
         </section>
+
         <section
           id="panel-users"
           role="tabpanel"
