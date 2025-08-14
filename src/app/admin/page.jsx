@@ -1,3 +1,4 @@
+// src/app/admin/page.jsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -16,7 +17,7 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Prefetch หน้าหลังล็อกอินเพื่อลดดีเลย์ตอนเปลี่ยนหน้า
+  // Prefetch หน้าเมนูเพื่อลดดีเลย์หลังล็อกอิน
   useEffect(() => {
     router.prefetch('/admin/menu')
   }, [router])
@@ -27,7 +28,6 @@ export default function AdminLoginPage() {
     setError('')
     setLoading(true)
 
-    // กันค้างด้วย AbortController + timeout
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 15000)
 
@@ -47,13 +47,11 @@ export default function AdminLoginPage() {
         throw new Error(data?.message || 'เข้าสู่ระบบไม่สำเร็จ')
       }
 
-      // สำเร็จ: นำทางทันที แล้ว "ไม่" ปลด loading
-      // เพื่อกันการกดซ้ำ/กดคีย์ซ้ำระหว่างกำลังสลับหน้า
+      // สำเร็จ: นำทางทันทีและ "ไม่" ปลด loading (กันกดซ้ำระหว่างกำลังเปลี่ยนหน้า)
       router.replace('/admin/menu')
       router.refresh()
-      return // ❗️ ออกจากฟังก์ชันทันที (ไม่ setLoading(false))
+      return
     } catch (err) {
-      // ล้มเหลว: แสดง error และค่อยปลด loading
       if (err?.name === 'AbortError') setError('การเชื่อมต่อช้า กรุณาลองใหม่อีกครั้ง')
       else setError(err?.message || 'เกิดข้อผิดพลาด')
       setLoading(false)
@@ -84,14 +82,18 @@ export default function AdminLoginPage() {
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Sign in to your account</p>
         </div>
 
-        {/* inert จะทำให้ทั้งฟอร์ม "ไม่โต้ตอบได้" ระหว่างโหลด (เบราว์เซอร์ที่รองรับ) */}
-          <form
-            className={`flex flex-col gap-4 ${disabled ? 'pointer-events-none' : ''}`}
-            autoComplete="off"
-            onSubmit={onSubmit}
-            noValidate
-            inert={disabled} // ✅ เป็น boolean แล้ว
-          >
+        {/* ใช้ inert เป็น boolean + ปิด interaction ทั้งฟอร์มตอนโหลด */}
+        <form
+          className={`flex flex-col gap-4 ${disabled ? 'pointer-events-none' : ''}`}
+          autoComplete="off"
+          onSubmit={onSubmit}
+          onKeyDown={(e) => {
+            // กัน Enter ซ้ำตอนกำลังโหลด
+            if (disabled && e.key === 'Enter') e.preventDefault()
+          }}
+          noValidate
+          inert={disabled}
+        >
           <Input
             type="text"
             placeholder="Email or Username"
@@ -141,7 +143,8 @@ export default function AdminLoginPage() {
               />
               Remember me
             </label>
-            <Link href="/forgot-password" className="text-sm text-blue-500 hover:underline hover:text-blue-600 transition">
+            {/* ปิด prefetch กัน 404 ถ้ายังไม่มีเพจ forgot-password */}
+            <Link prefetch={false} href="/forgot-password" className="text-sm text-blue-500 hover:underline hover:text-blue-600 transition">
               Forgot?
             </Link>
           </div>
