@@ -1,33 +1,38 @@
 // api/admin/farmer/information
-// api/admin/farmer/information
 import { connectMongoDB } from "../../../../../../lib/mongodb";
 import Register from "../../../../../../models/register";
-import Plant from "../../../../../../models/plant"; // ✅ ใช้โมเดลตรง ๆ เพื่อ query ชื่อพืช
+import Plant from "../../../../../../models/plant";
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 
 export const runtime = "nodejs";
-
 const MAX_LIMIT = 1000;
+
+// small helper
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export async function GET(req) {
   try {
     await connectMongoDB();
 
     const { searchParams } = new URL(req.url);
-    const q = (searchParams.get("q") || "").trim();
-    const province = (searchParams.get("province") || "").trim();
+    const q          = (searchParams.get("q") || "").trim();
+    const plant      = (searchParams.get("plant") || "").trim();
+    const species    = (searchParams.get("species") || "").trim();
+    const subDistrict= (searchParams.get("sub_district") || "").trim();
+    const district   = (searchParams.get("district") || "").trim();
+    const province   = (searchParams.get("province") || "").trim();
     const regSubType = (searchParams.get("regSubType") || "").trim();
+    const cursor     = searchParams.get("cursor");
     const limitParam = Number(searchParams.get("limit") || 100);
-    const limit = Math.min(Math.max(limitParam, 1), MAX_LIMIT); // 1..1000
-    const cursor = searchParams.get("cursor"); // last _id for next page
+    const limit      = Math.min(Math.max(limitParam, 1), MAX_LIMIT); // 1..1000
 
-    // ✅ ดึงเฉพาะ regType = "เกษตรกร"
+    // ✅ base: เฉพาะเกษตรกร
     const match = { regType: "เกษตรกร" };
 
-    // ค้นหาข้อความ
+    // 🔎 คำค้นรวม
     if (q) {
-      const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      const rx = new RegExp(esc(q), "i");
       match.$or = [
         { regName: rx },
         { regSurname: rx },
@@ -36,30 +41,63 @@ export async function GET(req) {
       ];
     }
 
-    // กรองจังหวัด/สถานะย่อย
-    if (province) match.province = province;
+    // 🔎 จังหวัด/สถานะย่อย
+    if (province)  match.province   = new RegExp(`^${esc(province)}$`, "i"); // เทียบชื่อตรงแบบ case-insensitive
     if (regSubType) match.regSubType = regSubType;
 
-    // Cursor-based pagination (_id เรียงจากใหม่ไปเก่า)
+    // 🔎 ตำบล/อำเภอ (บางทีสะกดไม่เป๊ะ → ใช้ regex)
+    if (subDistrict) match.sub_district = new RegExp(esc(subDistrict), "i");
+    if (district)    match.district     = new RegExp(esc(district), "i");
+
+    // 🔎 ชนิดพืช: รับทั้งรหัสหรือชื่อภาษาไทย + คำว่า other
+    if (plant) {
+      if (plant.toLowerCase() === "other") {
+        match.regPlant = { $in: ["other", "Other", "OTHER"] };
+      } else {
+        // ค้นรหัสที่ตรง หรือชื่อไทยที่แมตช์
+        const rx = new RegExp(esc(plant), "i");
+        const plantDocs = await Plant.find(
+          { $or: [{ plantID: plant }, { plantNameTH: rx }] },
+          { plantID: 1 }
+        ).lean();
+
+        const ids = [...new Set(plantDocs.map((p) => String(p.plantID)))];
+        // ถ้า user ใส่รหัสที่ไม่มีใน collection หรืออยากให้ลองเทียบตรงๆ ด้วย
+        if (!ids.includes(plant)) ids.push(plant);
+
+        // regPlant อาจเป็น string หรือ array → ใช้ $in ก็จับทั้งคู่ได้
+        match.regPlant = { $in: ids };
+      }
+    }
+
+    // 🔎 สายพันธุ์: เก็บเป็น array → ใช้ regex ตรงกับสมาชิกใดๆ
+    if (species) {
+      const rx = new RegExp(esc(species), "i");
+      match.regPlantSpecies = rx; // Mongo จะจับภายใน array ให้โดยอัตโนมัติ
+    }
+
+    // 🔎 Cursor-based pagination (ใหม่→เก่า)
     if (cursor && mongoose.Types.ObjectId.isValid(cursor)) {
       match._id = { $lt: new mongoose.Types.ObjectId(cursor) };
     }
 
-    // แนะนำ Index (รันใน MongoDB ครั้งเดียว):
+    // แนะนำ index (run one-time on MongoDB):
     // db.register.createIndex({ _id: -1 })
     // db.register.createIndex({ regType: 1, province: 1, regSubType: 1 })
     // db.register.createIndex({ regName: 1, regSurname: 1, regTel: 1 })
-    // db.register.createIndex({ addressDetail: "text" })
+    // db.register.createIndex({ district: 1, sub_district: 1 })
+    // db.register.createIndex({ regPlant: 1 })
+    // db.register.createIndex({ regPlantSpecies: 1 })
 
     const rows = await Register.find(match, {
       _id: 1,
       regName: 1,
       regSurname: 1,
       regTel: 1,
-      regPlant: 1,           // <- รหัสพืช (เช่น PLA001 หรือ array ของรหัส)
+      regPlant: 1,
       regPlantAmount: 1,
       regPlantOther: 1,
-      regPlantSpecies: 1,    // Array
+      regPlantSpecies: 1,
       regPlantAge: 1,
       areaWa: 1,
       areaNgan: 1,
@@ -73,65 +111,56 @@ export async function GET(req) {
       regType: 1,
     })
       .sort({ _id: -1 })
-      .limit(limit + 1) // เผื่อเช็คว่ามีหน้าถัดไป
+      .limit(limit + 1)
       .lean();
 
     const hasMore = rows.length > limit;
     const pageRows = hasMore ? rows.slice(0, limit) : rows;
 
-    // -----------------------------
-    // 🔎 เตรียมแม็ป plantID -> plantNameTH (เฉพาะรหัสที่มีใน "หน้า" นี้เท่านั้น เพื่อประสิทธิภาพ)
-    // -----------------------------
+    // สร้างชุดรหัสพืชที่อยู่ในหน้านี้ (ยกเว้น other)
     const plantIdSet = new Set();
     for (const r of pageRows) {
       const p = r.regPlant;
       if (Array.isArray(p)) {
-        for (const code of p) {
+        p.forEach((code) => {
           const id = String(code || "").trim();
           if (id && id.toLowerCase() !== "other") plantIdSet.add(id);
-        }
+        });
       } else {
         const id = String(p || "").trim();
         if (id && id.toLowerCase() !== "other") plantIdSet.add(id);
       }
     }
 
+    // ดึงชื่อไทยให้รหัสที่เกี่ยวข้อง
     let plantMap = {};
     if (plantIdSet.size > 0) {
-      // ⚠️ ตรงนี้สมมติว่าในคอลเลกชัน Plant เก็บฟิลด์รหัสใน "plantID"
-      // ถ้าโปรเจกต์คุณเก็บเป็นฟิลด์อื่น (เช่น code, _id) ปรับตรงนี้ให้ตรงสคีมา
       const plants = await Plant.find(
         { plantID: { $in: Array.from(plantIdSet) } },
         { plantID: 1, plantNameTH: 1 }
       ).lean();
-
-      plantMap = Object.fromEntries(
-        plants.map((p) => [String(p.plantID), p.plantNameTH])
-      );
+      plantMap = Object.fromEntries(plants.map((p) => [String(p.plantID), p.plantNameTH]));
     }
 
     const nameFromId = (id) => {
-      if (!id) return "-";
-      const s = String(id).trim();
+      const s = String(id || "").trim();
       if (!s) return "-";
-      if (s.toLowerCase() === "other") return "Other"; // ✅ กรณีระบุ other
-      return plantMap[s] || s; // ถ้าไม่เจอใน map ให้ fallback แสดงรหัสเดิม
+      if (s.toLowerCase() === "other") return "Other";
+      return plantMap[s] || s;
     };
 
-    // แปลงเป็น payload + เวลาไทย
     const data = pageRows.map((r) => {
       const createdAtTH = r.createdAt
         ? new Date(r.createdAt).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })
         : "-";
 
-      const codes = Array.isArray(r.regPlant)
+      const regPlantCodes = Array.isArray(r.regPlant)
         ? r.regPlant.map(String)
-        : (r.regPlant ? String(r.regPlant) : "-");
+        : r.regPlant ? [String(r.regPlant)] : [];
 
-      const names =
-        Array.isArray(codes)
-          ? codes.map(nameFromId)
-          : nameFromId(codes);
+      const regPlantNames = regPlantCodes.length
+        ? regPlantCodes.map(nameFromId)
+        : ["-"];
 
       return {
         id: String(r._id),
@@ -139,9 +168,8 @@ export async function GET(req) {
         regSurname: r.regSurname ?? "-",
         regTel: r.regTel ?? "-",
 
-        // ✅ ส่งทั้งรหัสเดิมและชื่อที่แปลงแล้ว
-        regPlantCodes: Array.isArray(codes) ? codes : (codes === "-" ? [] : [codes]),
-        regPlant: Array.isArray(names) ? names : (names === "-" ? [] : [names]),
+        regPlantCodes,
+        regPlant: regPlantNames, // ส่งกลับเป็นชื่อแสดงผล (array)
 
         regPlantAmount: r.regPlantAmount ?? 0,
         regPlantOther: r.regPlantOther ?? "-",
@@ -161,15 +189,9 @@ export async function GET(req) {
 
     const nextCursor = hasMore ? String(pageRows[pageRows.length - 1]._id) : null;
 
-    return NextResponse.json(
-      { data, nextCursor, hasMore },
-      { status: 200 }
-    );
+    return NextResponse.json({ data, nextCursor, hasMore }, { status: 200 });
   } catch (err) {
     console.error("INFORMATION_API_ERROR:", err);
-    return NextResponse.json(
-      { message: err?.message || "เกิดข้อผิดพลาด" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: err?.message || "เกิดข้อผิดพลาด" }, { status: 500 });
   }
 }

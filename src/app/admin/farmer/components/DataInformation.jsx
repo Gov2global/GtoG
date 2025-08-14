@@ -5,10 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Download, RefreshCw, Search, Filter, X } from "lucide-react";
 
+/** สร้าง URL จาก params (ตัดค่าว่างออก) */
 const apiUrl = (params) => {
   const qs = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && String(v).trim() !== "") qs.set(k, v);
+    if (v !== undefined && v !== null && String(v).trim() !== "") {
+      qs.set(k, String(v).trim());
+    }
   });
   return `/api/admin/farmer/information?${qs.toString()}`;
 };
@@ -18,6 +21,7 @@ function useInformation() {
   const [nextCursor, setNextCursor] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
+  const abortRef = React.useRef(null);
 
   const [params, setParams] = React.useState({
     q: "",
@@ -27,67 +31,87 @@ function useInformation() {
     district: "",
     province: "",
     regSubType: "",
-    limit: 100, // ขนาดเพจบนหน้าจอ (ไม่เกี่ยวกับ Export)
+    limit: 100, // ขนาดเพจสำหรับหน้าแสดงผล
   });
 
-  const refresh = React.useCallback(async () => {
-    setLoading(true);
-    setError("");
+  const cancelPending = () => {
     try {
-      const res = await fetch(apiUrl(params), { cache: "no-store" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.message || "โหลดข้อมูลไม่สำเร็จ");
-      setRows(json.data || []);
-      setNextCursor(json.nextCursor || null);
-    } catch (e) {
-      setError(e?.message || "เกิดข้อผิดพลาด");
-    } finally {
-      setLoading(false);
-    }
-  }, [params]);
+      abortRef.current?.abort();
+    } catch {}
+  };
 
-  const loadMore = React.useCallback(async () => {
-    if (!nextCursor) return;
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(apiUrl({ ...params, cursor: nextCursor }), { cache: "no-store" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.message || "โหลดข้อมูลไม่สำเร็จ");
-      setRows((prev) => [...prev, ...(json.data || [])]);
-      setNextCursor(json.nextCursor || null);
-    } catch (e) {
-      setError(e?.message || "เกิดข้อผิดพลาด");
-    } finally {
-      setLoading(false);
-    }
-  }, [params, nextCursor]);
+  const refresh = React.useCallback(
+    async (overrides = {}) => {
+      setLoading(true);
+      setError("");
+      cancelPending();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      try {
+        const merged = { ...params, ...overrides };
+        const res = await fetch(apiUrl(merged), {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.message || "โหลดข้อมูลไม่สำเร็จ");
+        setRows(json.data || []);
+        setNextCursor(json.nextCursor || null);
+      } catch (e) {
+        if (e?.name !== "AbortError") setError(e?.message || "เกิดข้อผิดพลาด");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [params]
+  );
+
+  const loadMore = React.useCallback(
+    async () => {
+      if (!nextCursor) return;
+      setLoading(true);
+      setError("");
+      cancelPending();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      try {
+        const res = await fetch(apiUrl({ ...params, cursor: nextCursor }), {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.message || "โหลดข้อมูลไม่สำเร็จ");
+        setRows((prev) => [...prev, ...(json.data || [])]);
+        setNextCursor(json.nextCursor || null);
+      } catch (e) {
+        if (e?.name !== "AbortError") setError(e?.message || "เกิดข้อผิดพลาด");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [params, nextCursor]
+  );
+
+  React.useEffect(() => () => cancelPending(), []);
 
   return { rows, nextCursor, loading, error, params, setParams, refresh, loadMore };
 }
 
-// ==================== Export helpers ====================
+/* ===== Export helpers ===== */
 
-// วนดึง “ทุกหน้า” ตาม filter ปัจจุบัน (อิสระจาก rows ในตาราง)
 async function fetchAllRows(params) {
-  const PAGE_LIMIT = 1000; // ใช้เพจใหญ่สุดของ API เพื่อลดจำนวนครั้งยิง
+  const PAGE_LIMIT = 1000;
   let cursor = null;
   const all = [];
-
-  // clone params + บังคับ limit ใหญ่สุดสำหรับ export
-  const base = { ...params, limit: PAGE_LIMIT };
-
-  // loop จนหมด
-  // ตั้งเพดาน safety 50 เพจ (50 * 1000 = 50,000 แถว); ปรับได้ตามจริง
-  for (let i = 0; i < 50; i++) {
-    const url = apiUrl(cursor ? { ...base, cursor } : base);
+  for (let i = 0; i < 200; i++) {
+    const url = apiUrl(cursor ? { ...params, limit: PAGE_LIMIT, cursor } : { ...params, limit: PAGE_LIMIT });
     const res = await fetch(url, { cache: "no-store" });
     const json = await res.json();
     if (!res.ok) throw new Error(json?.message || "โหลดข้อมูล (export) ไม่สำเร็จ");
-
     const chunk = Array.isArray(json?.data) ? json.data : [];
     all.push(...chunk);
-
     if (!json?.nextCursor) break;
     cursor = json.nextCursor;
   }
@@ -129,14 +153,31 @@ async function exportXLSX_fromRows(rows) {
   XLSX.writeFile(wb, `farmer-information-${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
-// ==================== Page ====================
+/* ===== Page ===== */
 
 export default function DataInformationPage() {
   const { rows, nextCursor, loading, error, params, setParams, refresh, loadMore } = useInformation();
   const [showFilters, setShowFilters] = React.useState(false);
   const [exporting, setExporting] = React.useState(false);
 
+  // โหลดครั้งแรก
   React.useEffect(() => { refresh(); }, [refresh]);
+
+  // ดีบาวซ์เฉพาะช่องค้นหา q
+  React.useEffect(() => {
+    const q = (params.q || "").trim();
+    const t = setTimeout(() => {
+      if (q.length === 0 || q.length >= 2) refresh();
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.q]);
+
+  // เปลี่ยนจำนวนต่อหน้า → รีเฟรชทันที
+  React.useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.limit]);
 
   const activeFilterChips = [
     params.plant && { k: "plant", label: `ชนิดพืช: ${params.plant}` },
@@ -151,7 +192,6 @@ export default function DataInformationPage() {
   const clearAllFilters = () =>
     setParams((p) => ({ ...p, plant: "", species: "", sub_district: "", district: "", province: "", regSubType: "" }));
 
-  // กด Export → ดึงทุกหน้าตาม filter ปัจจุบัน → เขียนไฟล์ .xlsx
   const handleExportAll = async () => {
     try {
       setExporting(true);
@@ -176,7 +216,7 @@ export default function DataInformationPage() {
                 variant="outline"
                 size="icon"
                 aria-label="รีเฟรช"
-                onClick={refresh}
+                onClick={() => refresh()}
                 disabled={loading || exporting}
                 title="รีเฟรช"
               >
@@ -197,17 +237,32 @@ export default function DataInformationPage() {
         </CardHeader>
 
         <CardContent className="space-y-3">
-          {/* แถวค้นหาหลัก */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* แถวค้นหา (Enter ทำงานแน่ ๆ) */}
+          <form
+            className="flex flex-wrap items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              refresh();
+            }}
+          >
             <div className="relative flex-1 min-w-[240px]">
               <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
-                className="pl-9 pr-3 py-2 w-full rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-black"
-                placeholder="ค้นหา ชื่อ/นามสกุล/เบอร์โทร/ที่อยู่…"
+                className="pl-9 pr-8 py-2 w-full rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-black"
+                placeholder="ค้นหา ชื่อ/นามสกุล/เบอร์โทร/ที่อยู่… (พิมพ์ ≥ 2 ตัว หรือกด Enter)"
                 value={params.q}
                 onChange={(e) => setParams((p) => ({ ...p, q: e.target.value }))}
-                onKeyDown={(e) => e.key === "Enter" && refresh()}
               />
+              {params.q ? (
+                <button
+                  type="button"
+                  onClick={() => setParams((p) => ({ ...p, q: "" }))}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black"
+                  aria-label="ล้างคำค้นหา"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              ) : null}
             </div>
 
             <div className="flex items-center gap-2">
@@ -240,11 +295,13 @@ export default function DataInformationPage() {
                 )}
               </Button>
 
-              <Button onClick={refresh} disabled={loading || exporting} className="rounded-xl">ค้นหา</Button>
+              <Button type="submit" disabled={loading || exporting} className="rounded-xl">
+                ค้นหา
+              </Button>
             </div>
-          </div>
+          </form>
 
-          {/* ชิปตัวกรองที่ใช้งานอยู่ */}
+          {/* ชิปตัวกรอง */}
           {activeFilterChips.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               {activeFilterChips.map((c) => (
@@ -271,7 +328,7 @@ export default function DataInformationPage() {
             </div>
           )}
 
-          {/* แผงตัวกรอง (ยุบ/ขยาย) */}
+          {/* แผงตัวกรอง */}
           {showFilters && (
             <div className="rounded-xl border border-gray-200 p-3 bg-white">
               <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-2">
@@ -321,7 +378,7 @@ export default function DataInformationPage() {
                 <Button variant="outline" className="rounded-xl" onClick={clearAllFilters} disabled={exporting}>
                   ล้าง
                 </Button>
-                <Button className="rounded-xl" onClick={refresh} disabled={exporting}>
+                <Button className="rounded-xl" onClick={() => refresh()} disabled={exporting}>
                   ใช้ตัวกรอง
                 </Button>
               </div>
@@ -336,76 +393,84 @@ export default function DataInformationPage() {
           )}
 
           {/* ตาราง */}
-        <div className="overflow-auto rounded-xl border border-gray-100">
-        {/* เพิ่ม whitespace-nowrap ที่ table เพื่อห้ามตัดบรรทัดทุกคอลัมน์ */}
-        <table className="min-w-[1400px] w-full text-sm whitespace-nowrap">
-            <thead className="bg-gray-50 sticky top-0 z-10">
-            <tr className="text-left text-gray-600">
-                {[
-                "ชื่อ","นามสกุล","เบอร์โทร",
-                "ชนิดพืช","จำนวนต้น","ชนิดพืชอื่น",
-                "สายพันธุ์","อายุพืช",
-                "วา","งาน","ไร่",
-                "ที่อยู่","ตำบล","อำเภอ","จังหวัด",
-                "สถานะ","วันที่ลงทะเบียน (TH)"
-                ].map((h) => (
-                <th key={h} className="px-3 py-2 font-medium">{h}</th>
-                ))}
-            </tr>
-            </thead>
-
-            <tbody className="divide-y divide-gray-100">
-            {loading && rows.length === 0
-                ? Array.from({ length: 10 }).map((_, i) => (
-                    <tr key={i}>
-                    {Array.from({ length: 17 }).map((__, j) => (
-                        <td key={j} className="px-3 py-2">
-                        <Skeleton className="h-4 w-full" />
-                        </td>
-                    ))}
-                    </tr>
-                ))
-                : rows.map((r) => (
-                    <tr key={r.id} className="hover:bg-gray-50/70">
-                    <td className="px-3 py-2">{r.regName}</td>
-                    <td className="px-3 py-2">{r.regSurname}</td>
-                    <td className="px-3 py-2">{r.regTel}</td>
-                    <td className="px-3 py-2">
-                        {Array.isArray(r.regPlant) ? r.regPlant.join(", ") : r.regPlant}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums">{r.regPlantAmount}</td>
-                    <td className="px-3 py-2">{r.regPlantOther}</td>
-                    <td className="px-3 py-2">
-                        {Array.isArray(r.regPlantSpecies) ? r.regPlantSpecies.join(", ") : "-"}
-                    </td>
-                    <td className="px-3 py-2">{r.regPlantAge}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{r.areaWa}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{r.areaNgan}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{r.areaRai}</td>
-
-                    {/* ที่อยู่: บังคับไม่ตัดบรรทัด + ให้มีความกว้างขั้นต่ำเพื่ออ่านง่าย */}
-                    <td className="px-3 py-2 min-w-[360px]">{r.addressDetail}</td>
-
-                    <td className="px-3 py-2">{r.sub_district}</td>
-                    <td className="px-3 py-2">{r.district}</td>
-                    <td className="px-3 py-2">{r.province}</td>
-                    <td className="px-3 py-2">{r.regSubType}</td>
-                    <td className="px-3 py-2">{r.createdAtTH}</td>
-                    </tr>
-                ))
-            }
-
-            {!loading && rows.length === 0 && (
-                <tr>
-                <td colSpan={17} className="px-3 py-6 text-center text-gray-500">
-                    ไม่พบข้อมูล
-                </td>
-                </tr>
+          <div className="relative">
+            {loading && rows.length > 0 && (
+              <div className="absolute inset-x-0 -top-7 text-xs text-gray-500">กำลังโหลดข้อมูล…</div>
             )}
-            </tbody>
-        </table>
-        </div>
+            <div className="overflow-auto rounded-xl border border-gray-100">
+              <table className="min-w-[1400px] w-full text-sm whitespace-nowrap">
+                <thead className="bg-gray-50 sticky top-0 z-10">
+                  <tr className="text-left text-gray-600">
+                    {[
+                      "ชื่อ","นามสกุล","เบอร์โทร",
+                      "ชนิดพืช","จำนวนต้น","ชนิดพืชอื่น",
+                      "สายพันธุ์","อายุพืช",
+                      "วา","งาน","ไร่",
+                      "ที่อยู่","ตำบล","อำเภอ","จังหวัด",
+                      "สถานะ","วันที่ลงทะเบียน (TH)"
+                    ].map((h, i) => (
+                      <th
+                        key={h}
+                        className={`px-3 py-2 font-medium bg-gray-50 ${i === 0 ? "sticky left-0 z-20" : ""}`}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {loading && rows.length === 0
+                    ? Array.from({ length: 10 }).map((_, i) => (
+                        <tr key={i}>
+                          {Array.from({ length: 17 }).map((__, j) => (
+                            <td key={j} className={`px-3 py-2 ${j === 0 ? "sticky left-0 bg-white" : ""}`}>
+                              <Skeleton className="h-4 w-full" />
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    : rows.map((r) => (
+                        <tr key={r.id} className="hover:bg-gray-50/70">
+                          <td className="px-3 py-2 sticky left-0 bg-white z-10">{r.regName}</td>
+                          <td className="px-3 py-2">{r.regSurname}</td>
+                          <td className="px-3 py-2">{r.regTel}</td>
+                          <td className="px-3 py-2">
+                            {Array.isArray(r.regPlant) ? r.regPlant.join(", ") : r.regPlant}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums">{r.regPlantAmount}</td>
+                          <td className="px-3 py-2">{r.regPlantOther}</td>
+                          <td className="px-3 py-2">
+                            {Array.isArray(r.regPlantSpecies) ? r.regPlantSpecies.join(", ") : "-"}
+                          </td>
+                          <td className="px-3 py-2">{r.regPlantAge}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{r.areaWa}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{r.areaNgan}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{r.areaRai}</td>
 
+                          {/* ที่อยู่: แสดงบรรทัดเดียว + ellipsis แต่ยัง hover ดูเต็มด้วย title */}
+                          <td className="px-3 py-2 max-w-[420px] truncate" title={r.addressDetail}>
+                            {r.addressDetail}
+                          </td>
+
+                          <td className="px-3 py-2">{r.sub_district}</td>
+                          <td className="px-3 py-2">{r.district}</td>
+                          <td className="px-3 py-2">{r.province}</td>
+                          <td className="px-3 py-2">{r.regSubType}</td>
+                          <td className="px-3 py-2">{r.createdAtTH}</td>
+                        </tr>
+                      ))}
+
+                  {!loading && rows.length === 0 && (
+                    <tr>
+                      <td colSpan={17} className="px-3 py-6 text-center text-gray-500">
+                        ไม่พบข้อมูล
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
           {/* โหลดเพิ่ม */}
           <div className="flex items-center justify-between">
