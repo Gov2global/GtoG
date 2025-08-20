@@ -24,8 +24,83 @@ import {
 import {
   Command, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty,
 } from "@/components/ui/command";
+import {
+  Popover, PopoverTrigger, PopoverContent, // [ADDED: ใช้ popover สำหรับตัวเลือกอิโมจิ]
+} from "@/components/ui/popover";
+import { Smile } from "lucide-react"; // [ADDED: ไอคอนปุ่มอิโมจิ]
 
 const CalendarClient = dynamic(() => import("./CalendarClient"), { ssr: false });
+
+/* ========================= EMOJI UTILS ========================= */
+// [ADDED] เซ็ตอิโมจิยอดนิยม (ปรับเพิ่ม/ลดได้)
+const EMOJI_SET = [
+  "😀","😁","😂","🤣","😊","😍","🥰","😘","😎","🤩",
+  "👍","👏","🙏","🔥","🎉","💯","✅","❗","⭐","🌟",
+  "🌈","☀️","☂️","🍀","🍎","🍔","🚀","🛒","📌","📞","📍","📣"
+];
+
+// [ADDED] ปุ่ม + Popover สำหรับเลือกอิโมจิแล้วยิง onPick(emoji)
+function EmojiPickerPopover({ onPick }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="icon" title="เพิ่มอิโมจิ">
+          <Smile className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-2">
+        <div className="grid grid-cols-7 gap-1">
+          {EMOJI_SET.map((e, i) => (
+            <button
+              key={i}
+              type="button"
+              className="text-xl hover:scale-110 transition"
+              onClick={() => onPick?.(e)}
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// [ADDED] แทรกอิโมจิ ณ caret position สำหรับ input/textarea ที่มี ref
+function insertAtCursor(ref, value, setValue, emoji) {
+  const el = ref?.current;
+  if (!el) {
+    setValue((v) => (v ?? "") + emoji);
+    return;
+  }
+  try {
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+    const next = `${before}${emoji}${after}`;
+    setValue(next);
+    // ย้าย caret ต่อท้ายอิโมจิ
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + emoji.length;
+      el.setSelectionRange(pos, pos);
+    });
+  } catch {
+    setValue((v) => (v ?? "") + emoji);
+  }
+}
+
+// [ADDED] Layout ช่วยให้ input/textarea มีปุ่มอิโมจิข้างๆ
+function WithEmoji({ children, onPick }) {
+  return (
+    <div className="flex items-start gap-2">
+      <div className="flex-1">{children}</div>
+      <EmojiPickerPopover onPick={onPick} />
+    </div>
+  );
+}
+/* =============================================================== */
 
 // [ADDED] helper โหลด JSON + ตรวจ content-type
 async function fetchJSON(url, init) { // [ADDED: ใช้ซ้ำ]
@@ -201,6 +276,10 @@ export default function CreateBroadcastDialog({ open, onOpenChange, onCreated })
   const [loading, setLoading] = useState(true); // [ADDED]
   const [error, setError] = useState(""); // [ADDED]
 
+  // [ADDED] refs สำหรับใส่อิโมจิ ณ caret
+  const textMessageRef = useRef(null);
+  const altTextRef = useRef(null);
+
   // [ADDED] รวม id ทั้งหมดที่ “จะส่งจริง”
   const combinedIds = useMemo(() => { // [ADDED]
     return Array.from(new Set([...selectedUsers, ...parsedIds]));
@@ -226,6 +305,7 @@ export default function CreateBroadcastDialog({ open, onOpenChange, onCreated })
         ]);
         const uniqueUsers = dedupeByValueStrict(lineid.users || []); // [ADDED]
         setOptionsRegType(Array.from(new Set((meta.regTypes || []).map(v => String(v)))));
+
         setOptionsProvince(Array.from(new Set((meta.provinces || []).map(v => String(v)))));
         setUserOptions(uniqueUsers);
       } catch (err) {
@@ -329,21 +409,63 @@ export default function CreateBroadcastDialog({ open, onOpenChange, onCreated })
             {messageType === "text" ? (
               <div className="space-y-2">
                 <Label className="text-sm">ข้อความ</Label>
-                <Textarea value={textMessage} onChange={(e) => setTextMessage(e.target.value)} rows={4} placeholder="พิมพ์ข้อความที่ต้องการส่ง เช่น สวัสดีครับ/ค่ะ" />
+                {/* [ADDED] ปุ่มอิโมจิสำหรับ Textarea (แทรกตามตำแหน่ง caret) */}
+                <WithEmoji
+                  onPick={(emoji) => insertAtCursor(textMessageRef, textMessage, setTextMessage, emoji)}
+                >
+                  <Textarea
+                    ref={textMessageRef} // [ADDED]
+                    value={textMessage}
+                    onChange={(e) => setTextMessage(e.target.value)}
+                    rows={4}
+                    placeholder="พิมพ์ข้อความที่ต้องการส่ง เช่น สวัสดีครับ/ค่ะ"
+                  />
+                </WithEmoji>
               </div>
             ) : (
               <>
                 <div className="space-y-2">
                   <Label className="text-sm">ข้อความสำรอง (altText)</Label>
-                  <Input value={altText} onChange={(e) => setAltText(e.target.value)} className="h-10" />
+                  {/* [ADDED] ปุ่มอิโมจิสำหรับ altText */}
+                    <Input
+                      ref={altTextRef} // [ADDED]
+                      value={altText}
+                      onChange={(e) => setAltText(e.target.value)}
+                      className="h-10"
+                    />
                 </div>
+
+                {/* [CHANGED] กล่อง Flex แต่ละอันให้มีปุ่มอิโมจิ (append ต่อท้ายค่า) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field label="ระยะ (หัวข้อ)" value={distance} onChange={setDistance} />
-                  <Field label="การปฏิบัติงาน" value={action} onChange={setAction} />
-                  <Field label="การให้น้ำ" value={water} onChange={setWater} />
-                  <Field label="การให้ปุ๋ย" value={fertilizer} onChange={setFertilizer} />
-                  <Field label="โรค" value={disease} onChange={setDisease} />
-                  <Field label="แมลง" value={insect} onChange={setInsect} />
+                  <div className="space-y-2">
+                    <Label className="text-sm">ระยะ (หัวข้อ)</Label>
+                      <Input value={distance} onChange={(e) => setDistance(e.target.value)} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm">การปฏิบัติงาน</Label>
+                      <Textarea value={action} onChange={(e) => setAction(e.target.value)} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm">การให้น้ำ</Label>
+                      <Textarea value={water} onChange={(e) => setWater(e.target.value)} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm">การให้ปุ๋ย</Label>
+                      <Textarea value={fertilizer} onChange={(e) => setFertilizer(e.target.value)} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm">โรค</Label>
+                      <Textarea value={disease} onChange={(e) => setDisease(e.target.value)} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm">แมลง</Label>
+                      <Textarea value={insect} onChange={(e) => setInsect(e.target.value)} />
+                  </div>
                 </div>
               </>
             )}
@@ -365,7 +487,7 @@ export default function CreateBroadcastDialog({ open, onOpenChange, onCreated })
             {targetType === "individual" && (
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <Label className="text-sm">เลือกผู้รับ (ชื่อ‑นามสกุล) — ค่าจริงใช้ regLineID</Label>
+                  <Label className="text-sm">เลือกผู้รับ (ชื่อ-นามสกุล) — ค่าจริงใช้ regLineID</Label>
                   <Command className="border rounded-md">
                     <CommandInput
                       ref={cmdInputRef}
@@ -414,8 +536,8 @@ export default function CreateBroadcastDialog({ open, onOpenChange, onCreated })
                   </div>
                 )}
 
-                {/* Preview regLineID ที่จะถูกส่งจริง */}
-                <div className="space-y-1" hidden> {/* [ADDED] */}
+                {/* Preview regLineID ที่จะถูกส่งจริง (ซ่อนไว้) */}
+                <div className="space-y-1" hidden>
                   <Label className="text-sm">หรือวาง regLineID หลายรายการ (คั่นด้วย , หรือเว้นบรรทัด)</Label>
                   <Textarea
                     value={targetIdsText}
@@ -429,17 +551,17 @@ export default function CreateBroadcastDialog({ open, onOpenChange, onCreated })
                   </div>
                 </div>
 
-                {/* [ADDED] กล่อง Preview id ที่จะส่งจริง */}
-                <div className="space-y-1" hidden> {/* [ADDED] */}
-                  <Label className="text-sm">regLineID ที่จะส่งจริง (รวมจากรายชื่อที่เลือก + พิมพ์เอง)</Label> {/* [ADDED] */}
+                {/* รวม id (ซ่อนไว้) */}
+                <div className="space-y-1" hidden>
+                  <Label className="text-sm">regLineID ที่จะส่งจริง (รวมจากรายชื่อที่เลือก + พิมพ์เอง)</Label>
                   <Textarea
                     value={combinedIds.join(", ")}
                     readOnly
                     rows={3}
                     className="bg-muted focus-visible:ring-0"
-                  /> {/* [ADDED] */}
+                  />
                   <div className="flex items-center justify-between text-xs">
-                    <span>รวมทั้งหมด: <b>{combinedIds.length}</b> รายการ</span> {/* [ADDED] */}
+                    <span>รวมทั้งหมด: <b>{combinedIds.length}</b> รายการ</span>
                     <Button
                       type="button"
                       size="sm"
@@ -447,7 +569,7 @@ export default function CreateBroadcastDialog({ open, onOpenChange, onCreated })
                       onClick={() => navigator.clipboard?.writeText(combinedIds.join(", ")).catch(()=>{})}
                     >
                       คัดลอกทั้งหมด
-                    </Button> {/* [ADDED] */}
+                    </Button>
                   </div>
                 </div>
               </div>
