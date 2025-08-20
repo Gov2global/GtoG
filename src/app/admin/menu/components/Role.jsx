@@ -1,7 +1,7 @@
 //src\app\admin\menu\components\Role.jsx
 // ใช้ใน Client Components (เพราะมี React icon components อยู่)
 import {
-  Sprout, PackageSearch, Landmark, MapPin, GraduationCap,Tractor,
+  Sprout, PackageSearch, Landmark, MapPin, GraduationCap,Tractor, Bird,
   Users as UsersIcon, BarChart3, Settings as SettingsIcon,
 } from 'lucide-react'
 
@@ -15,7 +15,7 @@ export const MENU_LIST = [
 
   // admin-only
   { key: 'users',    label: 'Users',    icon: UsersIcon,     path: '/admin/users',    color: 'text-slate-700',  bg: 'bg-slate-100' },
-  { key: 'broadcast',    label: 'Broadcast',    icon: UsersIcon,     path: '/admin/broadcast',    color: 'text-slate-700',  bg: 'bg-slate-100' },
+  { key: 'broadcast',    label: 'Broadcast',    icon: Bird,     path: '/admin/broadcast',    color: 'text-slate-700',  bg: 'bg-slate-100' },
   { key: 'reports',  label: 'Reports',  icon: BarChart3,     path: '/admin/reports',  color: 'text-emerald-700',bg: 'bg-emerald-100' },
   { key: 'settings', label: 'Settings', icon: SettingsIcon,  path: '/admin/settings', color: 'text-rose-700',   bg: 'bg-rose-100' },
 ]

@@ -45,6 +45,8 @@ function DialogOverlay({
   );
 }
 
+// 
+
 function DialogContent({
   className,
   children,
@@ -57,8 +59,11 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
-          className
+          // [CHANGED: ขยายความกว้าง/ความสูงเริ่มต้นให้ใหญ่ขึ้นแบบ responsive]
+          // เดิม: 'w-full max-w-[calc(100%-2rem)] ... sm:max-w-lg'
+          // ใหม่: ยกเลิก max-width เริ่มต้น + ใช้ 70vw บน md และ 50vw บน lg
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 w-full max-w-none md:w-[70vw] lg:w-[50vw] max-h-[85vh] overflow-y-auto", // [CHANGED: กว้าง/สูงขึ้น]
+          className // [ADDED: อนุญาตให้ผู้ใช้ส่ง className มาทับ ถ้าต้องการ 50% ตลอด ให้ส่ง 'w-[50vw] max-w-none'
         )}
         {...props}>
         {children}
