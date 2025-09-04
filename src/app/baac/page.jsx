@@ -1,8 +1,84 @@
-"use client"; // [UNCHANGED]
-import React, { useMemo, useState } from "react"; // [UNCHANGED]
-import Select from "react-select"; // [ADDED: ใช้ react-select สำหรับ multi select แบบมีชิป]
+"use client"; // [ADDED: เป็น client component ตามข้อกำหนด]
 
-// [UNCHANGED] ===== Utils =====
+import React, { useMemo, useState } from "react"; // [CHANGED: คง useMemo/useState ใช้ภายในคอมโพเนนต์]
+import dynamic from "next/dynamic";
+
+// Dynamic import ของ react-select พร้อมปิด SSR เพื่อป้องกัน hydration errors
+const CropSelect = dynamic(() =>
+  import("react-select").then((mod) => {
+    const Select = mod.default; // [ADDED: อ้างถึง default export ของ react-select]
+    const reactSelectStyles = {
+      control: (base, state) => ({
+        ...base,
+        borderRadius: 14,
+        borderColor: state.isFocused ? "#6ee7b7" : "rgba(16,185,129,0.3)",
+        boxShadow: state.isFocused ? "0 0 0 2px rgba(110,231,183,0.5)" : "none",
+        paddingLeft: 6,
+        minHeight: 44,
+        ":hover": { borderColor: "#6ee7b7" },
+      }),
+      multiValue: (base) => ({
+        ...base,
+        backgroundColor: "#7dd3fc",
+        color: "#083344",
+        borderRadius: 9999,
+        paddingLeft: 6,
+        paddingRight: 2,
+      }),
+      multiValueLabel: (base) => ({
+        ...base,
+        color: "#083344",
+        fontSize: 14,
+      }),
+      multiValueRemove: (base) => ({
+        ...base,
+        color: "#0c4a6e",
+        ":hover": { backgroundColor: "transparent", color: "#dc2626" },
+      }),
+      placeholder: (base) => ({ ...base, color: "#9ca3af" }),
+      menu: (base) => ({ ...base, borderRadius: 12, overflow: "hidden" }),
+    };
+
+    return function CropSelectWrapper(props) {
+      return (
+        <Select
+          {...props}
+          isMulti
+          styles={reactSelectStyles}
+          classNamePrefix="react-select"
+          placeholder="เลือกหรือพิมพ์ค้นหาพืชหลัก..."
+          noOptionsMessage={() => "ไม่พบรายการ"}
+        />
+      );
+    };
+  }),
+  { ssr: false }
+);
+
+function toNumber(val) {
+  if (val === "" || val === null || val === undefined) return NaN; // [ADDED: รองรับค่าว่าง]
+  const num = Number(String(val).replace(/,/g, "").trim());
+  return Number.isNaN(num) ? NaN : num;
+}
+
+function calculateTotalAreaSqm(rai, ngan, wa) {
+  const r = toNumber(rai);
+  const n = toNumber(ngan);
+  const w = toNumber(wa);
+  const sqm = (Number.isNaN(r) ? 0 : r) * 1600 + (Number.isNaN(n) ? 0 : n) * 400 + (Number.isNaN(w) ? 0 : w) * 4; // [CHANGED: กัน NaN ด้วย fallback 0]
+  return isNaN(sqm) ? 0 : sqm;
+}
+
+function convertSqmToRaiNganWa(sqm) {
+  const safe = Math.max(0, Number(sqm) || 0); // [ADDED: กันค่าติดลบ/NaN]
+  const rai = Math.floor(safe / 1600);
+  const remainingAfterRai = safe % 1600;
+  const ngan = Math.floor(remainingAfterRai / 400);
+  const remainingAfterNgan = remainingAfterRai % 400;
+  const wa = Math.floor(remainingAfterNgan / 4);
+  return `${rai} ไร่ ${ngan} งาน ${wa} วา`;
+}
+
 function isValidThaiId(id) {
   const digits = String(id).replace(/\D/g, "");
   if (digits.length !== 13) return false;
@@ -11,18 +87,18 @@ function isValidThaiId(id) {
   const check = (11 - (sum % 11)) % 10;
   return check === Number(digits[12]);
 }
-function toNumber(val) {
-  if (val === "" || val === null || val === undefined) return NaN;
-  const num = Number(String(val).replace(/,/g, "").trim());
-  return Number.isNaN(num) ? NaN : num;
-}
+
 function formatNumber(val) {
   const n = toNumber(val);
   if (Number.isNaN(n)) return "";
   return n.toLocaleString("en-US");
 }
 
-// [UNCHANGED] ===== Constants =====
+// const totalAreaSqm = useMemo(() => { // [REMOVED: useMemo นอกคอมโพเนนต์อ้าง form ซึ่งยังไม่ถูกประกาศ ทำให้ error]
+//   return calculateTotalAreaSqm(form.areaRai, form.areaNgan, form.areaWa);
+// }, [form.areaRai, form.areaNgan, form.areaWa]);
+// [REMOVED: ย้าย logic ไปไว้ในคอมโพเนนต์ BaacPage ด้านล่าง]
+
 const LOAN_PURPOSES = [
   "ต้นทุนการผลิต",
   "ซื้อปุ๋ย/สารปรับปรุงดิน",
@@ -33,26 +109,9 @@ const LOAN_PURPOSES = [
   "หมุนเวียนชำระหนี้",
   "อื่นๆ",
 ];
-const MAIN_CROPS = [
-  "ข้าว",
-  "ข้าวโพด",
-  "มันสำปะหลัง",
-  "อ้อย",
-  "ยางพารา",
-  "ปาล์มน้ำมัน",
-  "ทุเรียน",
-  "ลำไย",
-  "ส้มเขียวหวาน",
-  "ส้มโอ",
-  "กล้วย",
-  "พืชผัก",
-  "อื่นๆ",
-];
+const MAIN_CROPS = ["ทุเรียน", "ลำไย", "ส้มโอ", "ส้มเขียวหวาน", "อื่นๆ"];
+const CROP_OPTIONS = MAIN_CROPS.map((c) => ({ label: c, value: c }));
 
-// [ADDED] แปลงรายการพืชให้เป็น options ที่ react-select ใช้
-const CROP_OPTIONS = MAIN_CROPS.map((c) => ({ label: c, value: c })); // [ADDED]
-
-// [UNCHANGED] ===== Field wrapper =====
 function Field({ label, required, children, hint, error }) {
   return (
     <div className="space-y-1">
@@ -66,7 +125,6 @@ function Field({ label, required, children, hint, error }) {
   );
 }
 
-// [CHANGED] ===== Main Page =====
 export default function BaacPage() {
   const [form, setForm] = useState({
     firstName: "",
@@ -79,10 +137,11 @@ export default function BaacPage() {
     amphur: "",
     tambon: "",
     postcode: "",
-    // mainCrop: "", // [REMOVED: เปลี่ยนเป็น mainCrops (array) เพื่อรองรับหลายรายการ]
-    mainCrops: [], // [ADDED: โครงสร้างใหม่ เก็บเป็น array ของ {label,value}]
+    mainCrops: [],
     otherCrops: "",
     areaRai: "",
+    areaNgan: "",
+    areaWa: "", 
     plotLocation: "",
     landDoc: "",
     landDocFiles: null,
@@ -93,11 +152,18 @@ export default function BaacPage() {
     loanPurposeOther: "",
     loanAmount: "",
   });
-  const [errors, setErrors] = useState({}); // [UNCHANGED]
-  const [submitting, setSubmitting] = useState(false); // [UNCHANGED]
-  const [submitted, setSubmitted] = useState(false); // [UNCHANGED]
 
-  // [UNCHANGED] ===== Styles =====
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  // ====== คำนวณพื้นที่แบบ reactive ======
+  const totalAreaSqm = useMemo(() => { // [ADDED: คำนวณในคอมโพเนนต์เพื่ออ้าง form ได้]
+    return calculateTotalAreaSqm(form.areaRai, form.areaNgan, form.areaWa);
+  }, [form.areaRai, form.areaNgan, form.areaWa]);
+
+  const areaText = useMemo(() => convertSqmToRaiNganWa(totalAreaSqm), [totalAreaSqm]); // [ADDED: แสดงข้อความ ไร่-งาน-วา]
+
   const inputBase =
     "w-full rounded-[14px] border border-emerald-200/80 bg-white px-4 py-3 text-[15px] leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400";
   const selectBase =
@@ -105,36 +171,41 @@ export default function BaacPage() {
   const chipBox =
     "flex items-center gap-3 rounded-[14px] border border-emerald-200 bg-white px-3 py-3 shadow-sm active:scale-[0.99]";
 
-  // [UNCHANGED]
   const handleChange = (key) => (e) => {
     const value = e?.target?.files ? e.target.files : e.target.value;
-    setForm((s) => ({ ...s, [key]: value }));
+    setForm((s) => ({ ...s, [key]: value })); // [CHANGED: อัพเดต state ทันที]
   };
-  // [UNCHANGED]
+
   const handleCheckbox = (purpose) => (e) => {
     setForm((s) => {
-      const set = new Set(s.loanPurposes);
-      if (e.target.checked) set.add(purpose);
-      else set.delete(purpose);
-      return { ...s, loanPurposes: Array.from(set) };
+      const setPur = new Set(s.loanPurposes);
+      if (e.target.checked) setPur.add(purpose);
+      else setPur.delete(purpose);
+      return { ...s, loanPurposes: Array.from(setPur) };
     });
   };
-  // [UNCHANGED]
+
   const handleAmountChange = (key) => (e) => {
-    const raw = e.target.value.replace(/[^\d,]/g, "").replace(/,+/g, (m) => (m.length > 1 ? "," : m));
+    const raw = e.target.value
+      .replace(/[^\d,]/g, "")
+      .replace(/,+/g, (m) => (m.length > 1 ? "," : m));
     setForm((s) => ({ ...s, [key]: raw }));
   };
-  // [UNCHANGED]
+
   const onCitizenIdChange = (e) => {
     let v = e.target.value.replace(/\D/g, "").slice(0, 13);
-    const parts = [v.slice(0, 1), v.slice(1, 5), v.slice(5, 10), v.slice(10, 12), v.slice(12, 13)].filter(Boolean);
+    const parts = [
+      v.slice(0, 1),
+      v.slice(1, 5),
+      v.slice(5, 10),
+      v.slice(10, 12),
+      v.slice(12, 13),
+    ].filter(Boolean);
     setForm((s) => ({ ...s, citizenId: parts.join("-") }));
   };
 
-  // [ADDED] helper สำหรับเช็กว่าเลือก “อื่นๆ” อยู่หรือไม่
-  const hasOtherCrop = form.mainCrops.some((o) => o.value === "อื่นๆ"); // [ADDED]
+  const hasOtherCrop = form.mainCrops.some((o) => o.value === "อื่นๆ");
 
-  /* ===== Validate ===== */
   const validate = () => {
     const err = {};
     if (!form.firstName.trim()) err.firstName = "กรุณากรอกชื่อ";
@@ -143,7 +214,6 @@ export default function BaacPage() {
     if (!cid) err.citizenId = "กรุณากรอกเลขบัตรประชาชน";
     else if (!/^\d{13}$/.test(cid)) err.citizenId = "เลขบัตรประชาชนต้องมี 13 หลัก";
     else if (!isValidThaiId(cid)) err.citizenId = "เลขบัตรประชาชนไม่ถูกต้อง";
-
     if (!form.dob) err.dob = "กรุณาเลือกวันเกิด";
 
     const phone = form.phone.replace(/\D/g, "");
@@ -159,8 +229,7 @@ export default function BaacPage() {
     if (!post) err.postcode = "กรุณากรอกรหัสไปรษณีย์";
     else if (!/^\d{5}$/.test(post)) err.postcode = "ต้องเป็น 5 หลัก";
 
-    // if (!form.mainCrop) err.mainCrop = "กรุณาเลือกพืชหลัก"; // [REMOVED: ใช้ mainCrops แทน]
-    if (!form.mainCrops.length) err.mainCrop = "กรุณาเลือกพืชหลักอย่างน้อย 1 ชนิด"; // [ADDED]
+    if (!form.mainCrops.length) err.mainCrop = "กรุณาเลือกพืชหลักอย่างน้อย 1 ชนิด";
 
     const rai = toNumber(form.areaRai);
     if (Number.isNaN(rai) || rai <= 0) err.areaRai = "ใส่ตัวเลขมากกว่า 0";
@@ -181,42 +250,32 @@ export default function BaacPage() {
     const amount = toNumber(form.loanAmount);
     if (Number.isNaN(amount) || amount <= 0) err.loanAmount = "ตัวเลขมากกว่า 0";
 
-    if (hasOtherCrop && !form.otherCrops.trim()) {
-      err.otherCrops = "กรุณาระบุชื่อพืชอื่นๆ"; // [ADDED: บังคับกรอกเมื่อมีการเลือก “อื่นๆ”]
-    }
+    if (hasOtherCrop && !form.otherCrops.trim())
+      err.otherCrops = "กรุณาระบุชื่อพืชอื่นๆ";
 
     setErrors(err);
     return Object.keys(err).length === 0;
   };
 
-  /* ===== Payload ===== */
   const payload = useMemo(
     () => ({
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
+      ...form,
       citizenId: form.citizenId.replace(/\D/g, ""),
-      dob: form.dob,
       phone: form.phone.replace(/\D/g, ""),
-      address: form.address.trim(),
-      province: form.province.trim(),
-      amphur: form.amphur.trim(),
-      tambon: form.tambon.trim(),
-      postcode: form.postcode.trim(),
-      // mainCrop: form.mainCrop, // [REMOVED: เปลี่ยนเป็น mainCrops]
-      mainCrops: form.mainCrops.map((o) => o.value), // [ADDED: แปลงเหลือเป็น array ของ string]
-      otherCrops: form.otherCrops.trim(), // [UNCHANGED: จะมีค่าเมื่อเลือก “อื่นๆ” เท่านั้น]
+      mainCrops: form.mainCrops.map((o) => o.value),
+      otherCrops: form.otherCrops.trim(),
       areaRai: toNumber(form.areaRai),
-      plotLocation: form.plotLocation.trim(),
-      landDoc: form.landDoc,
       yearsPlanting: toNumber(form.yearsPlanting),
       incomePerYear: toNumber(form.incomePerYear),
-      loanPurposes: form.loanPurposes,
-      loanPurposeOther: form.loanPurposes.includes("อื่นๆ") ? form.loanPurposeOther.trim() : "",
+      loanPurposeOther: form.loanPurposes.includes("อื่นๆ")
+        ? form.loanPurposeOther.trim()
+        : "",
       loanAmount: toNumber(form.loanAmount),
       landDocFilesCount: form.landDocFiles?.length || 0,
       otherDocsCount: form.otherDocs?.length || 0,
+      totalAreaSqm, // [ADDED: แนบผลรวมพื้นที่เพื่อส่งไป backend ได้]
     }),
-    [form]
+    [form, totalAreaSqm]
   );
 
   const onSubmit = async (e) => {
@@ -226,84 +285,48 @@ export default function BaacPage() {
       setSubmitting(true);
       const fd = new FormData();
       Object.entries(payload).forEach(([k, v]) => {
-        if (Array.isArray(v)) {
-          // [ADDED] รองรับ array (เช่น mainCrops) โดยแปลงเป็น JSON string
-          fd.append(k, JSON.stringify(v)); // [ADDED: ส่ง array เป็น JSON string เพื่อความง่าย]
-        } else {
-          fd.append(k, typeof v === "number" ? String(v) : v);
-        }
+        if (Array.isArray(v)) fd.append(k, JSON.stringify(v));
+        else fd.append(k, typeof v === "number" ? String(v) : v);
       });
-      if (form.landDocFiles?.length) Array.from(form.landDocFiles).forEach((f) => fd.append("landDocFiles", f, f.name));
-      if (form.otherDocs?.length) Array.from(form.otherDocs).forEach((f) => fd.append("otherDocs", f, f.name));
-
-      // const res = await fetch("/api/baac/register", { method: "POST", body: fd });
-      // if (!res.ok) throw new Error("ส่งคำขอล้มเหลว");
-      // await res.json();
-
-      console.log("[BAAC] payload", payload); // [UNCHANGED]
-      setSubmitted(true); // [UNCHANGED]
+      if (form.landDocFiles?.length)
+        Array.from(form.landDocFiles).forEach((f) =>
+          fd.append("landDocFiles", f, f.name)
+        );
+      if (form.otherDocs?.length)
+        Array.from(form.otherDocs).forEach((f) =>
+          fd.append("otherDocs", f, f.name)
+        );
+      console.log("[BAAC] payload", payload);
+      setSubmitted(true);
     } catch {
-      alert("เกิดข้อผิดพลาดในการส่งคำขอ"); // [UNCHANGED]
+      alert("เกิดข้อผิดพลาดในการส่งคำขอ");
     } finally {
-      setSubmitting(false); // [UNCHANGED]
+      setSubmitting(false);
     }
   };
-
-  // [ADDED] กำหนด custom styles ให้ react-select เข้ากับโทน Tailwind
-  const reactSelectStyles = {
-    control: (base, state) => ({
-      ...base,
-      borderRadius: 14,
-      borderColor: state.isFocused ? "#6ee7b7" : "rgba(16,185,129,0.3)",
-      boxShadow: state.isFocused ? "0 0 0 2px rgba(110,231,183,0.5)" : "none",
-      paddingLeft: 6,
-      minHeight: 44,
-      ":hover": { borderColor: "#6ee7b7" },
-    }),
-    multiValue: (base) => ({
-      ...base,
-      backgroundColor: "#7dd3fc",
-      color: "#083344",
-      borderRadius: 9999,
-      paddingLeft: 6,
-      paddingRight: 2,
-    }),
-    multiValueLabel: (base) => ({
-      ...base,
-      color: "#083344",
-      fontSize: 14,
-    }),
-    multiValueRemove: (base) => ({
-      ...base,
-      color: "#0c4a6e",
-      ":hover": { backgroundColor: "transparent", color: "#dc2626" },
-    }),
-    placeholder: (base) => ({ ...base, color: "#9ca3af" }),
-    menu: (base) => ({ ...base, borderRadius: 12, overflow: "hidden" }),
-  }; // [ADDED]
 
   return (
     <main className="min-h-screen bg-[#F7F5EE] flex items-start justify-center p-4">
       <form
         onSubmit={onSubmit}
         className="
-          w-full max-w-xl 
+          w-full max-w-xl
           rounded-[20px] border border-emerald-200/60 bg-white shadow-[0_6px_24px_rgba(0,0,0,0.06)]
           px-5 sm:px-7 py-5 space-y-4 relative
         "
       >
-        {/* Header แบบการ์ด: ไอคอนต้นกล้า + ชื่อฟอร์ม */}
         <div className="flex items-center justify-center gap-2">
           <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200">
-            {/* sprout icon */}
-            <svg viewBox="0 0 24 24" className="h-4 w-4 text-emerald-600">
+            <svg viewBox="0 0 24 24" className="h-4 w-4 text-emerald-600" aria-hidden="true">
               <path
                 fill="currentColor"
                 d="M12 21a1 1 0 0 1-1-1v-5.28A7.5 7.5 0 0 1 3 7a1 1 0 0 1 1-1a7.5 7.5 0 0 1 7 4.27V5a1 1 0 1 1 2 0v5.27A7.5 7.5 0 0 1 20 6a1 1 0 0 1 1 1a7.5 7.5 0 0 1-8 7.72V20a1 1 0 0 1-1 1Z"
               />
             </svg>
           </span>
-          <h1 className="text-[18px] font-semibold text-emerald-700">แบบฟอร์มขอรับเงินสนับสนุนจาก ธ.ก.ส.</h1>
+          <h1 className="text-[18px] font-semibold text-emerald-700">
+            แบบฟอร์มขอรับเงินสนับสนุนจาก ธ.ก.ส.
+          </h1>
         </div>
 
         {submitted && (
@@ -312,27 +335,63 @@ export default function BaacPage() {
           </div>
         )}
 
-        {/* ชื่อ-สกุล */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="ชื่อ" required error={errors.firstName}>
-            <input className={inputBase} value={form.firstName} onChange={handleChange("firstName")} autoComplete="given-name" />
+            <input
+              className={inputBase}
+              value={form.firstName}
+              onChange={handleChange("firstName")}
+              autoComplete="given-name"
+            />
           </Field>
           <Field label="สกุล" required error={errors.lastName}>
-            <input className={inputBase} value={form.lastName} onChange={handleChange("lastName")} autoComplete="family-name" />
+            <input
+              className={inputBase}
+              value={form.lastName}
+              onChange={handleChange("lastName")}
+              autoComplete="family-name"
+            />
           </Field>
         </div>
 
-        {/* เบอร์ / บัตร / วันเกิด */}
-        <Field label="เบอร์โทรศัพท์" required hint="เช่น 0812345678" error={errors.phone}>
-          <input className={inputBase} inputMode="tel" autoComplete="tel-national" value={form.phone} onChange={handleChange("phone")} placeholder="0812345678" />
+        <Field
+          label="เบอร์โทรศัพท์"
+          required
+          hint="เช่น 0812345678"
+          error={errors.phone}
+        >
+          <input
+            className={inputBase}
+            inputMode="tel"
+            autoComplete="tel-national"
+            value={form.phone}
+            onChange={handleChange("phone")}
+            placeholder="0812345678"
+          />
         </Field>
 
-        <Field label="เลขบัตรประชาชน" required hint="13 หลัก" error={errors.citizenId}>
+        <Field
+          label="เลขบัตรประชาชน"
+          required
+          hint="13 หลัก"
+          error={errors.citizenId}
+        >
           <div className="relative">
-            <input className={inputBase + " pr-10"} inputMode="numeric" maxLength={17} placeholder="x-xxxx-xxxxx-xx-x" value={form.citizenId} onChange={onCitizenIdChange} />
-            {/* ไอคอนการ์ด */}
+            <input
+              className={inputBase + " pr-10"}
+              inputMode="numeric"
+              maxLength={17}
+              placeholder="x-xxxx-xxxxx-xx-x"
+              value={form.citizenId}
+              onChange={onCitizenIdChange}
+            />
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500">
-              <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1H3V7Zm19 3v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7h19ZM7 16h5v-2H7v2Z"/></svg>
+              <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1H3V7Zm19 3v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7h19ZM7 16h5v-2H7v2Z"
+                />
+              </svg>
             </span>
           </div>
         </Field>
@@ -341,74 +400,119 @@ export default function BaacPage() {
           <input type="date" className={inputBase} value={form.dob} onChange={handleChange("dob")} />
         </Field>
 
-        {/* ที่อยู่ */}
         <Field label="ที่อยู่ตามบัตรประชาชน" required error={errors.address}>
-          <textarea rows={3} className={inputBase} value={form.address} onChange={handleChange("address")} />
+          <textarea
+            rows={3}
+            className={inputBase}
+            value={form.address}
+            onChange={handleChange("address")}
+          />
         </Field>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Field label="จังหวัด" required error={errors.province}>
-            <input className={inputBase} value={form.province} onChange={handleChange("province")} />
+            <input
+              className={inputBase}
+              value={form.province}
+              onChange={handleChange("province")}
+            />
           </Field>
           <Field label="อำเภอ" required error={errors.amphur}>
             <input className={inputBase} value={form.amphur} onChange={handleChange("amphur")} />
           </Field>
           <Field label="ตำบล" required error={errors.tambon}>
-            <input className={inputBase} value={form.tambon} onChange={handleChange("tambon")} />
+            <input
+              className={inputBase}
+              value={form.tambon}
+              onChange={handleChange("tambon")}
+            />
           </Field>
         </div>
 
         <Field label="รหัสไปรษณีย์" required error={errors.postcode}>
-          <input className={inputBase} inputMode="numeric" maxLength={5} value={form.postcode} onChange={handleChange("postcode")} />
-        </Field>
-
-        {/* เพาะปลูก */}
-        <Field label="ชนิดพืชหลัก" required error={errors.mainCrop}>
-          {/* [REMOVED: select เดิมทั้งบล็อก และแทนด้วย react-select ด้านล่าง] */}
-          {/* <div className="relative"> ... </div> */}
-
-          {/* [CHANGED: Multi-select แบบมีชิปด้วย react-select + จัดการ “อื่นๆ”] */}
-          <Select
-            isMulti // [ADDED]
-            options={CROP_OPTIONS} // [ADDED]
-            value={form.mainCrops} // [ADDED]
-            onChange={(selected) =>
-              setForm((s) => {
-                const next = selected || [];
-                const includeOther = next.some((o) => o.value === "อื่นๆ"); // [ADDED]
-                return {
-                  ...s,
-                  mainCrops: next, // [ADDED]
-                  otherCrops: includeOther ? s.otherCrops : "", // [ADDED: ถ้ายกเลิก “อื่นๆ” ให้เคลียร์ค่า otherCrops]
-                };
-              })
-            }
-            placeholder="เลือกหรือพิมพ์ค้นหาพืชหลัก..."
-            styles={reactSelectStyles} // [ADDED: ปรับโทนให้เข้ากับ Tailwind]
-            classNamePrefix="react-select" // [ADDED: เผื่อจะปรับแต่งด้วย CSS ภายหลัง]
-            noOptionsMessage={() => "ไม่พบรายการ"}
+          <input
+            className={inputBase}
+            inputMode="numeric"
+            maxLength={5}
+            value={form.postcode}
+            onChange={handleChange("postcode")}
           />
         </Field>
 
-        {/* [CHANGED] แสดงช่อง “พืชอื่นๆ” เฉพาะเมื่อเลือก “อื่นๆ” และบังคับกรอก */}
-        {hasOtherCrop && ( // [ADDED]
-          <Field label="พืชอื่นๆ (ถ้ามี)" required error={errors.otherCrops}> {/* [CHANGED: เพิ่ม required + แสดง error] */}
+        <Field label="ชนิดพืชหลัก" required error={errors.mainCrop}>
+          <CropSelect
+            value={form.mainCrops}
+            onChange={(selected) => {
+              const next = selected || [];
+              const includeOther = next.some((o) => o.value === "อื่นๆ");
+              setForm((s) => ({
+                ...s,
+                mainCrops: next,
+                otherCrops: includeOther ? s.otherCrops : "",
+              }));
+            }}
+            options={CROP_OPTIONS}
+          />
+        </Field>
+
+        {hasOtherCrop && (
+          <Field label="พืชอื่นๆ (ถ้ามี)" required error={errors.otherCrops}>
             <input
               className={inputBase}
               value={form.otherCrops}
               onChange={handleChange("otherCrops")}
               placeholder="ระบุพืชเพิ่มเติม"
-              aria-required="true" // [ADDED: a11y ให้ชัดเจนว่าเป็นฟิลด์บังคับ]
+              aria-required="true"
             />
           </Field>
         )}
 
-        <Field label="พื้นที่เพาะปลูก (ไร่)" required hint="กรอกเป็นตัวเลข เช่น 12 หรือ 12.5" error={errors.areaRai}>
-          <input className={inputBase} inputMode="decimal" value={form.areaRai} onChange={handleChange("areaRai")} />
-        </Field>
+        <div>
+          <h3 className="text-xl font-semibold text-amber-700 mb-2 mt-4">
+            พื้นที่ที่ปลูก
+          </h3>
+          <div className="grid grid-cols-3 gap-4">
+            <Field label="ไร่">
+              <input
+                type="number"
+                className="w-full rounded-[14px] border border-amber-300 bg-white px-4 py-3 text-[15px] leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+                value={form.areaRai}
+                onChange={handleChange("areaRai")}
+                placeholder="0"
+              />
+            </Field>
+            <Field label="งาน">
+              <input
+                type="number"
+                className="w-full rounded-[14px] border border-amber-300 bg-white px-4 py-3 text-[15px] leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+                value={form.areaNgan}
+                onChange={handleChange("areaNgan")}
+                placeholder="0"
+              />
+            </Field>
+            <Field label="ตารางวา">
+              <input
+                type="number"
+                className="w-full rounded-[14px] border border-amber-300 bg-white px-4 py-3 text-[15px] leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+                value={form.areaWa}
+                onChange={handleChange("areaWa")}
+                placeholder="0"
+              />
+            </Field>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">
+            🧮 รวมพื้นที่ทั้งหมด: <strong>{totalAreaSqm}</strong> ตารางเมตร<br /> {/* [CHANGED: แสดงผลรวมแบบ realtime] */}
+            🧾 เทียบเท่า: <strong>{areaText}</strong> {/* [ADDED: แสดงข้อความไทย ไร่-งาน-วา] */}
+          </p>
+        </div>
 
         <Field label="สถานที่ตั้งแปลง" required hint="ระบุคำอธิบาย/ลิงก์ Google Maps" error={errors.plotLocation}>
-          <input className={inputBase} value={form.plotLocation} onChange={handleChange("plotLocation")} placeholder="เช่น https://maps.app.goo.gl/..." />
+          <input
+            className={inputBase}
+            value={form.plotLocation}
+            onChange={handleChange("plotLocation")}
+            placeholder="เช่น https://maps.app.goo.gl/..."
+          />
         </Field>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -424,28 +528,56 @@ export default function BaacPage() {
                 <option value="อื่นๆ">อื่นๆ</option>
               </select>
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500">
-                <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M7 10l5 5l5-5z"/></svg>
+                <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+                  <path fill="currentColor" d="M7 10l5 5l5-5z" />
+                </svg>
               </span>
             </div>
           </Field>
+
           <Field label="แนบเอกสารสิทธิ์ (รูป/PDF)">
-            <input type="file" multiple accept=".jpg,.jpeg,.png,.pdf" className={inputBase + " bg-white"} onChange={handleChange("landDocFiles")} />
+            <input
+              type="file"
+              multiple
+              accept=".jpg,.jpeg,.png,.pdf"
+              className={inputBase + " bg-white"}
+              onChange={handleChange("landDocFiles")}
+            />
           </Field>
+
           <Field label="เอกสารสิทธิ์อื่นๆ (ถ้ามี)">
-            <input type="file" multiple accept=".jpg,.jpeg,.png,.pdf" className={inputBase + " bg-white"} onChange={handleChange("otherDocs")} />
+            <input
+              type="file"
+              multiple
+              accept=".jpg,.jpeg,.png,.pdf"
+              className={inputBase + " bg-white"}
+              onChange={handleChange("otherDocs")}
+            />
           </Field>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="ท่านปลูกมากี่ปี" required error={errors.yearsPlanting}>
-            <input className={inputBase} inputMode="numeric" value={form.yearsPlanting} onChange={handleChange("yearsPlanting")} placeholder="เช่น 5" />
+            <input
+              className={inputBase}
+              inputMode="numeric"
+              value={form.yearsPlanting}
+              onChange={handleChange("yearsPlanting")}
+              placeholder="เช่น 5"
+            />
           </Field>
+
           <Field label="รายได้เฉลี่ยต่อปี (บาท)" required error={errors.incomePerYear}>
-            <input className={inputBase} inputMode="decimal" value={form.incomePerYear} onChange={handleChange("incomePerYear")} placeholder="เช่น 150000" />
+            <input
+              className={inputBase}
+              inputMode="decimal"
+              value={form.incomePerYear}
+              onChange={handleChange("incomePerYear")}
+              placeholder="เช่น 150000"
+            />
           </Field>
         </div>
 
-        {/* ความต้องการกู้ */}
         <Field label="รายการที่ต้องการกู้" required error={errors.loanPurposes}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {LOAN_PURPOSES.map((p) => (
@@ -464,7 +596,12 @@ export default function BaacPage() {
 
         {form.loanPurposes.includes("อื่นๆ") && (
           <Field label="รายการกู้อื่นๆ (ถ้ามี)" required error={errors.loanPurposeOther}>
-            <input className={inputBase} value={form.loanPurposeOther} onChange={handleChange("loanPurposeOther")} placeholder="อธิบายเพิ่มเติม" />
+            <input
+              className={inputBase}
+              value={form.loanPurposeOther}
+              onChange={handleChange("loanPurposeOther")}
+              placeholder="อธิบายเพิ่มเติม"
+            />
           </Field>
         )}
 
@@ -475,14 +612,20 @@ export default function BaacPage() {
             error={errors.loanAmount}
             hint="ระบบจะแสดงคอมมาอัตโนมัติ"
           >
-            <input className={inputBase} inputMode="numeric" value={form.loanAmount} onChange={handleAmountChange("loanAmount")} placeholder="เช่น 300,000" />
+            <input
+              className={inputBase}
+              inputMode="numeric"
+              value={form.loanAmount}
+              onChange={handleAmountChange("loanAmount")}
+              placeholder="เช่น 300,000"
+            />
           </Field>
+
           <div className="self-end text-sm text-neutral-600">
             ตัวอย่างส่งค่า: {formatNumber(form.loanAmount) || "-"} บาท
           </div>
         </div>
 
-        {/* Consent + Submit */}
         <div className="pt-2 flex items-start sm:items-center justify-between gap-3">
           <p className="text-xs text-neutral-500">
             เมื่อกด “ส่งคำขอ” ถือว่ายินยอมให้ใช้ข้อมูลตามวัตถุประสงค์ของแบบฟอร์มนี้
