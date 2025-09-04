@@ -1,7 +1,8 @@
-"use client";
-import React, { useMemo, useState } from "react";
+"use client"; // [UNCHANGED]
+import React, { useMemo, useState } from "react"; // [UNCHANGED]
+import Select from "react-select"; // [ADDED: ใช้ react-select สำหรับ multi select แบบมีชิป]
 
-/* ===== Utils ===== */
+// [UNCHANGED] ===== Utils =====
 function isValidThaiId(id) {
   const digits = String(id).replace(/\D/g, "");
   if (digits.length !== 13) return false;
@@ -21,7 +22,7 @@ function formatNumber(val) {
   return n.toLocaleString("en-US");
 }
 
-/* ===== Constants ===== */
+// [UNCHANGED] ===== Constants =====
 const LOAN_PURPOSES = [
   "ต้นทุนการผลิต",
   "ซื้อปุ๋ย/สารปรับปรุงดิน",
@@ -45,10 +46,13 @@ const MAIN_CROPS = [
   "ส้มโอ",
   "กล้วย",
   "พืชผัก",
-  "ไม้ผลอื่นๆ",
+  "อื่นๆ",
 ];
 
-/* ===== Field wrapper (โทน/สไตล์ตามตัวอย่าง) ===== */
+// [ADDED] แปลงรายการพืชให้เป็น options ที่ react-select ใช้
+const CROP_OPTIONS = MAIN_CROPS.map((c) => ({ label: c, value: c })); // [ADDED]
+
+// [UNCHANGED] ===== Field wrapper =====
 function Field({ label, required, children, hint, error }) {
   return (
     <div className="space-y-1">
@@ -62,7 +66,7 @@ function Field({ label, required, children, hint, error }) {
   );
 }
 
-/* ===== Main Page ===== */
+// [CHANGED] ===== Main Page =====
 export default function BaacPage() {
   const [form, setForm] = useState({
     firstName: "",
@@ -75,7 +79,8 @@ export default function BaacPage() {
     amphur: "",
     tambon: "",
     postcode: "",
-    mainCrop: "",
+    // mainCrop: "", // [REMOVED: เปลี่ยนเป็น mainCrops (array) เพื่อรองรับหลายรายการ]
+    mainCrops: [], // [ADDED: โครงสร้างใหม่ เก็บเป็น array ของ {label,value}]
     otherCrops: "",
     areaRai: "",
     plotLocation: "",
@@ -88,11 +93,11 @@ export default function BaacPage() {
     loanPurposeOther: "",
     loanAmount: "",
   });
-  const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState({}); // [UNCHANGED]
+  const [submitting, setSubmitting] = useState(false); // [UNCHANGED]
+  const [submitted, setSubmitted] = useState(false); // [UNCHANGED]
 
-  /* ===== Styles ให้เหมือนตัวอย่างด้านบน ===== */
+  // [UNCHANGED] ===== Styles =====
   const inputBase =
     "w-full rounded-[14px] border border-emerald-200/80 bg-white px-4 py-3 text-[15px] leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400";
   const selectBase =
@@ -100,10 +105,12 @@ export default function BaacPage() {
   const chipBox =
     "flex items-center gap-3 rounded-[14px] border border-emerald-200 bg-white px-3 py-3 shadow-sm active:scale-[0.99]";
 
+  // [UNCHANGED]
   const handleChange = (key) => (e) => {
     const value = e?.target?.files ? e.target.files : e.target.value;
     setForm((s) => ({ ...s, [key]: value }));
   };
+  // [UNCHANGED]
   const handleCheckbox = (purpose) => (e) => {
     setForm((s) => {
       const set = new Set(s.loanPurposes);
@@ -112,15 +119,20 @@ export default function BaacPage() {
       return { ...s, loanPurposes: Array.from(set) };
     });
   };
+  // [UNCHANGED]
   const handleAmountChange = (key) => (e) => {
     const raw = e.target.value.replace(/[^\d,]/g, "").replace(/,+/g, (m) => (m.length > 1 ? "," : m));
     setForm((s) => ({ ...s, [key]: raw }));
   };
+  // [UNCHANGED]
   const onCitizenIdChange = (e) => {
     let v = e.target.value.replace(/\D/g, "").slice(0, 13);
     const parts = [v.slice(0, 1), v.slice(1, 5), v.slice(5, 10), v.slice(10, 12), v.slice(12, 13)].filter(Boolean);
     setForm((s) => ({ ...s, citizenId: parts.join("-") }));
   };
+
+  // [ADDED] helper สำหรับเช็กว่าเลือก “อื่นๆ” อยู่หรือไม่
+  const hasOtherCrop = form.mainCrops.some((o) => o.value === "อื่นๆ"); // [ADDED]
 
   /* ===== Validate ===== */
   const validate = () => {
@@ -147,7 +159,9 @@ export default function BaacPage() {
     if (!post) err.postcode = "กรุณากรอกรหัสไปรษณีย์";
     else if (!/^\d{5}$/.test(post)) err.postcode = "ต้องเป็น 5 หลัก";
 
-    if (!form.mainCrop) err.mainCrop = "กรุณาเลือกพืชหลัก";
+    // if (!form.mainCrop) err.mainCrop = "กรุณาเลือกพืชหลัก"; // [REMOVED: ใช้ mainCrops แทน]
+    if (!form.mainCrops.length) err.mainCrop = "กรุณาเลือกพืชหลักอย่างน้อย 1 ชนิด"; // [ADDED]
+
     const rai = toNumber(form.areaRai);
     if (Number.isNaN(rai) || rai <= 0) err.areaRai = "ใส่ตัวเลขมากกว่า 0";
 
@@ -167,6 +181,10 @@ export default function BaacPage() {
     const amount = toNumber(form.loanAmount);
     if (Number.isNaN(amount) || amount <= 0) err.loanAmount = "ตัวเลขมากกว่า 0";
 
+    if (hasOtherCrop && !form.otherCrops.trim()) {
+      err.otherCrops = "กรุณาระบุชื่อพืชอื่นๆ"; // [ADDED: บังคับกรอกเมื่อมีการเลือก “อื่นๆ”]
+    }
+
     setErrors(err);
     return Object.keys(err).length === 0;
   };
@@ -184,8 +202,9 @@ export default function BaacPage() {
       amphur: form.amphur.trim(),
       tambon: form.tambon.trim(),
       postcode: form.postcode.trim(),
-      mainCrop: form.mainCrop,
-      otherCrops: form.otherCrops.trim(),
+      // mainCrop: form.mainCrop, // [REMOVED: เปลี่ยนเป็น mainCrops]
+      mainCrops: form.mainCrops.map((o) => o.value), // [ADDED: แปลงเหลือเป็น array ของ string]
+      otherCrops: form.otherCrops.trim(), // [UNCHANGED: จะมีค่าเมื่อเลือก “อื่นๆ” เท่านั้น]
       areaRai: toNumber(form.areaRai),
       plotLocation: form.plotLocation.trim(),
       landDoc: form.landDoc,
@@ -206,7 +225,14 @@ export default function BaacPage() {
     try {
       setSubmitting(true);
       const fd = new FormData();
-      Object.entries(payload).forEach(([k, v]) => fd.append(k, typeof v === "number" ? String(v) : v));
+      Object.entries(payload).forEach(([k, v]) => {
+        if (Array.isArray(v)) {
+          // [ADDED] รองรับ array (เช่น mainCrops) โดยแปลงเป็น JSON string
+          fd.append(k, JSON.stringify(v)); // [ADDED: ส่ง array เป็น JSON string เพื่อความง่าย]
+        } else {
+          fd.append(k, typeof v === "number" ? String(v) : v);
+        }
+      });
       if (form.landDocFiles?.length) Array.from(form.landDocFiles).forEach((f) => fd.append("landDocFiles", f, f.name));
       if (form.otherDocs?.length) Array.from(form.otherDocs).forEach((f) => fd.append("otherDocs", f, f.name));
 
@@ -214,14 +240,47 @@ export default function BaacPage() {
       // if (!res.ok) throw new Error("ส่งคำขอล้มเหลว");
       // await res.json();
 
-      console.log("[BAAC] payload", payload);
-      setSubmitted(true);
+      console.log("[BAAC] payload", payload); // [UNCHANGED]
+      setSubmitted(true); // [UNCHANGED]
     } catch {
-      alert("เกิดข้อผิดพลาดในการส่งคำขอ");
+      alert("เกิดข้อผิดพลาดในการส่งคำขอ"); // [UNCHANGED]
     } finally {
-      setSubmitting(false);
+      setSubmitting(false); // [UNCHANGED]
     }
   };
+
+  // [ADDED] กำหนด custom styles ให้ react-select เข้ากับโทน Tailwind
+  const reactSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      borderRadius: 14,
+      borderColor: state.isFocused ? "#6ee7b7" : "rgba(16,185,129,0.3)",
+      boxShadow: state.isFocused ? "0 0 0 2px rgba(110,231,183,0.5)" : "none",
+      paddingLeft: 6,
+      minHeight: 44,
+      ":hover": { borderColor: "#6ee7b7" },
+    }),
+    multiValue: (base) => ({
+      ...base,
+      backgroundColor: "#7dd3fc",
+      color: "#083344",
+      borderRadius: 9999,
+      paddingLeft: 6,
+      paddingRight: 2,
+    }),
+    multiValueLabel: (base) => ({
+      ...base,
+      color: "#083344",
+      fontSize: 14,
+    }),
+    multiValueRemove: (base) => ({
+      ...base,
+      color: "#0c4a6e",
+      ":hover": { backgroundColor: "transparent", color: "#dc2626" },
+    }),
+    placeholder: (base) => ({ ...base, color: "#9ca3af" }),
+    menu: (base) => ({ ...base, borderRadius: 12, overflow: "hidden" }),
+  }; // [ADDED]
 
   return (
     <main className="min-h-screen bg-[#F7F5EE] flex items-start justify-center p-4">
@@ -305,25 +364,44 @@ export default function BaacPage() {
 
         {/* เพาะปลูก */}
         <Field label="ชนิดพืชหลัก" required error={errors.mainCrop}>
-          <div className="relative">
-            <select className={selectBase} value={form.mainCrop} onChange={handleChange("mainCrop")}>
-              <option value="">เลือกหรือพิมพ์เพิ่มได้</option>
-              {MAIN_CROPS.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            {/* chevron */}
-            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500">
-              <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M7 10l5 5l5-5z"/></svg>
-            </span>
-          </div>
+          {/* [REMOVED: select เดิมทั้งบล็อก และแทนด้วย react-select ด้านล่าง] */}
+          {/* <div className="relative"> ... </div> */}
+
+          {/* [CHANGED: Multi-select แบบมีชิปด้วย react-select + จัดการ “อื่นๆ”] */}
+          <Select
+            isMulti // [ADDED]
+            options={CROP_OPTIONS} // [ADDED]
+            value={form.mainCrops} // [ADDED]
+            onChange={(selected) =>
+              setForm((s) => {
+                const next = selected || [];
+                const includeOther = next.some((o) => o.value === "อื่นๆ"); // [ADDED]
+                return {
+                  ...s,
+                  mainCrops: next, // [ADDED]
+                  otherCrops: includeOther ? s.otherCrops : "", // [ADDED: ถ้ายกเลิก “อื่นๆ” ให้เคลียร์ค่า otherCrops]
+                };
+              })
+            }
+            placeholder="เลือกหรือพิมพ์ค้นหาพืชหลัก..."
+            styles={reactSelectStyles} // [ADDED: ปรับโทนให้เข้ากับ Tailwind]
+            classNamePrefix="react-select" // [ADDED: เผื่อจะปรับแต่งด้วย CSS ภายหลัง]
+            noOptionsMessage={() => "ไม่พบรายการ"}
+          />
         </Field>
 
-        <Field label="พืชอื่นๆ (ถ้ามี)">
-          <input className={inputBase} value={form.otherCrops} onChange={handleChange("otherCrops")} placeholder="ระบุพืชเพิ่มเติม" />
-        </Field>
+        {/* [CHANGED] แสดงช่อง “พืชอื่นๆ” เฉพาะเมื่อเลือก “อื่นๆ” และบังคับกรอก */}
+        {hasOtherCrop && ( // [ADDED]
+          <Field label="พืชอื่นๆ (ถ้ามี)" required error={errors.otherCrops}> {/* [CHANGED: เพิ่ม required + แสดง error] */}
+            <input
+              className={inputBase}
+              value={form.otherCrops}
+              onChange={handleChange("otherCrops")}
+              placeholder="ระบุพืชเพิ่มเติม"
+              aria-required="true" // [ADDED: a11y ให้ชัดเจนว่าเป็นฟิลด์บังคับ]
+            />
+          </Field>
+        )}
 
         <Field label="พื้นที่เพาะปลูก (ไร่)" required hint="กรอกเป็นตัวเลข เช่น 12 หรือ 12.5" error={errors.areaRai}>
           <input className={inputBase} inputMode="decimal" value={form.areaRai} onChange={handleChange("areaRai")} />
