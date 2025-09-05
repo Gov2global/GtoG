@@ -46,7 +46,7 @@ const CropSelect = dynamic(() =>
           isMulti
           styles={reactSelectStyles}
           classNamePrefix="react-select"
-          placeholder="เลือกหรือพิมพ์ค้นหาพืชหลัก..."
+          placeholder="เลือกหรือพิมพ์ค้นหา..." // [CHANGED: ทำให้ generic ใช้ได้ทั้งพืช/เอกสาร]
           noOptionsMessage={() => "ไม่พบรายการ"}
         />
       );
@@ -65,7 +65,10 @@ function calculateTotalAreaSqm(rai, ngan, wa) {
   const r = toNumber(rai);
   const n = toNumber(ngan);
   const w = toNumber(wa);
-  const sqm = (Number.isNaN(r) ? 0 : r) * 1600 + (Number.isNaN(n) ? 0 : n) * 400 + (Number.isNaN(w) ? 0 : w) * 4; // [CHANGED: กัน NaN ด้วย fallback 0]
+  const sqm =
+    (Number.isNaN(r) ? 0 : r) * 1600 +
+    (Number.isNaN(n) ? 0 : n) * 400 +
+    (Number.isNaN(w) ? 0 : w) * 4; // [CHANGED: กัน NaN ด้วย fallback 0]
   return isNaN(sqm) ? 0 : sqm;
 }
 
@@ -94,11 +97,6 @@ function formatNumber(val) {
   return n.toLocaleString("en-US");
 }
 
-// const totalAreaSqm = useMemo(() => { // [REMOVED: useMemo นอกคอมโพเนนต์อ้าง form ซึ่งยังไม่ถูกประกาศ ทำให้ error]
-//   return calculateTotalAreaSqm(form.areaRai, form.areaNgan, form.areaWa);
-// }, [form.areaRai, form.areaNgan, form.areaWa]);
-// [REMOVED: ย้าย logic ไปไว้ในคอมโพเนนต์ BaacPage ด้านล่าง]
-
 const LOAN_PURPOSES = [
   "ต้นทุนการผลิต",
   "ซื้อปุ๋ย/สารปรับปรุงดิน",
@@ -107,10 +105,23 @@ const LOAN_PURPOSES = [
   "เครื่องมือ/เครื่องจักร",
   "ขยายพื้นที่เพาะปลูก",
   "หมุนเวียนชำระหนี้",
+  "ยากำจัด/ยาป้องกันศัตรูพืช",
   "อื่นๆ",
 ];
+
 const MAIN_CROPS = ["ทุเรียน", "ลำไย", "ส้มโอ", "ส้มเขียวหวาน", "อื่นๆ"];
 const CROP_OPTIONS = MAIN_CROPS.map((c) => ({ label: c, value: c }));
+
+// [ADDED: ตัวเลือกเอกสารสิทธิ์สำหรับ multi-select]
+const LAND_DOC_OPTIONS = [
+  "โฉนด (น.ส.4 จ)", // [ADDED]
+  "น.ส.3ก",          // [ADDED]
+  "ส.ป.ก.",          // [ADDED]
+  "ภบท.5",           // [ADDED]
+  "เช่าที่/สัญญาเช่า", // [ADDED]
+  "อื่นๆ",            // [ADDED]
+];
+const LAND_DOC_SELECT = LAND_DOC_OPTIONS.map((v) => ({ label: v, value: v })); // [ADDED]
 
 function Field({ label, required, children, hint, error }) {
   return (
@@ -141,9 +152,11 @@ export default function BaacPage() {
     otherCrops: "",
     areaRai: "",
     areaNgan: "",
-    areaWa: "", 
+    areaWa: "",
     plotLocation: "",
-    landDoc: "",
+    // landDoc: "", // [REMOVED: เปลี่ยนจากค่าเดี่ยวเป็นหลายค่า landDocs]
+    landDocs: [], // [ADDED: เก็บรายการเอกสารหลายค่าเป็น array ของ {label,value}]
+    landDocOther: "", // [ADDED: เก็บรายละเอียดเมื่อเลือก “อื่นๆ”]
     landDocFiles: null,
     otherDocs: null,
     yearsPlanting: "",
@@ -158,11 +171,14 @@ export default function BaacPage() {
   const [submitted, setSubmitted] = useState(false);
 
   // ====== คำนวณพื้นที่แบบ reactive ======
-  const totalAreaSqm = useMemo(() => { // [ADDED: คำนวณในคอมโพเนนต์เพื่ออ้าง form ได้]
-    return calculateTotalAreaSqm(form.areaRai, form.areaNgan, form.areaWa);
+  const totalAreaSqm = useMemo(() => {
+    return calculateTotalAreaSqm(form.areaRai, form.areaNgan, form.areaWa); // [ADDED: คำนวณในคอมโพเนนต์เพื่ออ้าง form ได้]
   }, [form.areaRai, form.areaNgan, form.areaWa]);
 
-  const areaText = useMemo(() => convertSqmToRaiNganWa(totalAreaSqm), [totalAreaSqm]); // [ADDED: แสดงข้อความ ไร่-งาน-วา]
+  const areaText = useMemo(
+    () => convertSqmToRaiNganWa(totalAreaSqm),
+    [totalAreaSqm]
+  ); // [ADDED: แสดงข้อความ ไร่-งาน-วา]
 
   const inputBase =
     "w-full rounded-[14px] border border-emerald-200/80 bg-white px-4 py-3 text-[15px] leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400";
@@ -205,6 +221,7 @@ export default function BaacPage() {
   };
 
   const hasOtherCrop = form.mainCrops.some((o) => o.value === "อื่นๆ");
+  const hasOtherLandDoc = form.landDocs.some((o) => o.value === "อื่นๆ"); // [ADDED: เช็ค “อื่นๆ” สำหรับเอกสาร]
 
   const validate = () => {
     const err = {};
@@ -229,13 +246,20 @@ export default function BaacPage() {
     if (!post) err.postcode = "กรุณากรอกรหัสไปรษณีย์";
     else if (!/^\d{5}$/.test(post)) err.postcode = "ต้องเป็น 5 หลัก";
 
-    if (!form.mainCrops.length) err.mainCrop = "กรุณาเลือกพืชหลักอย่างน้อย 1 ชนิด";
+    if (!form.mainCrops.length)
+      err.mainCrop = "กรุณาเลือกพืชหลักอย่างน้อย 1 ชนิด";
 
     const rai = toNumber(form.areaRai);
     if (Number.isNaN(rai) || rai <= 0) err.areaRai = "ใส่ตัวเลขมากกว่า 0";
 
-    if (!form.plotLocation.trim()) err.plotLocation = "กรุณากรอกสถานที่ตั้งแปลง";
-    if (!form.landDoc) err.landDoc = "กรุณาเลือกเอกสารสิทธิ์";
+    if (!form.plotLocation.trim())
+      err.plotLocation = "กรุณากรอกสถานที่ตั้งแปลง";
+
+    // if (!form.landDoc) err.landDoc = "กรุณาเลือกเอกสารสิทธิ์"; // [REMOVED: ใช้ landDocs แทน]
+    if (!form.landDocs.length)
+      err.landDocs = "กรุณาเลือกเอกสารสิทธิ์"; // [ADDED: validate array]
+    if (hasOtherLandDoc && !form.landDocOther.trim())
+      err.landDocOther = "กรุณาระบุเอกสารอื่นๆ"; // [ADDED: validate other text]
 
     const years = toNumber(form.yearsPlanting);
     if (Number.isNaN(years) || years < 0) err.yearsPlanting = "ตัวเลข >= 0";
@@ -243,12 +267,14 @@ export default function BaacPage() {
     const income = toNumber(form.incomePerYear);
     if (Number.isNaN(income) || income < 0) err.incomePerYear = "ตัวเลข >= 0";
 
-    if (!form.loanPurposes.length) err.loanPurposes = "เลือกอย่างน้อย 1 รายการ";
+    if (!form.loanPurposes.length)
+      err.loanPurposes = "เลือกอย่างน้อย 1 รายการ";
     if (form.loanPurposes.includes("อื่นๆ") && !form.loanPurposeOther.trim())
       err.loanPurposeOther = "ระบุรายละเอียด";
 
     const amount = toNumber(form.loanAmount);
-    if (Number.isNaN(amount) || amount <= 0) err.loanAmount = "ตัวเลขมากกว่า 0";
+    if (Number.isNaN(amount) || amount <= 0)
+      err.loanAmount = "ตัวเลขมากกว่า 0";
 
     if (hasOtherCrop && !form.otherCrops.trim())
       err.otherCrops = "กรุณาระบุชื่อพืชอื่นๆ";
@@ -274,8 +300,12 @@ export default function BaacPage() {
       landDocFilesCount: form.landDocFiles?.length || 0,
       otherDocsCount: form.otherDocs?.length || 0,
       totalAreaSqm, // [ADDED: แนบผลรวมพื้นที่เพื่อส่งไป backend ได้]
+
+      // [ADDED: แปลง landDocs -> array ของ value + include other text]
+      landDocs: form.landDocs.map((o) => o.value),
+      landDocOther: hasOtherLandDoc ? form.landDocOther.trim() : "",
     }),
-    [form, totalAreaSqm]
+    [form, totalAreaSqm, hasOtherLandDoc]
   );
 
   const onSubmit = async (e) => {
@@ -317,7 +347,11 @@ export default function BaacPage() {
       >
         <div className="flex items-center justify-center gap-2">
           <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200">
-            <svg viewBox="0 0 24 24" className="h-4 w-4 text-emerald-600" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4 text-emerald-600"
+              aria-hidden="true"
+            >
               <path
                 fill="currentColor"
                 d="M12 21a1 1 0 0 1-1-1v-5.28A7.5 7.5 0 0 1 3 7a1 1 0 0 1 1-1a7.5 7.5 0 0 1 7 4.27V5a1 1 0 1 1 2 0v5.27A7.5 7.5 0 0 1 20 6a1 1 0 0 1 1 1a7.5 7.5 0 0 1-8 7.72V20a1 1 0 0 1-1 1Z"
@@ -386,7 +420,11 @@ export default function BaacPage() {
               onChange={onCitizenIdChange}
             />
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500">
-              <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                aria-hidden="true"
+              >
                 <path
                   fill="currentColor"
                   d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1H3V7Zm19 3v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7h19ZM7 16h5v-2H7v2Z"
@@ -397,7 +435,12 @@ export default function BaacPage() {
         </Field>
 
         <Field label="วันเดือนปีเกิด" required error={errors.dob}>
-          <input type="date" className={inputBase} value={form.dob} onChange={handleChange("dob")} />
+          <input
+            type="date"
+            className={inputBase}
+            value={form.dob}
+            onChange={handleChange("dob")}
+          />
         </Field>
 
         <Field label="ที่อยู่ตามบัตรประชาชน" required error={errors.address}>
@@ -418,7 +461,11 @@ export default function BaacPage() {
             />
           </Field>
           <Field label="อำเภอ" required error={errors.amphur}>
-            <input className={inputBase} value={form.amphur} onChange={handleChange("amphur")} />
+            <input
+              className={inputBase}
+              value={form.amphur}
+              onChange={handleChange("amphur")}
+            />
           </Field>
           <Field label="ตำบล" required error={errors.tambon}>
             <input
@@ -501,12 +548,19 @@ export default function BaacPage() {
             </Field>
           </div>
           <p className="text-sm text-gray-600 mt-2">
-            🧮 รวมพื้นที่ทั้งหมด: <strong>{totalAreaSqm}</strong> ตารางเมตร<br /> {/* [CHANGED: แสดงผลรวมแบบ realtime] */}
-            🧾 เทียบเท่า: <strong>{areaText}</strong> {/* [ADDED: แสดงข้อความไทย ไร่-งาน-วา] */}
+            🧮 รวมพื้นที่ทั้งหมด: <strong>{totalAreaSqm}</strong> ตารางเมตร
+            <br /> {/* [CHANGED: แสดงผลรวมแบบ realtime] */}
+            🧾 เทียบเท่า: <strong>{areaText}</strong>{" "}
+            {/* [ADDED: แสดงข้อความไทย ไร่-งาน-วา] */}
           </p>
         </div>
 
-        <Field label="สถานที่ตั้งแปลง" required hint="ระบุคำอธิบาย/ลิงก์ Google Maps" error={errors.plotLocation}>
+        <Field
+          label="สถานที่ตั้งแปลง"
+          required
+          hint="ระบุคำอธิบาย/ลิงก์ Google Maps"
+          error={errors.plotLocation}
+        >
           <input
             className={inputBase}
             value={form.plotLocation}
@@ -515,46 +569,39 @@ export default function BaacPage() {
           />
         </Field>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="เอกสารสิทธิ์ในที่ดิน" required error={errors.landDoc}>
-            <div className="relative">
-              <select className={selectBase} value={form.landDoc} onChange={handleChange("landDoc")}>
-                <option value="">-- เลือกประเภทเอกสาร --</option>
-                <option value="โฉนด (น.ส.4 จ)">โฉนด (น.ส.4 จ)</option>
-                <option value="น.ส.3ก">น.ส.3ก</option>
-                <option value="ส.ป.ก.">ส.ป.ก.</option>
-                <option value="ภบท.5">ภบท.5</option>
-                <option value="เช่าที่/สัญญาเช่า">เช่าที่/สัญญาเช่า</option>
-                <option value="อื่นๆ">อื่นๆ</option>
-              </select>
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500">
-                <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-                  <path fill="currentColor" d="M7 10l5 5l5-5z" />
-                </svg>
-              </span>
-            </div>
-          </Field>
+        {/* [CHANGED: เอกสารสิทธิ์ในที่ดิน → multi-select + ช่อง 'อื่นๆ'] */}
 
-          <Field label="แนบเอกสารสิทธิ์ (รูป/PDF)">
-            <input
-              type="file"
-              multiple
-              accept=".jpg,.jpeg,.png,.pdf"
-              className={inputBase + " bg-white"}
-              onChange={handleChange("landDocFiles")}
+          <Field label="เอกสารสิทธิ์ในที่ดิน" required error={errors.landDocs}>
+            <CropSelect
+              value={form.landDocs}
+              onChange={(selected) => {
+                const next = selected || [];
+                const includeOther = next.some((o) => o.value === "อื่นๆ");
+                setForm((s) => ({
+                  ...s,
+                  landDocs: next, // [CHANGED: เก็บ array ของ options]
+                  landDocOther: includeOther ? s.landDocOther : "", // [ADDED: reset เมื่อเอา “อื่นๆ” ออก]
+                }));
+              }}
+              options={LAND_DOC_SELECT}
             />
           </Field>
 
-          <Field label="เอกสารสิทธิ์อื่นๆ (ถ้ามี)">
-            <input
-              type="file"
-              multiple
-              accept=".jpg,.jpeg,.png,.pdf"
-              className={inputBase + " bg-white"}
-              onChange={handleChange("otherDocs")}
-            />
-          </Field>
-        </div>
+          {hasOtherLandDoc && (
+            <Field
+              label="เอกสารอื่นๆ (โปรดระบุ)"
+              required
+              error={errors.landDocOther}
+            >
+              <input
+                className={inputBase}
+                value={form.landDocOther}
+                onChange={handleChange("landDocOther")}
+                placeholder="กรุณาระบุเอกสารอื่นๆ"
+              />
+            </Field>
+          )}
+
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="ท่านปลูกมากี่ปี" required error={errors.yearsPlanting}>
@@ -567,7 +614,11 @@ export default function BaacPage() {
             />
           </Field>
 
-          <Field label="รายได้เฉลี่ยต่อปี (บาท)" required error={errors.incomePerYear}>
+          <Field
+            label="รายได้เฉลี่ยต่อปี (บาท)"
+            required
+            error={errors.incomePerYear}
+          >
             <input
               className={inputBase}
               inputMode="decimal"
@@ -578,7 +629,11 @@ export default function BaacPage() {
           </Field>
         </div>
 
-        <Field label="รายการที่ต้องการกู้" required error={errors.loanPurposes}>
+        <Field
+          label="รายการที่ต้องการกู้"
+          required
+          error={errors.loanPurposes}
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {LOAN_PURPOSES.map((p) => (
               <label key={p} className={chipBox}>
@@ -595,7 +650,11 @@ export default function BaacPage() {
         </Field>
 
         {form.loanPurposes.includes("อื่นๆ") && (
-          <Field label="รายการกู้อื่นๆ (ถ้ามี)" required error={errors.loanPurposeOther}>
+          <Field
+            label="รายการกู้อื่นๆ (ถ้ามี)"
+            required
+            error={errors.loanPurposeOther}
+          >
             <input
               className={inputBase}
               value={form.loanPurposeOther}
