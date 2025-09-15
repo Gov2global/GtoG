@@ -187,7 +187,7 @@ export default function BaacPage() {
 
   // --- โหลดข้อมูลจังหวัด/อำเภอ/ตำบล ---
   useEffect(() => {
-    fetch("/thai_provinces.json") // ✅ คุณต้องมีไฟล์ json นี้ใน public/
+    fetch("api/farmer/get/province") 
       .then((res) => res.json())
       .then((data) => setProvinceData(data))
       .catch((err) => console.error("❌ โหลดจังหวัดล้มเหลว:", err));
