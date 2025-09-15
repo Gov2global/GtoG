@@ -198,46 +198,48 @@ useEffect(() => {
     .catch((err) => console.error("❌ โหลดจังหวัดล้มเหลว:", err));
 }, []);
 
-// เมื่อเปลี่ยนจังหวัด → filter อำเภอ
+// เมื่อเลือกจังหวัด → filter อำเภอ
 useEffect(() => {
   if (form.province) {
     const districts = provinceData
       .filter((item) => item.province === form.province)
-      .map((i) => i.amphur); // ใช้ amphur
+      .map((i) => i.district);   // ✅ ใช้ district
     setFilteredDistricts([...new Set(districts)]);
     setForm((s) => ({ ...s, amphur: "", tambon: "", postcode: "" }));
     setFilteredSubDistricts([]);
   }
 }, [form.province, provinceData]);
 
-// เมื่อเปลี่ยนอำเภอ → filter ตำบล
+// เมื่อเลือกอำเภอ → filter ตำบล
 useEffect(() => {
   if (form.amphur) {
     const subDistricts = provinceData
       .filter(
         (item) =>
-          item.province === form.province && item.amphur === form.amphur
+          item.province === form.province &&
+          item.district === form.amphur    // ✅ ใช้ district
       )
-      .map((i) => i.tambon); // ใช้ tambon
+      .map((i) => i.sub_district);         // ✅ ใช้ sub_district
     setFilteredSubDistricts([...new Set(subDistricts)]);
     setForm((s) => ({ ...s, tambon: "", postcode: "" }));
   }
 }, [form.amphur, form.province, provinceData]);
 
-// เมื่อเปลี่ยนตำบล → auto fill postcode
+// เมื่อเลือกตำบล → auto fill postcode
 useEffect(() => {
   if (form.tambon) {
     const match = provinceData.find(
       (item) =>
         item.province === form.province &&
-        item.amphur === form.amphur &&   // ใช้ amphur
-        item.tambon === form.tambon      // ใช้ tambon
+        item.district === form.amphur &&      // ✅ district
+        item.sub_district === form.tambon     // ✅ sub_district
     );
     if (match) {
       setForm((s) => ({ ...s, postcode: match.postcode.toString() }));
     }
   }
 }, [form.tambon, form.amphur, form.province, provinceData]);
+
 
 
   // ===== Derived values =====
@@ -408,7 +410,7 @@ useEffect(() => {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* จังหวัด */}
-          <Field label="จังหวัด" required error={errors.province}>
+          <Field label="จังหวัด" required>
             <select
               className={inputBase}
               value={form.province}
@@ -416,15 +418,13 @@ useEffect(() => {
             >
               <option value="">-- เลือกจังหวัด --</option>
               {[...new Set(provinceData.map((i) => i.province))].map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
+                <option key={p} value={p}>{p}</option>
               ))}
             </select>
           </Field>
 
           {/* อำเภอ */}
-          <Field label="อำเภอ" required error={errors.amphur}>
+          <Field label="อำเภอ" required>
             <select
               className={inputBase}
               value={form.amphur}
@@ -433,15 +433,13 @@ useEffect(() => {
             >
               <option value="">-- เลือกอำเภอ --</option>
               {filteredDistricts.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
+                <option key={d} value={d}>{d}</option>
               ))}
             </select>
           </Field>
 
           {/* ตำบล */}
-          <Field label="ตำบล" required error={errors.tambon}>
+          <Field label="ตำบล" required>
             <select
               className={inputBase}
               value={form.tambon}
@@ -450,9 +448,7 @@ useEffect(() => {
             >
               <option value="">-- เลือกตำบล --</option>
               {filteredSubDistricts.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
+                <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </Field>
