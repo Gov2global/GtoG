@@ -14,7 +14,9 @@ const CropSelect = dynamic(
           ...base,
           borderRadius: 14,
           borderColor: state.isFocused ? "#6ee7b7" : "rgba(16,185,129,0.3)",
-          boxShadow: state.isFocused ? "0 0 0 2px rgba(110,231,183,0.5)" : "none",
+          boxShadow: state.isFocused
+            ? "0 0 0 2px rgba(110,231,183,0.5)"
+            : "none",
           paddingLeft: 6,
           minHeight: 44,
           ":hover": { borderColor: "#6ee7b7" },
@@ -127,10 +129,9 @@ function Field({ label, required, children, hint, error }) {
 
 // ===== Main Page =====
 export default function BaacPage() {
-  const [regLineID, setRegLineID] = useState(""); // ✅ state เก็บค่า Line ID
-
+  const [regLineID, setRegLineID] = useState("");
   const [form, setForm] = useState({
-    regLineID: "", // เริ่มต้นว่างไว้ก่อน
+    regLineID: "",
     firstName: "",
     lastName: "",
     citizenId: "",
@@ -163,13 +164,17 @@ export default function BaacPage() {
   const [filteredDistricts, setFilteredDistricts] = useState([]);
   const [filteredSubDistricts, setFilteredSubDistricts] = useState([]);
 
+  const inputBase =
+    "w-full rounded-[14px] border border-emerald-200/80 bg-white px-4 py-3 text-[15px] leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400";
+  const chipBox =
+    "flex items-center gap-3 rounded-[14px] border border-emerald-200 bg-white px-3 py-3 shadow-sm active:scale-[0.99]";
+
   // --- Init LIFF ---
   useEffect(() => {
     liff.init({ liffId: "2007697520-ReVxGaBb" }).then(() => {
       if (liff.isLoggedIn()) {
         liff.getProfile().then((profile) => {
           setRegLineID(profile.userId);
-
           fetch(`/api/farmer/get/line-get/${profile.userId}`)
             .then((res) => res.json())
             .then((result) => {
@@ -197,16 +202,6 @@ export default function BaacPage() {
     });
   }, []);
 
-  // --- โหลดจังหวัด ---
-  useEffect(() => {
-    fetch("/api/farmer/get/province")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) setProvinceData(data.data);
-      })
-      .catch((err) => console.error("❌ โหลดจังหวัดล้มเหลว:", err));
-  }, []);
-
   // ===== Derived =====
   const totalAreaSqm = useMemo(
     () => calculateTotalAreaSqm(form.areaRai, form.areaNgan, form.areaWa),
@@ -216,35 +211,44 @@ export default function BaacPage() {
     () => convertSqmToRaiNganWa(totalAreaSqm),
     [totalAreaSqm]
   );
+  const hasOtherCrop = form.mainCrops.some((o) => o.value === "อื่นๆ");
+  const hasOtherLandDoc = form.landDocs.some((o) => o.value === "อื่นๆ");
+
+  // ===== Handlers =====
+  const handleChange = (key) => (e) => {
+    setForm((s) => ({ ...s, [key]: e.target.value }));
+  };
+  const handleCheckbox = (purpose) => (e) => {
+    setForm((s) => {
+      const setPur = new Set(s.loanPurposes);
+      if (e.target.checked) setPur.add(purpose);
+      else setPur.delete(purpose);
+      return { ...s, loanPurposes: Array.from(setPur) };
+    });
+  };
+  const handleAmountChange = (key) => (e) => {
+    const raw = e.target.value.replace(/[^\d,]/g, "");
+    setForm((s) => ({ ...s, [key]: raw }));
+  };
+  const onCitizenIdChange = (e) => {
+    let v = e.target.value.replace(/\D/g, "").slice(0, 13);
+    setForm((s) => ({ ...s, citizenId: v }));
+  };
 
   // ===== Submit =====
-  const payload = useMemo(
-    () => ({
-      ...form,
-      citizenId: form.citizenId.replace(/\D/g, ""),
-      phone: form.phone.replace(/\D/g, ""),
-      mainCrops: form.mainCrops.map((o) => o.value),
-      otherCrops: form.otherCrops.trim(),
-      areaRai: toNumber(form.areaRai),
-      yearsPlanting: toNumber(form.yearsPlanting),
-      incomePerYear: toNumber(form.incomePerYear),
-      loanPurposeOther: form.loanPurposes.includes("อื่นๆ")
-        ? form.loanPurposeOther.trim()
-        : "",
-      loanAmount: toNumber(form.loanAmount),
-      totalAreaSqm,
-      landDocs: form.landDocs.map((o) => o.value),
-      landDocOther: form.landDocs.some((o) => o.value === "อื่นๆ")
-        ? form.landDocOther.trim()
-        : "",
-    }),
-    [form, totalAreaSqm]
-  );
-
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
       setSubmitting(true);
+      const payload = {
+        ...form,
+        citizenId: form.citizenId.replace(/\D/g, ""),
+        phone: form.phone.replace(/\D/g, ""),
+        mainCrops: form.mainCrops.map((o) => o.value),
+        landDocs: form.landDocs.map((o) => o.value),
+        loanAmount: toNumber(form.loanAmount),
+        totalAreaSqm,
+      };
       const res = await fetch("/api/baac", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -254,7 +258,7 @@ export default function BaacPage() {
       if (res.ok && result.success) {
         setSubmitted(true);
         setForm({
-          regLineID, // ✅ เก็บค่าเดิมไว้
+          regLineID: regLineID,
           firstName: "",
           lastName: "",
           citizenId: "",
@@ -308,39 +312,42 @@ export default function BaacPage() {
         )}
 
         {/* ========== Fields ========== */}
-        <Field label="Line ID" required error={errors.regLineID}>
-            <input
-              className={inputBase}
-              value={form.regLineID}
-              onChange={handleChange("regLineID")}
-            />
-          </Field>
+        <Field label="Line ID" required>
+          <input
+            className="w-full rounded-[14px] border border-red-500 bg-yellow-50 px-4 py-3"
+            placeholder="Line ID จะโชว์ที่นี่"
+            value={form.regLineID}
+            onChange={handleChange("regLineID")}
+          />
+        </Field>
+
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-  <Field label="ชื่อ" required error={errors.firstName}>
-    <input
-      className={inputBase}
-      value={form.firstName}
-      onChange={handleChange("firstName")}
-    />
-  </Field>
-  <Field label="สกุล" required error={errors.lastName}>
-    <input
-      className={inputBase}
-      value={form.lastName}
-      onChange={handleChange("lastName")}
-    />
-  </Field>
+        <Field label="ชื่อ" required>
+          <input
+            className={inputBase}
+            value={form.firstName}
+            onChange={handleChange("firstName")}
+          />
+        </Field>
+
+        <Field label="สกุล" required>
+          <input
+            className={inputBase}
+            value={form.lastName}
+            onChange={handleChange("lastName")}
+          />
+        </Field>
 </div>
 
-<Field label="เบอร์โทรศัพท์" required hint="เช่น 0812345678" error={errors.phone}>
-  <input
-    className={inputBase}
-    inputMode="tel"
-    value={form.phone}
-    onChange={handleChange("phone")}
-  />
-</Field>
+        <Field label="เบอร์โทรศัพท์" required>
+          <input
+            className={inputBase}
+            inputMode="tel"
+            value={form.phone}
+            onChange={handleChange("phone")}
+          />
+        </Field>
 
         <Field label="เลขบัตรประชาชน" required error={errors.citizenId}>
           <input
