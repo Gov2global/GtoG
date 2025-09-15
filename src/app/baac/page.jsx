@@ -187,56 +187,58 @@ export default function BaacPage() {
 
   // --- โหลดข้อมูลจังหวัด/อำเภอ/ตำบล ---
 useEffect(() => {
-    fetch("/api/farmer/get/province")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setProvinceData(data.data);
-        }
-      })
-      .catch((err) => console.error("❌ โหลดจังหวัดล้มเหลว:", err));
-  }, []);
-
-  // เมื่อเปลี่ยนจังหวัด → filter อำเภอ
-  useEffect(() => {
-    if (form.province) {
-      const districts = provinceData
-        .filter((item) => item.province === form.province)
-        .map((i) => i.district);
-      setFilteredDistricts([...new Set(districts)]);
-      setForm((s) => ({ ...s, amphur: "", tambon: "", postcode: "" })); // reset
-      setFilteredSubDistricts([]);
-    }
-  }, [form.province]);
-
-  // เมื่อเปลี่ยนอำเภอ → filter ตำบล
-  useEffect(() => {
-    if (form.amphur) {
-      const subDistricts = provinceData
-        .filter(
-          (item) =>
-            item.province === form.province && item.district === form.amphur
-        )
-        .map((i) => i.sub_district);
-      setFilteredSubDistricts([...new Set(subDistricts)]);
-      setForm((s) => ({ ...s, tambon: "", postcode: "" })); // reset
-    }
-  }, [form.amphur]);
-
-  // เมื่อเปลี่ยนตำบล → auto fill postcode
-  useEffect(() => {
-    if (form.tambon) {
-      const match = provinceData.find(
-        (item) =>
-          item.province === form.province &&
-          item.district === form.amphur &&
-          item.sub_district === form.tambon
-      );
-      if (match) {
-        setForm((s) => ({ ...s, postcode: match.postcode.toString() }));
+  fetch("/api/farmer/get/province")
+    .then((res) => res.json())
+    .then((data) => {
+      console.log("📍 provinceData:", data);
+      if (data.success) {
+        setProvinceData(data.data);
       }
+    })
+    .catch((err) => console.error("❌ โหลดจังหวัดล้มเหลว:", err));
+}, []);
+
+// เมื่อเปลี่ยนจังหวัด → filter อำเภอ
+useEffect(() => {
+  if (form.province) {
+    const districts = provinceData
+      .filter((item) => item.province === form.province)
+      .map((i) => i.amphur); // ใช้ amphur
+    setFilteredDistricts([...new Set(districts)]);
+    setForm((s) => ({ ...s, amphur: "", tambon: "", postcode: "" }));
+    setFilteredSubDistricts([]);
+  }
+}, [form.province, provinceData]);
+
+// เมื่อเปลี่ยนอำเภอ → filter ตำบล
+useEffect(() => {
+  if (form.amphur) {
+    const subDistricts = provinceData
+      .filter(
+        (item) =>
+          item.province === form.province && item.amphur === form.amphur
+      )
+      .map((i) => i.tambon); // ใช้ tambon
+    setFilteredSubDistricts([...new Set(subDistricts)]);
+    setForm((s) => ({ ...s, tambon: "", postcode: "" }));
+  }
+}, [form.amphur, form.province, provinceData]);
+
+// เมื่อเปลี่ยนตำบล → auto fill postcode
+useEffect(() => {
+  if (form.tambon) {
+    const match = provinceData.find(
+      (item) =>
+        item.province === form.province &&
+        item.amphur === form.amphur &&   // ใช้ amphur
+        item.tambon === form.tambon      // ใช้ tambon
+    );
+    if (match) {
+      setForm((s) => ({ ...s, postcode: match.postcode.toString() }));
     }
-  }, [form.tambon]);
+  }
+}, [form.tambon, form.amphur, form.province, provinceData]);
+
 
   // ===== Derived values =====
   const totalAreaSqm = calculateTotalAreaSqm(
