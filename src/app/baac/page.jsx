@@ -145,7 +145,7 @@ export default function BaacPage() {
   // --- Init LIFF ---
   useEffect(() => {
     liff
-      .init({ liffId: "2007697520-ReVxGaBb" })
+      .init({ liffId: "2007697520-JzdQxW3y" })
       .then(() => {
         if (liff.isLoggedIn()) {
           liff.getProfile().then((profile) => {
@@ -280,37 +280,49 @@ useEffect(() => {
   };
 
   // ===== Submit =====
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      setSubmitting(true);
-      const payload = {
-        ...form,
-        citizenId: form.citizenId.replace(/\D/g, ""),
-        phone: form.phone.replace(/\D/g, ""),
-        mainCrops: (form.mainCrops || []).map((o) => o.value),
-        landDocs: (form.landDocs || []).map((o) => o.value),
-        loanAmount: toNumber(form.loanAmount),
-        totalAreaSqm,
-      };
-      const res = await fetch("/api/baac", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const result = await res.json();
-      if (res.ok && result.success) {
-        setSubmitted(true);
-      } else {
-        alert("❌ บันทึกไม่สำเร็จ: " + (result.error || "Unknown error"));
-      }
-    } catch (err) {
-      console.error(err);
-      alert("เกิดข้อผิดพลาดในการส่งคำขอ");
-    } finally {
-      setSubmitting(false);
+const onSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    setSubmitting(true);
+    const payload = {
+      ...form,
+      citizenId: form.citizenId.replace(/\D/g, ""),
+      phone: form.phone.replace(/\D/g, ""),
+      mainCrops: (form.mainCrops || []).map((o) => o.value),
+      landDocs: (form.landDocs || []).map((o) => o.value),
+      loanAmount: toNumber(form.loanAmount),
+      totalAreaSqm,
+    };
+    const res = await fetch("/api/baac", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const result = await res.json();
+    if (res.ok && result.success) {
+      setSubmitted(true);
+
+      // ✅ ส่งข้อความไปที่ LINE
+      await liff.sendMessages([
+        {
+          type: "text",
+          text: "ส่งคำขอสำเร็จแล้ว! เจ้าหน้าที่จะติดต่อกลับ",
+        },
+      ]);
+
+      // ✅ ปิดหน้าต่าง LIFF
+      liff.closeWindow();
+    } else {
+      alert("❌ บันทึกไม่สำเร็จ: " + (result.error || "Unknown error"));
     }
-  };
+  } catch (err) {
+    console.error(err);
+    alert("เกิดข้อผิดพลาดในการส่งคำขอ");
+  } finally {
+    setSubmitting(false);
+  }
+};
+
 
   // ===== Render =====
   if (loading) {
@@ -345,8 +357,7 @@ useEffect(() => {
         {/* Field: Line ID */}
         <Field label="Line ID" required>
           <input
-            className="w-full rounded-[14px] border border-red-500 bg-yellow-50 px-4 py-3"
-            placeholder="Line ID จะโชว์ที่นี่"
+            type="hidden"
             value={form.regLineID}
             onChange={handleChange("regLineID")}
           />
