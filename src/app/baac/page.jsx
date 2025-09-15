@@ -60,7 +60,7 @@ const CropSelect = dynamic(
 
 // ===== Helper Functions =====
 function toNumber(val) {
-  if (val === "" || val === null || val === undefined) return NaN;
+  if (!val) return NaN;
   const num = Number(String(val).replace(/,/g, "").trim());
   return Number.isNaN(num) ? NaN : num;
 }
@@ -76,13 +76,6 @@ function convertSqmToRaiNganWa(sqm) {
   const ngan = Math.floor((safe % 1600) / 400);
   const wa = Math.floor((safe % 400) / 4);
   return `${rai} ไร่ ${ngan} งาน ${wa} วา`;
-}
-function isValidThaiId(id) {
-  const digits = String(id).replace(/\D/g, "");
-  if (digits.length !== 13) return false;
-  let sum = 0;
-  for (let i = 0; i < 12; i++) sum += Number(digits[i]) * (13 - i);
-  return (11 - (sum % 11)) % 10 === Number(digits[12]);
 }
 function formatNumber(val) {
   const n = toNumber(val);
@@ -129,8 +122,9 @@ function Field({ label, required, children, hint, error }) {
 
 // ===== Main Page =====
 export default function BaacPage() {
+  const [loading, setLoading] = useState(true);
   const [regLineID, setRegLineID] = useState("");
-  const [loading, setLoading] = useState(true); 
+
   const [form, setForm] = useState({
     regLineID: "",
     firstName: "",
@@ -161,9 +155,6 @@ export default function BaacPage() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [provinceData, setProvinceData] = useState([]);
-  const [filteredDistricts, setFilteredDistricts] = useState([]);
-  const [filteredSubDistricts, setFilteredSubDistricts] = useState([]);
 
   const inputBase =
     "w-full rounded-[14px] border border-emerald-200/80 bg-white px-4 py-3 text-[15px] leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400";
@@ -171,7 +162,6 @@ export default function BaacPage() {
     "flex items-center gap-3 rounded-[14px] border border-emerald-200 bg-white px-3 py-3 shadow-sm active:scale-[0.99]";
 
   // --- Init LIFF ---
-    // --- Init LIFF + ดึงข้อมูล
   useEffect(() => {
     liff.init({ liffId: "2007697520-ReVxGaBb" }).then(() => {
       if (liff.isLoggedIn()) {
@@ -197,17 +187,17 @@ export default function BaacPage() {
               }
             })
             .catch((err) => console.error("❌ โหลดข้อมูลเกษตรกรล้มเหลว:", err))
-            .finally(() => setLoading(false)); // ✅ โหลดเสร็จ
+            .finally(() => setLoading(false));
         });
       } else {
         liff.login();
+        setLoading(false); // กันค้าง
       }
     });
   }, []);
 
-  // ===== Render =====
+  // ===== Loading UI =====
   if (loading) {
-    // ✅ Loading UI
     return (
       <main className="min-h-screen flex items-center justify-center bg-[#F7F5EE]">
         <div className="text-center">
@@ -227,13 +217,17 @@ export default function BaacPage() {
     () => convertSqmToRaiNganWa(totalAreaSqm),
     [totalAreaSqm]
   );
-  const hasOtherCrop = form.mainCrops.some((o) => o.value === "อื่นๆ");
-  const hasOtherLandDoc = form.landDocs.some((o) => o.value === "อื่นๆ");
+  const hasOtherCrop = Array.isArray(form.mainCrops)
+    ? form.mainCrops.some((o) => o.value === "อื่นๆ")
+    : false;
+  const hasOtherLandDoc = Array.isArray(form.landDocs)
+    ? form.landDocs.some((o) => o.value === "อื่นๆ")
+    : false;
 
   // ===== Handlers =====
-  const handleChange = (key) => (e) => {
+  const handleChange = (key) => (e) =>
     setForm((s) => ({ ...s, [key]: e.target.value }));
-  };
+
   const handleCheckbox = (purpose) => (e) => {
     setForm((s) => {
       const setPur = new Set(s.loanPurposes);
@@ -242,10 +236,12 @@ export default function BaacPage() {
       return { ...s, loanPurposes: Array.from(setPur) };
     });
   };
+
   const handleAmountChange = (key) => (e) => {
     const raw = e.target.value.replace(/[^\d,]/g, "");
     setForm((s) => ({ ...s, [key]: raw }));
   };
+
   const onCitizenIdChange = (e) => {
     let v = e.target.value.replace(/\D/g, "").slice(0, 13);
     setForm((s) => ({ ...s, citizenId: v }));
@@ -273,32 +269,6 @@ export default function BaacPage() {
       const result = await res.json();
       if (res.ok && result.success) {
         setSubmitted(true);
-        setForm({
-          regLineID: regLineID,
-          firstName: "",
-          lastName: "",
-          citizenId: "",
-          dob: "",
-          phone: "",
-          address: "",
-          province: "",
-          amphur: "",
-          tambon: "",
-          postcode: "",
-          mainCrops: [],
-          otherCrops: "",
-          areaRai: "",
-          areaNgan: "",
-          areaWa: "",
-          plotLocation: "",
-          landDocs: [],
-          landDocOther: "",
-          yearsPlanting: "",
-          incomePerYear: "",
-          loanPurposes: [],
-          loanPurposeOther: "",
-          loanAmount: "",
-        });
       } else {
         alert("❌ บันทึกไม่สำเร็จ: " + (result.error || "Unknown error"));
       }
@@ -309,7 +279,6 @@ export default function BaacPage() {
       setSubmitting(false);
     }
   };
-
   // ===== Render =====
   return (
     <main className="min-h-screen bg-[#F7F5EE] flex items-start justify-center p-4">
@@ -328,6 +297,7 @@ export default function BaacPage() {
         )}
 
         {/* ========== Fields ========== */}
+        {/* Example Field */}
         <Field label="Line ID" required>
           <input
             className="w-full rounded-[14px] border border-red-500 bg-yellow-50 px-4 py-3"
