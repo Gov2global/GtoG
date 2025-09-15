@@ -130,6 +130,7 @@ function Field({ label, required, children, hint, error }) {
 // ===== Main Page =====
 export default function BaacPage() {
   const [regLineID, setRegLineID] = useState("");
+  const [loading, setLoading] = useState(true); 
   const [form, setForm] = useState({
     regLineID: "",
     firstName: "",
@@ -170,6 +171,7 @@ export default function BaacPage() {
     "flex items-center gap-3 rounded-[14px] border border-emerald-200 bg-white px-3 py-3 shadow-sm active:scale-[0.99]";
 
   // --- Init LIFF ---
+    // --- Init LIFF + ดึงข้อมูล
   useEffect(() => {
     liff.init({ liffId: "2007697520-ReVxGaBb" }).then(() => {
       if (liff.isLoggedIn()) {
@@ -194,13 +196,27 @@ export default function BaacPage() {
                 }));
               }
             })
-            .catch((err) => console.error("❌ โหลดข้อมูลเกษตรกรล้มเหลว:", err));
+            .catch((err) => console.error("❌ โหลดข้อมูลเกษตรกรล้มเหลว:", err))
+            .finally(() => setLoading(false)); // ✅ โหลดเสร็จ
         });
       } else {
         liff.login();
       }
     });
   }, []);
+
+  // ===== Render =====
+  if (loading) {
+    // ✅ Loading UI
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-[#F7F5EE]">
+        <div className="text-center">
+          <div className="animate-spin h-12 w-12 border-4 border-emerald-400 border-t-transparent rounded-full mx-auto"></div>
+          <p className="mt-4 text-emerald-700 font-medium">กำลังโหลดข้อมูล...</p>
+        </div>
+      </main>
+    );
+  }
 
   // ===== Derived =====
   const totalAreaSqm = useMemo(

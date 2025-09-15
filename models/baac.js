@@ -5,6 +5,7 @@ const BaacSchema = new mongoose.Schema(
 
     baac_ID: { type: String, required: true, unique: true },
     // --- ข้อมูลส่วนตัว ---
+    regLineID: { type: String, required: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     citizenId: { type: String, required: true},
