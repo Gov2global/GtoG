@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import liff from "@line/liff";
@@ -21,39 +20,17 @@ const CropSelect = dynamic(
           minHeight: 44,
           ":hover": { borderColor: "#6ee7b7" },
         }),
-        multiValue: (base) => ({
-          ...base,
-          backgroundColor: "#7dd3fc",
-          color: "#083344",
-          borderRadius: 9999,
-          paddingLeft: 6,
-          paddingRight: 2,
-        }),
-        multiValueLabel: (base) => ({
-          ...base,
-          color: "#083344",
-          fontSize: 14,
-        }),
-        multiValueRemove: (base) => ({
-          ...base,
-          color: "#0c4a6e",
-          ":hover": { backgroundColor: "transparent", color: "#dc2626" },
-        }),
-        placeholder: (base) => ({ ...base, color: "#9ca3af" }),
-        menu: (base) => ({ ...base, borderRadius: 12, overflow: "hidden" }),
       };
-      return function CropSelectWrapper(props) {
-        return (
-          <Select
-            {...props}
-            isMulti
-            styles={reactSelectStyles}
-            classNamePrefix="react-select"
-            placeholder="เลือกหรือพิมพ์ค้นหา..."
-            noOptionsMessage={() => "ไม่พบรายการ"}
-          />
-        );
-      };
+      return (props) => (
+        <Select
+          {...props}
+          isMulti
+          styles={reactSelectStyles}
+          classNamePrefix="react-select"
+          placeholder="เลือกหรือพิมพ์ค้นหา..."
+          noOptionsMessage={() => "ไม่พบรายการ"}
+        />
+      );
     }),
   { ssr: false }
 );
@@ -127,6 +104,11 @@ export default function BaacPage() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  // ✅ เพิ่ม State เก็บจังหวัด/อำเภอ/ตำบล
+  const [provinceData, setProvinceData] = useState([]);
+  const [filteredDistricts, setFilteredDistricts] = useState([]);
+  const [filteredSubDistricts, setFilteredSubDistricts] = useState([]);
 
   const [form, setForm] = useState({
     regLineID: "",
@@ -203,19 +185,54 @@ export default function BaacPage() {
       });
   }, []);
 
-  // ===== Loading UI =====
-  if (loading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-[#F7F5EE]">
-        <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-emerald-400 border-t-transparent rounded-full mx-auto"></div>
-          <p className="mt-4 text-emerald-700 font-medium">กำลังโหลดข้อมูล...</p>
-        </div>
-      </main>
-    );
-  }
+  // --- โหลดข้อมูลจังหวัด/อำเภอ/ตำบล ---
+  useEffect(() => {
+    fetch("/thai_provinces.json") // ✅ คุณต้องมีไฟล์ json นี้ใน public/
+      .then((res) => res.json())
+      .then((data) => setProvinceData(data))
+      .catch((err) => console.error("❌ โหลดจังหวัดล้มเหลว:", err));
+  }, []);
 
-  // ===== Derived values (no useMemo) =====
+  // --- เมื่อเลือกจังหวัด ---
+  useEffect(() => {
+    if (form.province) {
+      const districts = provinceData
+        .filter((i) => i.province === form.province)
+        .map((i) => i.amphur);
+      setFilteredDistricts([...new Set(districts)]);
+    } else {
+      setFilteredDistricts([]);
+    }
+    setForm((s) => ({ ...s, amphur: "", tambon: "", postcode: "" }));
+  }, [form.province, provinceData]);
+
+  // --- เมื่อเลือกอำเภอ ---
+  useEffect(() => {
+    if (form.amphur) {
+      const tambons = provinceData
+        .filter((i) => i.province === form.province && i.amphur === form.amphur)
+        .map((i) => i.tambon);
+      setFilteredSubDistricts([...new Set(tambons)]);
+    } else {
+      setFilteredSubDistricts([]);
+    }
+    setForm((s) => ({ ...s, tambon: "", postcode: "" }));
+  }, [form.amphur, form.province, provinceData]);
+
+  // --- เมื่อเลือกตำบล → ตั้งรหัสไปรษณีย์ ---
+  useEffect(() => {
+    if (form.tambon) {
+      const found = provinceData.find(
+        (i) =>
+          i.province === form.province &&
+          i.amphur === form.amphur &&
+          i.tambon === form.tambon
+      );
+      if (found) setForm((s) => ({ ...s, postcode: found.postcode }));
+    }
+  }, [form.tambon, form.amphur, form.province, provinceData]);
+
+  // ===== Derived values =====
   const totalAreaSqm = calculateTotalAreaSqm(
     form.areaRai,
     form.areaNgan,
@@ -284,6 +301,18 @@ export default function BaacPage() {
       setSubmitting(false);
     }
   };
+
+  // ===== Render =====
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-[#F7F5EE]">
+        <div className="text-center">
+          <div className="animate-spin h-12 w-12 border-4 border-emerald-400 border-t-transparent rounded-full mx-auto"></div>
+          <p className="mt-4 text-emerald-700 font-medium">กำลังโหลดข้อมูล...</p>
+        </div>
+      </main>
+    );
+  }
 
   // ===== Render =====
   return (
