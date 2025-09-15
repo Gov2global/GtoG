@@ -186,12 +186,27 @@ export default function BaacPage() {
   }, []);
 
   // --- โหลดข้อมูลจังหวัด/อำเภอ/ตำบล ---
-  useEffect(() => {
-    fetch("api/farmer/get/province") 
-      .then((res) => res.json())
-      .then((data) => setProvinceData(data))
-      .catch((err) => console.error("❌ โหลดจังหวัดล้มเหลว:", err));
-  }, []);
+// --- โหลดข้อมูลจังหวัด/อำเภอ/ตำบล ---
+useEffect(() => {
+  fetch("/api/farmer/get/province")
+    .then((res) => res.json())
+    .then((result) => {
+      // ตรวจสอบว่า API ส่งออกมาเป็น array หรือ object
+      if (result.success && Array.isArray(result.data)) {
+        setProvinceData(result.data);
+      } else if (Array.isArray(result)) {
+        setProvinceData(result);
+      } else {
+        console.error("❌ province data format ไม่ถูก:", result);
+        setProvinceData([]); // กันพัง
+      }
+    })
+    .catch((err) => {
+      console.error("❌ โหลดจังหวัดล้มเหลว:", err);
+      setProvinceData([]); // กันพัง
+    });
+}, []);
+
 
   // --- เมื่อเลือกจังหวัด ---
   useEffect(() => {
