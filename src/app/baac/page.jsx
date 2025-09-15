@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useMemo, useState,useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import liff from "@line/liff";
 
 // ===== React Select (no SSR) =====
 const CropSelect = dynamic(
@@ -65,19 +66,13 @@ function calculateTotalAreaSqm(rai, ngan, wa) {
   const r = toNumber(rai);
   const n = toNumber(ngan);
   const w = toNumber(wa);
-  const sqm =
-    (Number.isNaN(r) ? 0 : r) * 1600 +
-    (Number.isNaN(n) ? 0 : n) * 400 +
-    (Number.isNaN(w) ? 0 : w) * 4;
-  return isNaN(sqm) ? 0 : sqm;
+  return (r || 0) * 1600 + (n || 0) * 400 + (w || 0) * 4;
 }
 function convertSqmToRaiNganWa(sqm) {
   const safe = Math.max(0, Number(sqm) || 0);
   const rai = Math.floor(safe / 1600);
-  const remainingAfterRai = safe % 1600;
-  const ngan = Math.floor(remainingAfterRai / 400);
-  const remainingAfterNgan = remainingAfterRai % 400;
-  const wa = Math.floor(remainingAfterNgan / 4);
+  const ngan = Math.floor((safe % 1600) / 400);
+  const wa = Math.floor((safe % 400) / 4);
   return `${rai} ไร่ ${ngan} งาน ${wa} วา`;
 }
 function isValidThaiId(id) {
@@ -85,13 +80,11 @@ function isValidThaiId(id) {
   if (digits.length !== 13) return false;
   let sum = 0;
   for (let i = 0; i < 12; i++) sum += Number(digits[i]) * (13 - i);
-  const check = (11 - (sum % 11)) % 10;
-  return check === Number(digits[12]);
+  return (11 - (sum % 11)) % 10 === Number(digits[12]);
 }
 function formatNumber(val) {
   const n = toNumber(val);
-  if (Number.isNaN(n)) return "";
-  return n.toLocaleString("en-US");
+  return Number.isNaN(n) ? "" : n.toLocaleString("en-US");
 }
 
 // ===== Constants =====
@@ -134,7 +127,10 @@ function Field({ label, required, children, hint, error }) {
 
 // ===== Main Page =====
 export default function BaacPage() {
+  const [regLineID, setRegLineID] = useState(""); // ✅ state เก็บค่า Line ID
+
   const [form, setForm] = useState({
+    regLineID: "", // เริ่มต้นว่างไว้ก่อน
     firstName: "",
     lastName: "",
     citizenId: "",
@@ -153,73 +149,63 @@ export default function BaacPage() {
     plotLocation: "",
     landDocs: [],
     landDocOther: "",
-    // landDocFiles: null,
-    // otherDocs: null,
     yearsPlanting: "",
     incomePerYear: "",
     loanPurposes: [],
     loanPurposeOther: "",
     loanAmount: "",
   });
+
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [provinceData, setProvinceData] = useState([]); // [ADDED: เก็บข้อมูลทั้งหมด]
-  const [filteredDistricts, setFilteredDistricts] = useState([]); // [ADDED: สำหรับอำเภอ]
-  const [filteredSubDistricts, setFilteredSubDistricts] = useState([]); // [ADDED: สำหรับตำบล]
+  const [provinceData, setProvinceData] = useState([]);
+  const [filteredDistricts, setFilteredDistricts] = useState([]);
+  const [filteredSubDistricts, setFilteredSubDistricts] = useState([]);
 
-   // โหลด province data จาก API
+  // --- Init LIFF ---
+  useEffect(() => {
+    liff.init({ liffId: "2007697520-ReVxGaBb" }).then(() => {
+      if (liff.isLoggedIn()) {
+        liff.getProfile().then((profile) => {
+          setRegLineID(profile.userId);
+
+          fetch(`/api/farmer/get/line-get/${profile.userId}`)
+            .then((res) => res.json())
+            .then((result) => {
+              if (result.success && result.data) {
+                const user = result.data;
+                setForm((prev) => ({
+                  ...prev,
+                  firstName: user.regName || prev.firstName,
+                  lastName: user.regSurname || prev.lastName,
+                  phone: user.regTel || prev.phone,
+                  regLineID: user.regLineID || profile.userId,
+                }));
+              } else {
+                setForm((prev) => ({
+                  ...prev,
+                  regLineID: profile.userId,
+                }));
+              }
+            })
+            .catch((err) => console.error("❌ โหลดข้อมูลเกษตรกรล้มเหลว:", err));
+        });
+      } else {
+        liff.login();
+      }
+    });
+  }, []);
+
+  // --- โหลดจังหวัด ---
   useEffect(() => {
     fetch("/api/farmer/get/province")
       .then((res) => res.json())
       .then((data) => {
-        if (data.success) {
-          setProvinceData(data.data);
-        }
+        if (data.success) setProvinceData(data.data);
       })
       .catch((err) => console.error("❌ โหลดจังหวัดล้มเหลว:", err));
   }, []);
-
-  // เมื่อเปลี่ยนจังหวัด → filter อำเภอ
-  useEffect(() => {
-    if (form.province) {
-      const districts = provinceData
-        .filter((item) => item.province === form.province)
-        .map((i) => i.district);
-      setFilteredDistricts([...new Set(districts)]);
-      setForm((s) => ({ ...s, amphur: "", tambon: "", postcode: "" })); // reset
-      setFilteredSubDistricts([]);
-    }
-  }, [form.province]);
-
-  // เมื่อเปลี่ยนอำเภอ → filter ตำบล
-  useEffect(() => {
-    if (form.amphur) {
-      const subDistricts = provinceData
-        .filter(
-          (item) =>
-            item.province === form.province && item.district === form.amphur
-        )
-        .map((i) => i.sub_district);
-      setFilteredSubDistricts([...new Set(subDistricts)]);
-      setForm((s) => ({ ...s, tambon: "", postcode: "" })); // reset
-    }
-  }, [form.amphur]);
-
-  // เมื่อเปลี่ยนตำบล → auto fill postcode
-  useEffect(() => {
-    if (form.tambon) {
-      const match = provinceData.find(
-        (item) =>
-          item.province === form.province &&
-          item.district === form.amphur &&
-          item.sub_district === form.tambon
-      );
-      if (match) {
-        setForm((s) => ({ ...s, postcode: match.postcode.toString() }));
-      }
-    }
-  }, [form.tambon]);
 
   // ===== Derived =====
   const totalAreaSqm = useMemo(
@@ -230,83 +216,6 @@ export default function BaacPage() {
     () => convertSqmToRaiNganWa(totalAreaSqm),
     [totalAreaSqm]
   );
-
-  const inputBase =
-    "w-full rounded-[14px] border border-emerald-200/80 bg-white px-4 py-3 text-[15px] leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400";
-  const chipBox =
-    "flex items-center gap-3 rounded-[14px] border border-emerald-200 bg-white px-3 py-3 shadow-sm active:scale-[0.99]";
-
-  // ===== Handlers =====
-  const handleChange = (key) => (e) => {
-    const value = e?.target?.files ? e.target.files : e.target.value;
-    setForm((s) => ({ ...s, [key]: value }));
-  };
-  const handleCheckbox = (purpose) => (e) => {
-    setForm((s) => {
-      const setPur = new Set(s.loanPurposes);
-      if (e.target.checked) setPur.add(purpose);
-      else setPur.delete(purpose);
-      return { ...s, loanPurposes: Array.from(setPur) };
-    });
-  };
-  const handleAmountChange = (key) => (e) => {
-    const raw = e.target.value
-      .replace(/[^\d,]/g, "")
-      .replace(/,+/g, (m) => (m.length > 1 ? "," : m));
-    setForm((s) => ({ ...s, [key]: raw }));
-  };
-  const onCitizenIdChange = (e) => {
-    let v = e.target.value.replace(/\D/g, "").slice(0, 13);
-    const parts = [
-      v.slice(0, 1),
-      v.slice(1, 5),
-      v.slice(5, 10),
-      v.slice(10, 12),
-      v.slice(12, 13),
-    ].filter(Boolean);
-    setForm((s) => ({ ...s, citizenId: parts.join("-") }));
-  };
-
-  const hasOtherCrop = form.mainCrops.some((o) => o.value === "อื่นๆ");
-  const hasOtherLandDoc = form.landDocs.some((o) => o.value === "อื่นๆ");
-
-  // ===== Validate =====
-  const validate = () => {
-    const err = {};
-    if (!form.firstName.trim()) err.firstName = "กรุณากรอกชื่อ";
-    if (!form.lastName.trim()) err.lastName = "กรุณากรอกสกุล";
-    const cid = form.citizenId.replace(/\D/g, "");
-    if (!cid) err.citizenId = "กรุณากรอกเลขบัตรประชาชน";
-    else if (!/^\d{13}$/.test(cid)) err.citizenId = "ต้องมี 13 หลัก";
-    else if (!isValidThaiId(cid)) err.citizenId = "เลขบัตรประชาชนไม่ถูกต้อง";
-    if (!form.dob) err.dob = "กรุณาเลือกวันเกิด";
-    const phone = form.phone.replace(/\D/g, "");
-    if (!phone) err.phone = "กรุณากรอกเบอร์โทรศัพท์";
-    else if (!/^0(6|8|9)\d{8}$/.test(phone)) err.phone = "เบอร์ไม่ถูกต้อง";
-    if (!form.address.trim()) err.address = "กรุณากรอกที่อยู่";
-    if (!form.province.trim()) err.province = "กรุณาระบุจังหวัด";
-    if (!form.amphur.trim()) err.amphur = "กรุณาระบุอำเภอ";
-    if (!form.tambon.trim()) err.tambon = "กรุณาระบุตำบล";
-    if (!/^\d{5}$/.test(form.postcode)) err.postcode = "รหัสไปรษณีย์ไม่ถูกต้อง";
-    if (!form.mainCrops.length) err.mainCrop = "กรุณาเลือกพืชหลัก";
-    if (hasOtherCrop && !form.otherCrops.trim())
-      err.otherCrops = "กรุณาระบุพืชอื่นๆ";
-    if (toNumber(form.areaRai) <= 0) err.areaRai = "กรอกตัวเลข > 0";
-    if (!form.plotLocation.trim()) err.plotLocation = "กรุณากรอกสถานที่ตั้งแปลง";
-    if (!form.landDocs.length) err.landDocs = "กรุณาเลือกเอกสารสิทธิ์";
-    if (hasOtherLandDoc && !form.landDocOther.trim())
-      err.landDocOther = "กรุณาระบุเอกสารอื่นๆ";
-    if (toNumber(form.yearsPlanting) < 0) err.yearsPlanting = "ตัวเลข >= 0";
-    if (toNumber(form.incomePerYear) < 0) err.incomePerYear = "ตัวเลข >= 0";
-    if (!form.loanPurposes.length)
-      err.loanPurposes = "เลือกวัตถุประสงค์กู้เงินอย่างน้อย 1";
-    if (form.loanPurposes.includes("อื่นๆ") && !form.loanPurposeOther.trim())
-      err.loanPurposeOther = "กรุณาระบุรายละเอียด";
-    if (toNumber(form.loanAmount) <= 0)
-      err.loanAmount = "กรอกวงเงินมากกว่า 0";
-    setErrors(err);
-    return Object.keys(err).length === 0;
-  };
 
   // ===== Submit =====
   const payload = useMemo(
@@ -325,40 +234,27 @@ export default function BaacPage() {
       loanAmount: toNumber(form.loanAmount),
       totalAreaSqm,
       landDocs: form.landDocs.map((o) => o.value),
-      landDocOther: hasOtherLandDoc ? form.landDocOther.trim() : "",
+      landDocOther: form.landDocs.some((o) => o.value === "อื่นๆ")
+        ? form.landDocOther.trim()
+        : "",
     }),
-    [form, totalAreaSqm, hasOtherLandDoc]
+    [form, totalAreaSqm]
   );
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
     try {
       setSubmitting(true);
-      const fd = new FormData();
-      Object.entries(payload).forEach(([k, v]) => {
-        if (Array.isArray(v)) fd.append(k, JSON.stringify(v));
-        else fd.append(k, typeof v === "number" ? String(v) : v);
-      });
-      if (form.landDocFiles?.length)
-        Array.from(form.landDocFiles).forEach((f) =>
-          fd.append("landDocFiles", f, f.name)
-        );
-      if (form.otherDocs?.length)
-        Array.from(form.otherDocs).forEach((f) =>
-          fd.append("otherDocs", f, f.name)
-        );
-
       const res = await fetch("/api/baac", {
         method: "POST",
-        headers: { "Content-Type": "application/json" }, // [ADDED: ส่งเป็น JSON]
-        body: JSON.stringify(payload), // [CHANGED: ใช้ JSON payload แทน FormData]
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-
       const result = await res.json();
       if (res.ok && result.success) {
         setSubmitted(true);
         setForm({
+          regLineID, // ✅ เก็บค่าเดิมไว้
           firstName: "",
           lastName: "",
           citizenId: "",
@@ -377,8 +273,6 @@ export default function BaacPage() {
           plotLocation: "",
           landDocs: [],
           landDocOther: "",
-          // landDocFiles: null,
-          // otherDocs: null,
           yearsPlanting: "",
           incomePerYear: "",
           loanPurposes: [],
@@ -414,31 +308,39 @@ export default function BaacPage() {
         )}
 
         {/* ========== Fields ========== */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="ชื่อ" required error={errors.firstName}>
+        <Field label="Line ID" required error={errors.regLineID}>
             <input
               className={inputBase}
-              value={form.firstName}
-              onChange={handleChange("firstName")}
+              value={form.regLineID}
+              onChange={handleChange("regLineID")}
             />
           </Field>
-          <Field label="สกุล" required error={errors.lastName}>
-            <input
-              className={inputBase}
-              value={form.lastName}
-              onChange={handleChange("lastName")}
-            />
-          </Field>
-        </div>
 
-        <Field label="เบอร์โทรศัพท์" required hint="เช่น 0812345678" error={errors.phone}>
-          <input
-            className={inputBase}
-            inputMode="tel"
-            value={form.phone}
-            onChange={handleChange("phone")}
-          />
-        </Field>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  <Field label="ชื่อ" required error={errors.firstName}>
+    <input
+      className={inputBase}
+      value={form.firstName}
+      onChange={handleChange("firstName")}
+    />
+  </Field>
+  <Field label="สกุล" required error={errors.lastName}>
+    <input
+      className={inputBase}
+      value={form.lastName}
+      onChange={handleChange("lastName")}
+    />
+  </Field>
+</div>
+
+<Field label="เบอร์โทรศัพท์" required hint="เช่น 0812345678" error={errors.phone}>
+  <input
+    className={inputBase}
+    inputMode="tel"
+    value={form.phone}
+    onChange={handleChange("phone")}
+  />
+</Field>
 
         <Field label="เลขบัตรประชาชน" required error={errors.citizenId}>
           <input
