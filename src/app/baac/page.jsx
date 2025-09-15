@@ -186,66 +186,57 @@ export default function BaacPage() {
   }, []);
 
   // --- โหลดข้อมูลจังหวัด/อำเภอ/ตำบล ---
-// --- โหลดข้อมูลจังหวัด/อำเภอ/ตำบล ---
 useEffect(() => {
-  fetch("/api/farmer/get/province")
-    .then((res) => res.json())
-    .then((result) => {
-      // ตรวจสอบว่า API ส่งออกมาเป็น array หรือ object
-      if (result.success && Array.isArray(result.data)) {
-        setProvinceData(result.data);
-      } else if (Array.isArray(result)) {
-        setProvinceData(result);
-      } else {
-        console.error("❌ province data format ไม่ถูก:", result);
-        setProvinceData([]); // กันพัง
-      }
-    })
-    .catch((err) => {
-      console.error("❌ โหลดจังหวัดล้มเหลว:", err);
-      setProvinceData([]); // กันพัง
-    });
-}, []);
+    fetch("/api/farmer/get/province")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setProvinceData(data.data);
+        }
+      })
+      .catch((err) => console.error("❌ โหลดจังหวัดล้มเหลว:", err));
+  }, []);
 
-
-  // --- เมื่อเลือกจังหวัด ---
+  // เมื่อเปลี่ยนจังหวัด → filter อำเภอ
   useEffect(() => {
     if (form.province) {
       const districts = provinceData
-        .filter((i) => i.province === form.province)
-        .map((i) => i.amphur);
+        .filter((item) => item.province === form.province)
+        .map((i) => i.district);
       setFilteredDistricts([...new Set(districts)]);
-    } else {
-      setFilteredDistricts([]);
-    }
-    setForm((s) => ({ ...s, amphur: "", tambon: "", postcode: "" }));
-  }, [form.province, provinceData]);
-
-  // --- เมื่อเลือกอำเภอ ---
-  useEffect(() => {
-    if (form.amphur) {
-      const tambons = provinceData
-        .filter((i) => i.province === form.province && i.amphur === form.amphur)
-        .map((i) => i.tambon);
-      setFilteredSubDistricts([...new Set(tambons)]);
-    } else {
+      setForm((s) => ({ ...s, amphur: "", tambon: "", postcode: "" })); // reset
       setFilteredSubDistricts([]);
     }
-    setForm((s) => ({ ...s, tambon: "", postcode: "" }));
-  }, [form.amphur, form.province, provinceData]);
+  }, [form.province]);
 
-  // --- เมื่อเลือกตำบล → ตั้งรหัสไปรษณีย์ ---
+  // เมื่อเปลี่ยนอำเภอ → filter ตำบล
+  useEffect(() => {
+    if (form.amphur) {
+      const subDistricts = provinceData
+        .filter(
+          (item) =>
+            item.province === form.province && item.district === form.amphur
+        )
+        .map((i) => i.sub_district);
+      setFilteredSubDistricts([...new Set(subDistricts)]);
+      setForm((s) => ({ ...s, tambon: "", postcode: "" })); // reset
+    }
+  }, [form.amphur]);
+
+  // เมื่อเปลี่ยนตำบล → auto fill postcode
   useEffect(() => {
     if (form.tambon) {
-      const found = provinceData.find(
-        (i) =>
-          i.province === form.province &&
-          i.amphur === form.amphur &&
-          i.tambon === form.tambon
+      const match = provinceData.find(
+        (item) =>
+          item.province === form.province &&
+          item.district === form.amphur &&
+          item.sub_district === form.tambon
       );
-      if (found) setForm((s) => ({ ...s, postcode: found.postcode }));
+      if (match) {
+        setForm((s) => ({ ...s, postcode: match.postcode.toString() }));
+      }
     }
-  }, [form.tambon, form.amphur, form.province, provinceData]);
+  }, [form.tambon]);
 
   // ===== Derived values =====
   const totalAreaSqm = calculateTotalAreaSqm(
