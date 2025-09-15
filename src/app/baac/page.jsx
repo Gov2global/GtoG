@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import liff from "@line/liff";
 
@@ -124,6 +124,9 @@ function Field({ label, required, children, hint, error }) {
 export default function BaacPage() {
   const [loading, setLoading] = useState(true);
   const [regLineID, setRegLineID] = useState("");
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const [form, setForm] = useState({
     regLineID: "",
@@ -152,10 +155,6 @@ export default function BaacPage() {
     loanAmount: "",
   });
 
-  const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-
   const inputBase =
     "w-full rounded-[14px] border border-emerald-200/80 bg-white px-4 py-3 text-[15px] leading-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400";
   const chipBox =
@@ -163,37 +162,45 @@ export default function BaacPage() {
 
   // --- Init LIFF ---
   useEffect(() => {
-    liff.init({ liffId: "2007697520-ReVxGaBb" }).then(() => {
-      if (liff.isLoggedIn()) {
-        liff.getProfile().then((profile) => {
-          setRegLineID(profile.userId);
-          fetch(`/api/farmer/get/line-get/${profile.userId}`)
-            .then((res) => res.json())
-            .then((result) => {
-              if (result.success && result.data) {
-                const user = result.data;
-                setForm((prev) => ({
-                  ...prev,
-                  firstName: user.regName || prev.firstName,
-                  lastName: user.regSurname || prev.lastName,
-                  phone: user.regTel || prev.phone,
-                  regLineID: user.regLineID || profile.userId,
-                }));
-              } else {
-                setForm((prev) => ({
-                  ...prev,
-                  regLineID: profile.userId,
-                }));
-              }
-            })
-            .catch((err) => console.error("❌ โหลดข้อมูลเกษตรกรล้มเหลว:", err))
-            .finally(() => setLoading(false));
-        });
-      } else {
-        liff.login();
-        setLoading(false); // กันค้าง
-      }
-    });
+    liff
+      .init({ liffId: "2007697520-ReVxGaBb" })
+      .then(() => {
+        if (liff.isLoggedIn()) {
+          liff.getProfile().then((profile) => {
+            setRegLineID(profile.userId);
+            fetch(`/api/farmer/get/line-get/${profile.userId}`)
+              .then((res) => res.json())
+              .then((result) => {
+                if (result.success && result.data) {
+                  const user = result.data;
+                  setForm((prev) => ({
+                    ...prev,
+                    firstName: user.regName || prev.firstName,
+                    lastName: user.regSurname || prev.lastName,
+                    phone: user.regTel || prev.phone,
+                    regLineID: user.regLineID || profile.userId,
+                  }));
+                } else {
+                  setForm((prev) => ({
+                    ...prev,
+                    regLineID: profile.userId,
+                  }));
+                }
+              })
+              .catch((err) =>
+                console.error("❌ โหลดข้อมูลเกษตรกรล้มเหลว:", err)
+              )
+              .finally(() => setLoading(false));
+          });
+        } else {
+          liff.login();
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error("❌ LIFF init error:", err);
+        setLoading(false);
+      });
   }, []);
 
   // ===== Loading UI =====
@@ -208,15 +215,13 @@ export default function BaacPage() {
     );
   }
 
-  // ===== Derived =====
-  const totalAreaSqm = useMemo(
-    () => calculateTotalAreaSqm(form.areaRai, form.areaNgan, form.areaWa),
-    [form.areaRai, form.areaNgan, form.areaWa]
+  // ===== Derived values (no useMemo) =====
+  const totalAreaSqm = calculateTotalAreaSqm(
+    form.areaRai,
+    form.areaNgan,
+    form.areaWa
   );
-  const areaText = useMemo(
-    () => convertSqmToRaiNganWa(totalAreaSqm),
-    [totalAreaSqm]
-  );
+  const areaText = convertSqmToRaiNganWa(totalAreaSqm);
   const hasOtherCrop = Array.isArray(form.mainCrops)
     ? form.mainCrops.some((o) => o.value === "อื่นๆ")
     : false;
@@ -256,8 +261,8 @@ export default function BaacPage() {
         ...form,
         citizenId: form.citizenId.replace(/\D/g, ""),
         phone: form.phone.replace(/\D/g, ""),
-        mainCrops: form.mainCrops.map((o) => o.value),
-        landDocs: form.landDocs.map((o) => o.value),
+        mainCrops: (form.mainCrops || []).map((o) => o.value),
+        landDocs: (form.landDocs || []).map((o) => o.value),
         loanAmount: toNumber(form.loanAmount),
         totalAreaSqm,
       };
@@ -279,6 +284,7 @@ export default function BaacPage() {
       setSubmitting(false);
     }
   };
+
   // ===== Render =====
   return (
     <main className="min-h-screen bg-[#F7F5EE] flex items-start justify-center p-4">
@@ -297,7 +303,7 @@ export default function BaacPage() {
         )}
 
         {/* ========== Fields ========== */}
-        {/* Example Field */}
+        {/* Field: Line ID */}
         <Field label="Line ID" required>
           <input
             className="w-full rounded-[14px] border border-red-500 bg-yellow-50 px-4 py-3"
