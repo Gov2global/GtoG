@@ -13,6 +13,8 @@ export async function POST(req) {
     await connectMongoDB();
     const body = await req.json();
 
+    console.log("📥 Body received:", body); // ✅ Debug payload
+
     // ✅ gen baac_ID (YYMMDD + running 4 digit)
     const now = new Date();
     const yy = now.getFullYear().toString().slice(-2);
@@ -39,8 +41,9 @@ export async function POST(req) {
 
     // ✅ Save to MongoDB
     const newBaac = await Baac.create({ ...body, baac_ID });
+    console.log("💾 Saved BAAC:", newBaac._id);
 
-    // ✅ ทดสอบ Push LINE (ข้อความธรรมดา)
+    // ✅ Push LINE message
     let lineResult = null;
     if (body.regLineID) {
       const payload = {
@@ -48,7 +51,7 @@ export async function POST(req) {
         messages: [
           {
             type: "text",
-            text: `✅ ลงทะเบียนสำเร็จ!\nรหัส: ${baac_ID}\nชื่อ: ${body.firstName} ${body.lastName}\nเบอร์: ${body.phone}`,
+            text: `✅ ลงทะเบียนสำเร็จ!\n\nรหัส: ${baac_ID}\nชื่อ: ${body.firstName} ${body.lastName}\nเบอร์: ${body.phone}\n\nเจ้าหน้าที่จะติดต่อกลับเร็ว ๆ นี้ครับ 🙏`,
           },
         ],
       };

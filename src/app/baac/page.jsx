@@ -286,6 +286,7 @@ const onSubmit = async (e) => {
 
     const payload = {
       ...form,
+      regLineID,  // ✅ ใช้ค่าแน่นอนจาก LIFF profile
       citizenId: form.citizenId.replace(/\D/g, ""),
       phone: form.phone.replace(/\D/g, ""),
       mainCrops: (form.mainCrops || []).map((o) => o.value),
@@ -294,7 +295,7 @@ const onSubmit = async (e) => {
       totalAreaSqm,
     };
 
-     console.log("📦 Payload:", payload); // ✅ เช็กว่ามี regLineID
+    console.log("📦 Payload:", payload); 
 
     const res = await fetch("/api/baac", {
       method: "POST",
@@ -306,14 +307,12 @@ const onSubmit = async (e) => {
     if (res.ok && result.success) {
       setSubmitted(true);
 
-      // ✅ รอ 2 วิ ให้ LINE Push เสร็จก่อนค่อยปิด LIFF
-      setTimeout(() => {
-        if (liff.isInClient()) {
-          liff.closeWindow();
-        } else {
-          alert("✅ ส่งคำขอสำเร็จแล้ว! เจ้าหน้าที่จะติดต่อกลับ");
-        }
-      }, 2000);
+      // ✅ ปิดหน้าต่างหลัง backend ยืนยันว่า LINE ส่งเสร็จแล้ว
+      if (liff.isInClient()) {
+        setTimeout(() => liff.closeWindow(), 2000);
+      } else {
+        alert("✅ ส่งคำขอสำเร็จแล้ว! เจ้าหน้าที่จะติดต่อกลับ");
+      }
     } else {
       alert("❌ บันทึกไม่สำเร็จ: " + (result.error || "Unknown error"));
     }
@@ -324,6 +323,7 @@ const onSubmit = async (e) => {
     setSubmitting(false);
   }
 };
+
 
   // ===== Render =====
   if (loading) {
@@ -355,15 +355,6 @@ const onSubmit = async (e) => {
         )}
 
         {/* ========== Fields ========== */}
-        {/* Field: Line ID */}
-        {/* <Field label="Line ID" required>
-          <input
-            type="hidden"
-            value={form.regLineID}
-            onChange={handleChange("regLineID")}
-          />
-        </Field> */}
-
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="ชื่อ" required>
