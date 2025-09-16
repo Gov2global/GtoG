@@ -285,10 +285,14 @@ const onSubmit = async (e) => {
   try {
     setSubmitting(true);
 
+    // ✅ ตรวจสอบค่าที่ได้จาก form และ state regLineID
     console.log("📌 DEBUG: form.regLineID =", form.regLineID);
+    console.log("📌 DEBUG: state regLineID =", regLineID);
 
+    // ✅ บังคับใช้ regLineID จาก state (ป้องกันหาย)
     const payload = {
       ...form,
+      regLineID: regLineID || form.regLineID,   // ใช้ค่าที่แน่ๆ จาก liff.getProfile()
       citizenId: form.citizenId.replace(/\D/g, ""),
       phone: form.phone.replace(/\D/g, ""),
       mainCrops: (form.mainCrops || []).map((o) => o.value),
@@ -297,6 +301,9 @@ const onSubmit = async (e) => {
       totalAreaSqm,
     };
 
+    console.log("📤 DEBUG: Payload ส่งไป API =", payload);
+
+    // ✅ ส่งข้อมูลไปยัง API
     const res = await fetch("/api/baac", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -304,10 +311,14 @@ const onSubmit = async (e) => {
     });
 
     const result = await res.json();
+    console.log("📨 DEBUG: API Response =", result);
+
     if (res.ok && result.success) {
       setSubmitted(true);
 
+      // ✅ ปิดหน้าต่าง LIFF ถ้าอยู่ใน Client
       if (liff.isInClient()) {
+        console.log("📌 DEBUG: Closing LIFF window...");
         liff.closeWindow();
       } else {
         alert("✅ ส่งคำขอสำเร็จแล้ว! เจ้าหน้าที่จะติดต่อกลับ");
