@@ -143,47 +143,45 @@ export default function BaacPage() {
     "flex items-center gap-3 rounded-[14px] border border-emerald-200 bg-white px-3 py-3 shadow-sm active:scale-[0.99]";
 
   // --- Init LIFF ---
-  useEffect(() => {
-    liff
-      .init({ liffId: "2007697520-JzdQxW3y" })
-      .then(() => {
-        if (liff.isLoggedIn()) {
-          liff.getProfile().then((profile) => {
-            setRegLineID(profile.userId);
-            fetch(`/api/farmer/get/line-get/${profile.userId}`)
-              .then((res) => res.json())
-              .then((result) => {
-                if (result.success && result.data) {
-                  const user = result.data;
-                  setForm((prev) => ({
-                    ...prev,
-                    firstName: user.regName || prev.firstName,
-                    lastName: user.regSurname || prev.lastName,
-                    phone: user.regTel || prev.phone,
-                    regLineID: user.regLineID || profile.userId,
-                  }));
-                } else {
-                  setForm((prev) => ({
-                    ...prev,
-                    regLineID: profile.userId,
-                  }));
-                }
-              })
-              .catch((err) =>
-                console.error("❌ โหลดข้อมูลเกษตรกรล้มเหลว:", err)
-              )
-              .finally(() => setLoading(false));
-          });
-        } else {
-          liff.login();
-          setLoading(false);
-        }
-      })
-      .catch((err) => {
-        console.error("❌ LIFF init error:", err);
+  // useEffect init LIFF
+useEffect(() => {
+  liff
+    .init({ liffId: "2007697520-JzdQxW3y" })
+    .then(() => {
+      if (liff.isLoggedIn()) {
+        liff.getProfile().then((profile) => {
+          setRegLineID(profile.userId);
+          fetch(`/api/farmer/get/line-get/${profile.userId}`)
+            .then((res) => res.json())
+            .then((result) => {
+              if (result.success && result.data) {
+                const user = result.data;
+                setForm((prev) => ({
+                  ...prev,
+                  regLineID: profile.userId,   // ✅ set ตรงนี้
+                  firstName: user.regName || prev.firstName,
+                  lastName: user.regSurname || prev.lastName,
+                  phone: user.regTel || prev.phone,
+                }));
+              } else {
+                setForm((prev) => ({
+                  ...prev,
+                  regLineID: profile.userId,   // ✅ fallback
+                }));
+              }
+            })
+            .finally(() => setLoading(false));
+        });
+      } else {
+        liff.login();
         setLoading(false);
-      });
-  }, []);
+      }
+    })
+    .catch((err) => {
+      console.error("❌ LIFF init error:", err);
+      setLoading(false);
+    });
+}, []);
 
   // --- โหลดข้อมูลจังหวัด/อำเภอ/ตำบล ---
 useEffect(() => {
