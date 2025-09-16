@@ -1,11 +1,10 @@
 // api/line-message
 
+
 import { NextResponse } from "next/server";
 
-export async function POST(req) {
+export async function GET() {
   try {
-    const { to } = await req.json();
-
     const res = await fetch("https://api.line.me/v2/bot/message/push", {
       method: "POST",
       headers: {
@@ -13,20 +12,14 @@ export async function POST(req) {
         Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
       },
       body: JSON.stringify({
-        to,
-        messages: [{ type: "text", text: "🚀 ทดสอบส่งข้อความสำเร็จ!" }],
+        to: "U9522cc6ee5337c62188de55406470c41", // 🔹 regLineID ของคุณ
+        messages: [{ type: "text", text: "🚀 ทดสอบส่งข้อความจาก OA สำเร็จ!" }],
       }),
     });
 
-    const text = await res.text();
-    console.log("📩 LINE Debug Response:", text);
-
-    if (!res.ok) {
-      throw new Error(text);
-    }
-
-    return NextResponse.json({ success: true, response: text });
+    const result = await res.json();
+    return NextResponse.json({ status: res.status, result });
   } catch (err) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
