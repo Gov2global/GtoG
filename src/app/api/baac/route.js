@@ -37,32 +37,34 @@ export async function POST(req) {
 
     // ✅ ส่งข้อความไปที่ LINE (เฉพาะ user ที่ส่งฟอร์ม)
     if (body.regLineID) {
-      try {
-        const resLine = await fetch("https://api.line.me/v2/bot/message/push", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
+  try {
+    const resLine = await fetch("https://api.line.me/v2/bot/message/push", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
+      },
+      body: JSON.stringify({
+        to: body.regLineID,
+        messages: [
+          {
+            type: "text",
+            text: `✅ ส่งคำขอสำเร็จ!\nรหัสลงทะเบียนของคุณคือ ${baac_ID}\nเจ้าหน้าที่จะติดต่อกลับเร็วๆ นี้`,
           },
-          body: JSON.stringify({
-            to: body.regLineID,
-            messages: [
-              {
-                type: "text",
-                text: `✅ ส่งคำขอสำเร็จ!\nรหัสลงทะเบียนของคุณคือ ${baac_ID}\nเจ้าหน้าที่จะติดต่อกลับเร็วๆ นี้`,
-              },
-            ],
-          }),
-        });
+        ],
+      }),
+    });
 
-        if (!resLine.ok) {
-          const errText = await resLine.text();
-          console.error("❌ LINE Push Error:", errText);
-        }
-      } catch (err) {
-        console.error("❌ Error sending LINE message:", err);
-      }
+    const text = await resLine.text();
+    console.log("📩 LINE API Response:", text);
+
+    if (!resLine.ok) {
+      throw new Error("LINE API error: " + text);
     }
+  } catch (err) {
+    console.error("❌ Error sending LINE message:", err);
+  }
+}
 
     return NextResponse.json({ success: true, data: newBaac }, { status: 201 });
   } catch (err) {

@@ -284,6 +284,9 @@ const onSubmit = async (e) => {
   e.preventDefault();
   try {
     setSubmitting(true);
+
+    console.log("📌 DEBUG: form.regLineID =", form.regLineID);
+
     const payload = {
       ...form,
       citizenId: form.citizenId.replace(/\D/g, ""),
@@ -304,7 +307,6 @@ const onSubmit = async (e) => {
     if (res.ok && result.success) {
       setSubmitted(true);
 
-      // ✅ ปิดหน้าต่าง LIFF (เฉพาะเมื่ออยู่ใน LIFF)
       if (liff.isInClient()) {
         liff.closeWindow();
       } else {
