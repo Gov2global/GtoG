@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { connectMongoDB } from "../../../../lib/mongodb";
 import Baac from "../../../../models/baac";
 
+
 function pad(num, size) {
   return num.toString().padStart(size, "0");
 }
@@ -35,57 +36,43 @@ export async function POST(req) {
     // ✅ บันทึกข้อมูลลง MongoDB
     const newBaac = await Baac.create({ ...body, baac_ID });
 
-    // ✅ ส่งข้อความไปที่ LINE (เฉพาะ user ที่ส่งฟอร์ม)
- if (body.regLineID) {
-  try {
-    console.log("📩 Sending message to:", body.regLineID);
+    // ✅ ส่งข้อความไปที่ LINE
+    if (body.regLineID) {
+      try {
+        console.log("📩 Sending message to:", body.regLineID);
 
-    const resLine = await fetch("https://api.line.me/v2/bot/message/push", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
-      },
-      body: JSON.stringify({
-        to: body.regLineID,
-        messages: [
-          {
-            type: "text",
-            text: `✅ ส่งคำขอสำเร็จ!\nรหัสลงทะเบียนของคุณคือ ${baac_ID}\nเจ้าหน้าที่จะติดต่อกลับเร็วๆ นี้`,
+        const resLine = await fetch("https://api.line.me/v2/bot/message/push", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
           },
-        ],
-      }),
-    });
+          body: JSON.stringify({
+            to: body.regLineID,
+            messages: [
+              {
+                type: "text",
+                text: `✅ ส่งคำขอสำเร็จ!\nรหัสลงทะเบียนของคุณคือ ${baac_ID}\nเจ้าหน้าที่จะติดต่อกลับเร็วๆ นี้`,
+              },
+            ],
+          }),
+        });
 
-    const lineResult = await resLine.json();
-    console.log("📨 LINE API status:", resLine.status);
-    console.log("📨 LINE API response:", lineResult);
+        const text = await resLine.text();
+        console.log("📨 LINE API status:", resLine.status);
+        console.log("📨 LINE API raw response:", text);
 
-    if (!resLine.ok) {
-      throw new Error("LINE API error: " + JSON.stringify(lineResult));
+        if (!resLine.ok) {
+          throw new Error("LINE API error: " + text);
+        }
+      } catch (err) {
+        console.error("❌ Error sending LINE message:", err);
+      }
     }
-  } catch (err) {
-    console.error("❌ Error sending LINE message:", err);
-  }
-}
 
     return NextResponse.json({ success: true, data: newBaac }, { status: 201 });
   } catch (err) {
     console.error("❌ Error saving BAAC:", err);
-    return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET() {
-  try {
-    await connectMongoDB();
-    const list = await Baac.find().sort({ createdAt: -1 }).limit(50).lean();
-    return NextResponse.json({ success: true, data: list });
-  } catch (err) {
-    console.error("❌ Error fetching BAAC:", err);
     return NextResponse.json(
       { success: false, error: err.message },
       { status: 500 }
