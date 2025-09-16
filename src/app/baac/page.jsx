@@ -304,21 +304,17 @@ const onSubmit = async (e) => {
     if (res.ok && result.success) {
       setSubmitted(true);
 
-      // ✅ เรียก API ส่งข้อความกลับไปยัง User โดยใช้ regLineID
-      await fetch("/api/line-message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: form.regLineID,
-          message: "✅ ส่งคำขอสำเร็จแล้ว! เจ้าหน้าที่จะติดต่อกลับ",
-        }),
-      });
-
+      // ✅ ปิดหน้าต่าง LIFF (เฉพาะเมื่ออยู่ใน LIFF)
+      if (liff.isInClient()) {
+        liff.closeWindow();
+      } else {
+        alert("✅ ส่งคำขอสำเร็จแล้ว! เจ้าหน้าที่จะติดต่อกลับ");
+      }
     } else {
       alert("❌ บันทึกไม่สำเร็จ: " + (result.error || "Unknown error"));
     }
   } catch (err) {
-    console.error("❌ Error onSubmit:", err);
+    console.error("❌ Submit Error:", err);
     alert("เกิดข้อผิดพลาดในการส่งคำขอ");
   } finally {
     setSubmitting(false);
