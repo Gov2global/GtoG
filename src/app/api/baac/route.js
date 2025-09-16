@@ -13,7 +13,7 @@ export async function POST(req) {
     await connectMongoDB();
     const body = await req.json();
 
-    // ✅ gen baac_ID
+    // ✅ gen baac_ID (YYMMDD + running 4 digit)
     const now = new Date();
     const yy = now.getFullYear().toString().slice(-2);
     const mm = pad(now.getMonth() + 1, 2);
@@ -32,10 +32,16 @@ export async function POST(req) {
 
     const baac_ID = `${prefix}${pad(seq, 4)}`;
 
+    // ✅ ensure dob is Date
+    if (body.dob) {
+      body.dob = new Date(body.dob);
+    }
+
     // ✅ Save to MongoDB
     const newBaac = await Baac.create({ ...body, baac_ID });
 
-    // ✅ Push LINE Flex Message
+    // ✅ Push LINE Flex Message (ไม่ให้พังถ้า LINE error)
+    let lineResult = null;
     if (body.regLineID) {
       const flexMessage = {
         type: "flex",
@@ -109,31 +115,36 @@ export async function POST(req) {
         },
       };
 
-      const resLine = await fetch("https://api.line.me/v2/bot/message/push", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
-        },
-        body: JSON.stringify({
-          to: body.regLineID,
-          messages: [flexMessage],
-        }),
-      });
+      const payload = {
+        to: body.regLineID,
+        messages: [flexMessage],
+      };
 
-      const text = await resLine.text();
-      console.log("📨 LINE API status:", resLine.status);
-      console.log("📨 LINE API response:", text);
+      try {
+        const resLine = await fetch("https://api.line.me/v2/bot/message/push", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
+          },
+          body: JSON.stringify(payload),
+        });
 
-      if (!resLine.ok) {
-        return NextResponse.json(
-          { success: false, error: "LINE push failed: " + text },
-          { status: 500 }
-        );
+        const text = await resLine.text();
+        console.log("📨 LINE API status:", resLine.status);
+        console.log("📨 LINE API response:", text);
+
+        lineResult = { status: resLine.status, response: text };
+      } catch (err) {
+        console.error("❌ LINE push error:", err.message);
+        lineResult = { error: err.message };
       }
     }
 
-    return NextResponse.json({ success: true, data: newBaac }, { status: 201 });
+    return NextResponse.json(
+      { success: true, data: newBaac, line: lineResult },
+      { status: 201 }
+    );
   } catch (err) {
     console.error("❌ Error saving BAAC:", err);
     return NextResponse.json(
