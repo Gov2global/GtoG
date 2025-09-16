@@ -19,8 +19,8 @@ export async function POST(req) {
     const yy = now.getFullYear().toString().slice(-2);
     const mm = pad(now.getMonth() + 1, 2);
     const dd = pad(now.getDate(), 2);
-
     const prefix = `${yy}${mm}${dd}`;
+
     const lastEntry = await Baac.findOne({ baac_ID: new RegExp(`^${prefix}`) })
       .sort({ baac_ID: -1 })
       .lean();
@@ -33,10 +33,10 @@ export async function POST(req) {
 
     const baac_ID = `${prefix}${pad(seq, 4)}`;
 
-    // ✅ บันทึกข้อมูลลง MongoDB
+    // ✅ Save to MongoDB
     const newBaac = await Baac.create({ ...body, baac_ID });
 
-    // ✅ ส่งข้อความไปที่ LINE
+    // ✅ Push LINE Message
     if (body.regLineID) {
       try {
         console.log("📩 Sending message to:", body.regLineID);
@@ -60,7 +60,7 @@ export async function POST(req) {
 
         const text = await resLine.text();
         console.log("📨 LINE API status:", resLine.status);
-        console.log("📨 LINE API raw response:", text);
+        console.log("📨 LINE API response:", text);
 
         if (!resLine.ok) {
           throw new Error("LINE API error: " + text);
@@ -73,9 +73,6 @@ export async function POST(req) {
     return NextResponse.json({ success: true, data: newBaac }, { status: 201 });
   } catch (err) {
     console.error("❌ Error saving BAAC:", err);
-    return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
