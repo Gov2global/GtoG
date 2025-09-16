@@ -36,8 +36,10 @@ export async function POST(req) {
     const newBaac = await Baac.create({ ...body, baac_ID });
 
     // ✅ ส่งข้อความไปที่ LINE (เฉพาะ user ที่ส่งฟอร์ม)
-    if (body.regLineID) {
+ if (body.regLineID) {
   try {
+    console.log("📩 Sending message to:", body.regLineID);
+
     const resLine = await fetch("https://api.line.me/v2/bot/message/push", {
       method: "POST",
       headers: {
@@ -55,11 +57,12 @@ export async function POST(req) {
       }),
     });
 
-    const text = await resLine.text();
-    console.log("📩 LINE API Response:", text);
+    const lineResult = await resLine.json();
+    console.log("📨 LINE API status:", resLine.status);
+    console.log("📨 LINE API response:", lineResult);
 
     if (!resLine.ok) {
-      throw new Error("LINE API error: " + text);
+      throw new Error("LINE API error: " + JSON.stringify(lineResult));
     }
   } catch (err) {
     console.error("❌ Error sending LINE message:", err);
