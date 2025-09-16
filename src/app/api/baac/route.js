@@ -40,7 +40,7 @@ export async function POST(req) {
     // ✅ Save to MongoDB
     const newBaac = await Baac.create({ ...body, baac_ID });
 
-    // ✅ Push LINE Flex Message (ไม่ให้พังถ้า LINE error)
+    // ✅ Push LINE Flex Message
     let lineResult = null;
     if (body.regLineID) {
       const flexMessage = {
@@ -49,9 +49,10 @@ export async function POST(req) {
         contents: {
           type: "bubble",
           size: "mega",
-          hero: {
+          body: {
             type: "box",
             layout: "vertical",
+            spacing: "md",
             contents: [
               {
                 type: "text",
@@ -61,14 +62,7 @@ export async function POST(req) {
                 align: "center",
                 color: "#1E824C",
               },
-            ],
-            paddingAll: "20px",
-          },
-          body: {
-            type: "box",
-            layout: "vertical",
-            spacing: "md",
-            contents: [
+              { type: "separator", margin: "md" },
               {
                 type: "text",
                 text: `รหัสลงทะเบียน: ${baac_ID}`,
@@ -115,10 +109,7 @@ export async function POST(req) {
         },
       };
 
-      const payload = {
-        to: body.regLineID,
-        messages: [flexMessage],
-      };
+      const payload = { to: body.regLineID, messages: [flexMessage] };
 
       try {
         const resLine = await fetch("https://api.line.me/v2/bot/message/push", {
