@@ -302,26 +302,15 @@ const onSubmit = async (e) => {
     });
 
     const result = await res.json();
-    console.log("📨 API response:", result);
-
     if (res.ok && result.success) {
       setSubmitted(true);
 
-      // ✅ Debug ผล LINE API
-      if (result.lineStatus) {
-        console.log("📩 LINE status:", result.lineStatus);
-        console.log("📩 LINE response:", result.lineResponse);
-      }
-
-      // ✅ แสดงข้อความให้ผู้ใช้รู้ก่อนปิด LIFF
-      alert(
-        `✅ ส่งคำขอสำเร็จ!\nรหัสลงทะเบียน: ${result.data.baac_ID}\n(ผล LINE: ${result.lineStatus})`
-      );
-
-      // ✅ ปิด LIFF หลังจาก delay เล็กน้อย
+      // ✅ รอ 2 วิ ให้ LINE Push เสร็จก่อนค่อยปิด LIFF
       setTimeout(() => {
-        if (window.liff && liff.isInClient()) {
+        if (liff.isInClient()) {
           liff.closeWindow();
+        } else {
+          alert("✅ ส่งคำขอสำเร็จแล้ว! เจ้าหน้าที่จะติดต่อกลับ");
         }
       }, 2000);
     } else {

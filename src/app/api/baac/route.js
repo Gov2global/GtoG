@@ -36,50 +36,38 @@ export async function POST(req) {
     // ✅ Save to MongoDB
     const newBaac = await Baac.create({ ...body, baac_ID });
 
-    // ✅ Push LINE Message
-    let lineStatus = null;
-    let lineResponse = null;
-
+    // ✅ Push LINE Message (รอให้ส่งสำเร็จก่อน)
     if (body.regLineID) {
-      try {
-        console.log("📩 Sending message to:", body.regLineID);
+      const resLine = await fetch("https://api.line.me/v2/bot/message/push", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
+        },
+        body: JSON.stringify({
+          to: body.regLineID,
+          messages: [
+            {
+              type: "text",
+              text: `✅ ส่งคำขอสำเร็จ!\nรหัสลงทะเบียนของคุณคือ ${baac_ID}\nเจ้าหน้าที่จะติดต่อกลับเร็วๆ นี้`,
+            },
+          ],
+        }),
+      });
 
-        const resLine = await fetch("https://api.line.me/v2/bot/message/push", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
-          },
-          body: JSON.stringify({
-            to: body.regLineID,
-            messages: [
-              {
-                type: "text",
-                text: `✅ ส่งคำขอสำเร็จ!\nรหัสลงทะเบียนของคุณคือ ${baac_ID}\nเจ้าหน้าที่จะติดต่อกลับเร็วๆ นี้`,
-              },
-            ],
-          }),
-        });
+      const text = await resLine.text();
+      console.log("📨 LINE API status:", resLine.status);
+      console.log("📨 LINE API response:", text);
 
-        lineStatus = resLine.status;
-        lineResponse = await resLine.text();
-
-        console.log("📨 LINE API status:", lineStatus);
-        console.log("📨 LINE API response:", lineResponse);
-
-        if (!resLine.ok) {
-          throw new Error("LINE API error: " + lineResponse);
-        }
-      } catch (err) {
-        console.error("❌ Error sending LINE message:", err);
+      if (!resLine.ok) {
+        return NextResponse.json(
+          { success: false, error: "LINE push failed: " + text },
+          { status: 500 }
+        );
       }
     }
 
-    // ✅ ส่งกลับทั้งข้อมูลใน DB + ผล LINE API
-    return NextResponse.json(
-      { success: true, data: newBaac, lineStatus, lineResponse },
-      { status: 201 }
-    );
+    return NextResponse.json({ success: true, data: newBaac }, { status: 201 });
   } catch (err) {
     console.error("❌ Error saving BAAC:", err);
     return NextResponse.json(
