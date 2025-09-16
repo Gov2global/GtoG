@@ -286,7 +286,7 @@ const onSubmit = async (e) => {
 
     const payload = {
       ...form,
-      regLineID,  // ✅ ใช้ค่าแน่นอนจาก LIFF profile
+      regLineID, // ใช้จาก LIFF profile โดยตรง
       citizenId: form.citizenId.replace(/\D/g, ""),
       phone: form.phone.replace(/\D/g, ""),
       mainCrops: (form.mainCrops || []).map((o) => o.value),
@@ -295,7 +295,7 @@ const onSubmit = async (e) => {
       totalAreaSqm,
     };
 
-    console.log("📦 Payload:", payload); 
+    console.log("📦 Payload:", payload);
 
     const res = await fetch("/api/baac", {
       method: "POST",
@@ -304,14 +304,21 @@ const onSubmit = async (e) => {
     });
 
     const result = await res.json();
+    console.log("📨 API result:", result);
+
     if (res.ok && result.success) {
       setSubmitted(true);
 
-      // ✅ ปิดหน้าต่างหลัง backend ยืนยันว่า LINE ส่งเสร็จแล้ว
-      if (liff.isInClient()) {
-        setTimeout(() => liff.closeWindow(), 2000);
+      if (result.line?.status === 200) {
+        // ✅ LINE push สำเร็จ → ปิด LIFF
+        if (liff.isInClient()) {
+          setTimeout(() => liff.closeWindow(), 1500);
+        } else {
+          alert("✅ ส่งคำขอสำเร็จแล้ว! เจ้าหน้าที่จะติดต่อกลับ");
+        }
       } else {
-        alert("✅ ส่งคำขอสำเร็จแล้ว! เจ้าหน้าที่จะติดต่อกลับ");
+        // ⚠️ LINE push fail แต่ DB save สำเร็จ
+        alert("⚠️ บันทึกข้อมูลแล้ว แต่ส่ง LINE ไม่สำเร็จ: " + JSON.stringify(result.line));
       }
     } else {
       alert("❌ บันทึกไม่สำเร็จ: " + (result.error || "Unknown error"));
@@ -323,6 +330,7 @@ const onSubmit = async (e) => {
     setSubmitting(false);
   }
 };
+
 
 
   // ===== Render =====

@@ -13,8 +13,6 @@ export async function POST(req) {
     await connectMongoDB();
     const body = await req.json();
 
-    console.log("📥 Body received:", body); // ✅ Debug payload
-
     // ✅ gen baac_ID (YYMMDD + running 4 digit)
     const now = new Date();
     const yy = now.getFullYear().toString().slice(-2);
@@ -43,46 +41,58 @@ export async function POST(req) {
     const newBaac = await Baac.create({ ...body, baac_ID });
     console.log("💾 Saved BAAC:", newBaac._id);
 
-    // ✅ Push LINE message
-    let lineResult = null;
-    if (body.regLineID) {
-      const payload = {
-        to: body.regLineID,
-        messages: [
-          {
-            type: "text",
-            text: `✅ ลงทะเบียนสำเร็จ!\n\nรหัส: ${baac_ID}\nชื่อ: ${body.firstName} ${body.lastName}\nเบอร์: ${body.phone}\n\nเจ้าหน้าที่จะติดต่อกลับเร็ว ๆ นี้ครับ 🙏`,
-          },
-        ],
-      };
-
-      console.log("📦 LINE payload:", payload);
-
-      try {
-        const resLine = await fetch("https://api.line.me/v2/bot/message/push", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
-          },
-          body: JSON.stringify(payload),
-        });
-
-        const text = await resLine.text();
-        console.log("📨 LINE API status:", resLine.status);
-        console.log("📨 LINE API response:", text);
-
-        lineResult = { status: resLine.status, response: text };
-      } catch (err) {
-        console.error("❌ LINE push error:", err.message);
-        lineResult = { error: err.message };
-      }
-    } else {
-      console.warn("⚠️ regLineID is missing in request body");
+    // ✅ Push LINE message (ถ้าไม่มี regLineID จะ fail ทันที)
+    if (!body.regLineID) {
+      return NextResponse.json(
+        { success: false, error: "regLineID is required" },
+        { status: 400 }
+      );
     }
 
+    const payload = {
+      to: body.regLineID,
+      messages: [
+        {
+          type: "text",
+          text: `✅ ลงทะเบียนสำเร็จ!\n\nรหัส: ${baac_ID}\nชื่อ: ${body.firstName} ${body.lastName}\nเบอร์: ${body.phone}\n\nเจ้าหน้าที่จะติดต่อกลับเร็ว ๆ นี้ครับ 🙏`,
+        },
+      ],
+    };
+
+    console.log("📦 LINE payload:", payload);
+
+    const resLine = await fetch("https://api.line.me/v2/bot/message/push", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await resLine.text();
+    console.log("📨 LINE API status:", resLine.status);
+    console.log("📨 LINE API response:", text);
+
+    // ❌ ถ้า push LINE fail → ส่ง error ทันที
+    if (!resLine.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "LINE push failed",
+          line: { status: resLine.status, response: text },
+        },
+        { status: 500 }
+      );
+    }
+
+    // ✅ ทั้ง DB และ LINE OK
     return NextResponse.json(
-      { success: true, data: newBaac, line: lineResult },
+      {
+        success: true,
+        data: newBaac,
+        line: { status: resLine.status, response: text },
+      },
       { status: 201 }
     );
   } catch (err) {
