@@ -293,35 +293,38 @@ const onSubmit = async (e) => {
       loanAmount: toNumber(form.loanAmount),
       totalAreaSqm,
     };
+
     const res = await fetch("/api/baac", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+
     const result = await res.json();
     if (res.ok && result.success) {
       setSubmitted(true);
 
-      // ✅ ส่งข้อความไปที่ LINE
-      await liff.sendMessages([
-        {
-          type: "text",
-          text: "ส่งคำขอสำเร็จแล้ว! เจ้าหน้าที่จะติดต่อกลับ",
-        },
-      ]);
+      // ✅ เรียก API ส่งข้อความกลับไปยัง User โดยใช้ regLineID
+      await fetch("/api/line-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: form.regLineID,
+          message: "✅ ส่งคำขอสำเร็จแล้ว! เจ้าหน้าที่จะติดต่อกลับ",
+        }),
+      });
 
-      // ✅ ปิดหน้าต่าง LIFF
-      liff.closeWindow();
     } else {
       alert("❌ บันทึกไม่สำเร็จ: " + (result.error || "Unknown error"));
     }
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error onSubmit:", err);
     alert("เกิดข้อผิดพลาดในการส่งคำขอ");
   } finally {
     setSubmitting(false);
   }
 };
+
 
 
   // ===== Render =====
