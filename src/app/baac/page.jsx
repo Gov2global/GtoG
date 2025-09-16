@@ -302,17 +302,28 @@ const onSubmit = async (e) => {
     });
 
     const result = await res.json();
+    console.log("📨 API response:", result);
+
     if (res.ok && result.success) {
       setSubmitted(true);
 
-      // ✅ รอ LINE API ตอบกลับก่อนค่อยปิด
-      if (liff.isInClient()) {
-        setTimeout(() => {
-          liff.closeWindow();
-        }, 1500); // รอ 1.5 วิ ให้ LINE Push ทำงาน
-      } else {
-        alert("✅ ส่งคำขอสำเร็จแล้ว! เจ้าหน้าที่จะติดต่อกลับ");
+      // ✅ Debug ผล LINE API
+      if (result.lineStatus) {
+        console.log("📩 LINE status:", result.lineStatus);
+        console.log("📩 LINE response:", result.lineResponse);
       }
+
+      // ✅ แสดงข้อความให้ผู้ใช้รู้ก่อนปิด LIFF
+      alert(
+        `✅ ส่งคำขอสำเร็จ!\nรหัสลงทะเบียน: ${result.data.baac_ID}\n(ผล LINE: ${result.lineStatus})`
+      );
+
+      // ✅ ปิด LIFF หลังจาก delay เล็กน้อย
+      setTimeout(() => {
+        if (window.liff && liff.isInClient()) {
+          liff.closeWindow();
+        }
+      }, 2000);
     } else {
       alert("❌ บันทึกไม่สำเร็จ: " + (result.error || "Unknown error"));
     }
@@ -323,7 +334,6 @@ const onSubmit = async (e) => {
     setSubmitting(false);
   }
 };
-
 
   // ===== Render =====
   if (loading) {

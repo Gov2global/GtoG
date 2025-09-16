@@ -37,6 +37,9 @@ export async function POST(req) {
     const newBaac = await Baac.create({ ...body, baac_ID });
 
     // ✅ Push LINE Message
+    let lineStatus = null;
+    let lineResponse = null;
+
     if (body.regLineID) {
       try {
         console.log("📩 Sending message to:", body.regLineID);
@@ -58,21 +61,30 @@ export async function POST(req) {
           }),
         });
 
-        const text = await resLine.text();
-        console.log("📨 LINE API status:", resLine.status);
-        console.log("📨 LINE API response:", text);
+        lineStatus = resLine.status;
+        lineResponse = await resLine.text();
+
+        console.log("📨 LINE API status:", lineStatus);
+        console.log("📨 LINE API response:", lineResponse);
 
         if (!resLine.ok) {
-          throw new Error("LINE API error: " + text);
+          throw new Error("LINE API error: " + lineResponse);
         }
       } catch (err) {
         console.error("❌ Error sending LINE message:", err);
       }
     }
 
-    return NextResponse.json({ success: true, data: newBaac }, { status: 201 });
+    // ✅ ส่งกลับทั้งข้อมูลใน DB + ผล LINE API
+    return NextResponse.json(
+      { success: true, data: newBaac, lineStatus, lineResponse },
+      { status: 201 }
+    );
   } catch (err) {
     console.error("❌ Error saving BAAC:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: err.message },
+      { status: 500 }
+    );
   }
 }
