@@ -40,76 +40,20 @@ export async function POST(req) {
     // ✅ Save to MongoDB
     const newBaac = await Baac.create({ ...body, baac_ID });
 
-    // ✅ Push LINE Flex Message
+    // ✅ ทดสอบ Push LINE (ข้อความธรรมดา)
     let lineResult = null;
     if (body.regLineID) {
-      const flexMessage = {
-        type: "flex",
-        altText: "📋 ยืนยันการลงทะเบียน ธ.ก.ส.",
-        contents: {
-          type: "bubble",
-          size: "mega",
-          body: {
-            type: "box",
-            layout: "vertical",
-            spacing: "md",
-            contents: [
-              {
-                type: "text",
-                text: "✅ ส่งคำขอสำเร็จ!",
-                weight: "bold",
-                size: "xl",
-                align: "center",
-                color: "#1E824C",
-              },
-              { type: "separator", margin: "md" },
-              {
-                type: "text",
-                text: `รหัสลงทะเบียน: ${baac_ID}`,
-                weight: "bold",
-                size: "md",
-              },
-              {
-                type: "text",
-                text: `${body.firstName || ""} ${body.lastName || ""}`,
-                size: "sm",
-                color: "#555555",
-              },
-              {
-                type: "text",
-                text: `เบอร์: ${body.phone || "-"}`,
-                size: "sm",
-                color: "#555555",
-              },
-              {
-                type: "text",
-                text: "เจ้าหน้าที่จะติดต่อกลับเร็วๆ นี้",
-                margin: "md",
-                size: "sm",
-                color: "#888888",
-              },
-            ],
+      const payload = {
+        to: body.regLineID,
+        messages: [
+          {
+            type: "text",
+            text: `✅ ลงทะเบียนสำเร็จ!\nรหัส: ${baac_ID}\nชื่อ: ${body.firstName} ${body.lastName}\nเบอร์: ${body.phone}`,
           },
-          footer: {
-            type: "box",
-            layout: "vertical",
-            contents: [
-              {
-                type: "button",
-                style: "primary",
-                color: "#1E824C",
-                action: {
-                  type: "uri",
-                  label: "📑 ตรวจสอบข้อมูล",
-                  uri: `https://farmer-eight-mu.vercel.app/baac-status/${baac_ID}`,
-                },
-              },
-            ],
-          },
-        },
+        ],
       };
 
-      const payload = { to: body.regLineID, messages: [flexMessage] };
+      console.log("📦 LINE payload:", payload);
 
       try {
         const resLine = await fetch("https://api.line.me/v2/bot/message/push", {
@@ -130,6 +74,8 @@ export async function POST(req) {
         console.error("❌ LINE push error:", err.message);
         lineResult = { error: err.message };
       }
+    } else {
+      console.warn("⚠️ regLineID is missing in request body");
     }
 
     return NextResponse.json(
