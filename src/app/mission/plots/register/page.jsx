@@ -22,7 +22,7 @@ export default function RegisterPage() {
     lon: "",
     plantType: "",
     spacing: "",
-    lineId: "", // ✅ เก็บ userId จาก LIFF
+    lineId: "",
     images: {
       general: [null, null, null, null],
       tree: null,
@@ -30,53 +30,53 @@ export default function RegisterPage() {
       fruit: null,
     },
   })
-
   const router = useRouter()
+
   const [locating, setLocating] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [loading, setLoading] = useState(true) // ✅ เริ่มต้นเป็น true ตอน init
+  const [loading, setLoading] = useState(false) // [ADDED: state loading]
 
-  // --- Init LIFF ---
-//   useEffect(() => {
-//   let mounted = true
 
-//   async function initLiff() {
-//     try {
-//       await liff.init({ liffId: "2007697520-ReVxGaBb" })
-
-//       if (!liff.isLoggedIn()) {
-//         liff.login({ redirectUri: window.location.href }) // กลับมาหน้าเดิม
-//         return
-//       }
-
-//       const profile = await liff.getProfile()
-//       const userId = profile.userId
-
-//       if (mounted) {
-//         console.log("✅ ได้ Line UserID:", userId) // debug
-//         setForm((prev) => ({ ...prev, lineId: userId }))
-//       }
-
-//       // ✅ ถ้าอยากดึงข้อมูลจาก backend ด้วย
-//       const res = await fetch(`/api/farmer/get/line-get/${userId}`)
-//       const result = await res.json()
-//       if (mounted && result.success && result.data) {
-//         console.log("ℹ️ Data from API:", result.data)
-//         // จะใช้หรือไม่ใช้ก็ได้ ขึ้นอยู่กับ schema
-//       }
-//     } catch (err) {
-//       console.error("❌ LIFF init error:", err)
-//     } finally {
-//       if (mounted) setLoading(false)
-//     }
-//   }
-
-//   initLiff()
-//   return () => {
-//     mounted = false
-//   }
-// }, [])
-
+   // --- Init LIFF ---
+    useEffect(() => {
+    liff.init({ liffId: "2007697520-ReVxGaBb" })
+      .then(() => {
+        if (liff.isLoggedIn()) {
+          liff.getProfile().then((profile) => {
+            const userId = profile.userId;
+            setRegLineID(userId);
+  
+            fetch(`/api/farmer/get/line-get/${userId}`)
+              .then((res) => res.json())
+              .then((result) => {
+                if (result.success && result.data) {
+                  const user = result.data;
+                  setForm((prev) => ({
+                    ...prev,
+                    regLineID: userId, // ✅ บังคับ set
+                    firstName: user.regName || prev.firstName,
+                    lastName: user.regSurname || prev.lastName,
+                    phone: user.regTel || prev.phone,
+                  }));
+                } else {
+                  setForm((prev) => ({
+                    ...prev,
+                    regLineID: userId, // ✅ fallback
+                  }));
+                }
+              })
+              .finally(() => setLoading(false));
+          });
+        } else {
+          liff.login();
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error("❌ LIFF init error:", err);
+        setLoading(false);
+      });
+  }, []);
 
   const handleInputChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -110,58 +110,50 @@ export default function RegisterPage() {
     handleGetLocation()
   }, [])
 
-  // --- Submit ---
+  // [ADDED: ส่งข้อมูลไป API]
   const handleSubmit = async (e) => {
-  e.preventDefault()
-  setLoading(true)
+    e.preventDefault()
+    setLoading(true)
 
-  try {
-    const formData = new FormData()
-    formData.append("name", form.name)
-    formData.append("lat", form.lat)
-    formData.append("lon", form.lon)
-    formData.append("plantType", form.plantType)
-    formData.append("spacing", form.spacing)
-    formData.append("lineId", form.lineId) // ✅ ส่ง Line ID ไป DB
+    try {
+      const formData = new FormData()
+      formData.append("name", form.name)
+      formData.append("lat", form.lat)
+      formData.append("lon", form.lon)
+      formData.append("plantType", form.plantType)
+      formData.append("spacing", form.spacing)
+      formData.append("lineId", form.lineId)
 
-    form.images.general.forEach((file, i) => {
-      if (file) formData.append(`general${i + 1}`, file)
-    })
-    if (form.images.tree) formData.append("tree", form.images.tree)
-    if (form.images.leaf) formData.append("leaf", form.images.leaf)
-    if (form.images.fruit) formData.append("fruit", form.images.fruit)
+      // general images
+      form.images.general.forEach((file, i) => {
+        if (file) formData.append(`general${i + 1}`, file)
+      })
+      if (form.images.tree) formData.append("tree", form.images.tree)
+      if (form.images.leaf) formData.append("leaf", form.images.leaf)
+      if (form.images.fruit) formData.append("fruit", form.images.fruit)
 
-    const res = await fetch("/api/mission/regmission", {
-      method: "POST",
-      body: formData,
-    })
-    const data = await res.json()
+      const res = await fetch("/api/mission/regmission", {
+        method: "POST",
+        body: formData,
+      })
+      const data = await res.json()
 
-    if (data.success) {
-      console.log("✅ ลงทะเบียนสำเร็จ:", data)
-      setSuccess(true)
-      setTimeout(() => {
-        setSuccess(false)
-        router.push("/mission")
-      }, 2000)
-    } else {
-      alert("❌ บันทึกไม่สำเร็จ: " + data.error)
+      if (data.success) {
+        console.log("✅ ลงทะเบียนสำเร็จ:", data)
+        setSuccess(true)
+        setTimeout(() => {
+          setSuccess(false)
+          router.push("/mission") // [ADDED: redirect หลังสำเร็จ]
+        }, 2000)
+      } else {
+        alert("❌ บันทึกไม่สำเร็จ: " + data.error)
+      }
+    } catch (err) {
+      console.error("Error:", err)
+      alert("❌ เกิดข้อผิดพลาด")
+    } finally {
+      setLoading(false)
     }
-  } catch (err) {
-    console.error("Error:", err)
-    alert("❌ เกิดข้อผิดพลาด")
-  } finally {
-    setLoading(false)
-  }
-}
-
-
-  if (loading) {
-    return (
-      <main className="flex items-center justify-center min-h-screen text-lg text-gray-600">
-        ⏳ กำลังโหลด...
-      </main>
-    )
   }
 
   return (
@@ -208,7 +200,7 @@ export default function RegisterPage() {
                 {form.images.general[index] ? (
                   <>
                     <img
-                      src={URL.createObjectURL(form.images.general[index])}
+                      src={URL.createObjectURL(form.images.general[index])} // [CHANGED: preview จากไฟล์]
                       alt={`ลักษณะ ${index + 1}`}
                       className="object-cover w-full h-full rounded-xl"
                     />
@@ -240,7 +232,7 @@ export default function RegisterPage() {
                         const file = e.target.files?.[0]
                         if (file) {
                           const updated = [...form.images.general]
-                          updated[index] = file
+                          updated[index] = file // [CHANGED: เก็บไฟล์จริง]
                           setForm({
                             ...form,
                             images: { ...form.images, general: updated },
@@ -305,6 +297,18 @@ export default function RegisterPage() {
               <SelectItem value="ระยะหว่าน">ระยะหว่าน</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Line ID */}
+        <div className="space-y-2">
+          <Label className="text-green-700 font-semibold">Line ID (ถ้ามี)</Label>
+          <Input
+            name="lineId"
+            value={form.lineId}
+            onChange={handleInputChange}
+            placeholder="@yourlineid"
+            className="h-12"
+          />
         </div>
 
         {/* ปุ่ม Submit */}
