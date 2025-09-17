@@ -249,6 +249,7 @@ export default function RegisterPage() {
                     <input
                       type="file"
                       accept="image/*"
+                    capture="environment" // ✅ ใช้กล้องหลัง
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0]
