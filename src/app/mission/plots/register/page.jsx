@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -12,17 +13,18 @@ import {
   SelectItem,
 } from "@/components/ui/select"
 import { LocateIcon, CheckCircle2, Camera, X, ArrowLeft } from "lucide-react"
-import { useRouter } from "next/navigation"
-import liff from "@line/liff"
 
 export default function RegisterPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
   const [form, setForm] = useState({
     name: "",
     lat: "",
     lon: "",
     plantType: "",
     spacing: "",
-    lineId: "",
+    lineId: "", // จะรับจาก query
     images: {
       general: [null, null, null, null],
       tree: null,
@@ -30,53 +32,19 @@ export default function RegisterPage() {
       fruit: null,
     },
   })
-  const router = useRouter()
 
   const [locating, setLocating] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [loading, setLoading] = useState(false) // [ADDED: state loading]
+  const [loading, setLoading] = useState(false)
 
-
-   // --- Init LIFF ---
-    useEffect(() => {
-    liff.init({ liffId: "2007697520-ReVxGaBb" })
-      .then(() => {
-        if (liff.isLoggedIn()) {
-          liff.getProfile().then((profile) => {
-            const userId = profile.userId;
-            setRegLineID(userId);
-  
-            fetch(`/api/farmer/get/line-get/${userId}`)
-              .then((res) => res.json())
-              .then((result) => {
-                if (result.success && result.data) {
-                  const user = result.data;
-                  setForm((prev) => ({
-                    ...prev,
-                    regLineID: userId, // ✅ บังคับ set
-                    firstName: user.regName || prev.firstName,
-                    lastName: user.regSurname || prev.lastName,
-                    phone: user.regTel || prev.phone,
-                  }));
-                } else {
-                  setForm((prev) => ({
-                    ...prev,
-                    regLineID: userId, // ✅ fallback
-                  }));
-                }
-              })
-              .finally(() => setLoading(false));
-          });
-        } else {
-          liff.login();
-          setLoading(false);
-        }
-      })
-      .catch((err) => {
-        console.error("❌ LIFF init error:", err);
-        setLoading(false);
-      });
-  }, []);
+  // ✅ ดึงค่า lineId จาก query string
+  useEffect(() => {
+    const qLineId = searchParams.get("lineId")
+    if (qLineId) {
+      setForm((prev) => ({ ...prev, lineId: qLineId }))
+      console.log("✅ รับค่า lineId จาก query:", qLineId)
+    }
+  }, [searchParams])
 
   const handleInputChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -87,7 +55,6 @@ export default function RegisterPage() {
       alert("อุปกรณ์นี้ไม่รองรับการใช้ GPS")
       return
     }
-
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -110,7 +77,6 @@ export default function RegisterPage() {
     handleGetLocation()
   }, [])
 
-  // [ADDED: ส่งข้อมูลไป API]
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -122,9 +88,8 @@ export default function RegisterPage() {
       formData.append("lon", form.lon)
       formData.append("plantType", form.plantType)
       formData.append("spacing", form.spacing)
-      formData.append("lineId", form.lineId)
+      formData.append("lineId", form.lineId) // ✅ ใช้ค่าที่ได้จาก query
 
-      // general images
       form.images.general.forEach((file, i) => {
         if (file) formData.append(`general${i + 1}`, file)
       })
@@ -143,7 +108,7 @@ export default function RegisterPage() {
         setSuccess(true)
         setTimeout(() => {
           setSuccess(false)
-          router.push("/mission") // [ADDED: redirect หลังสำเร็จ]
+          router.push("/mission")
         }, 2000)
       } else {
         alert("❌ บันทึกไม่สำเร็จ: " + data.error)
@@ -171,6 +136,7 @@ export default function RegisterPage() {
           กลับ
         </Button>
       </div>
+
       <h1 className="text-2xl font-extrabold text-center mb-6 text-green-800 flex items-center justify-center gap-2">
         🌱 ลงทะเบียนแปลงปลูก
       </h1>
@@ -188,128 +154,8 @@ export default function RegisterPage() {
           />
         </div>
 
-        {/* รูปภาพ */}
-        <div className="space-y-2">
-          <Label className="text-green-700 font-semibold">ถ่ายรูปลักษณะ (สูงสุด 4 รูป)</Label>
-          <div className="flex gap-3 flex-wrap">
-            {[0, 1, 2, 3].map((index) => (
-              <div
-                key={index}
-                className="relative w-28 h-28 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50"
-              >
-                {form.images.general[index] ? (
-                  <>
-                    <img
-                      src={URL.createObjectURL(form.images.general[index])} // [CHANGED: preview จากไฟล์]
-                      alt={`ลักษณะ ${index + 1}`}
-                      className="object-cover w-full h-full rounded-xl"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updated = [...form.images.general]
-                        updated[index] = null
-                        setForm({
-                          ...form,
-                          images: { ...form.images, general: updated },
-                        })
-                      }}
-                      className="absolute top-[-6px] right-[-6px] bg-red-500 text-white p-1 rounded-full shadow"
-                      aria-label="ลบรูป"
-                    >
-                      <X size={14} />
-                    </button>
-                  </>
-                ) : (
-                  <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-green-600">
-                    <Camera className="mb-1" size={26} />
-                    <span className="text-xs">กดเพื่อถ่ายรูป</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) {
-                          const updated = [...form.images.general]
-                          updated[index] = file // [CHANGED: เก็บไฟล์จริง]
-                          setForm({
-                            ...form,
-                            images: { ...form.images, general: updated },
-                          })
-                        }
-                      }}
-                    />
-                  </label>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* พิกัด */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label className="text-green-700 font-semibold">ละติจูด</Label>
-            <Input name="lat" value={form.lat} onChange={handleInputChange} placeholder="16.9xxxxxx" className="h-12" />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-green-700 font-semibold">ลองจิจูด</Label>
-            <Input name="lon" value={form.lon} onChange={handleInputChange} placeholder="99.1xxxxxx" className="h-12" />
-          </div>
-        </div>
-
-        <Button
-          type="button"
-          onClick={handleGetLocation}
-          disabled={locating}
-          variant="outline"
-          className="w-full text-blue-700 border-blue-400 gap-2 py-3 font-semibold"
-        >
-          <LocateIcon className="w-5 h-5" />
-          {locating ? "กำลังดึงพิกัด..." : "📍 ดึงพิกัดจาก GPS"}
-        </Button>
-
-        {/* ชนิดพืช */}
-        <div className="space-y-2">
-          <Label className="text-green-700 font-semibold">ชนิดพืช</Label>
-          <Select onValueChange={(v) => setForm({ ...form, plantType: v })}>
-            <SelectTrigger className="h-12 text-lg">
-              <SelectValue placeholder="เลือกชนิดพืช" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ทุเรียน">ทุเรียน</SelectItem>
-              <SelectItem value="มังคุด">มังคุด</SelectItem>
-              <SelectItem value="ลองกอง">ลองกอง</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* ระยะพืช */}
-        <div className="space-y-2">
-          <Label className="text-green-700 font-semibold">ระยะพืช</Label>
-          <Select onValueChange={(v) => setForm({ ...form, spacing: v })}>
-            <SelectTrigger className="h-12 text-lg">
-              <SelectValue placeholder="เลือกระยะพืช" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ระยะไข่ปลา">ระยะไข่ปลา</SelectItem>
-              <SelectItem value="ระยะหว่าน">ระยะหว่าน</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Line ID */}
-        <div className="space-y-2">
-          <Label className="text-green-700 font-semibold">Line ID (ถ้ามี)</Label>
-          <Input
-            name="lineId"
-            value={form.lineId}
-            onChange={handleInputChange}
-            placeholder="@yourlineid"
-            className="h-12"
-          />
-        </div>
+        {/* ✅ ไม่ต้องมี input lineId ให้กรอกเองแล้ว */}
+        <p className="text-sm text-gray-500">Line ID: {form.lineId}</p>
 
         {/* ปุ่ม Submit */}
         <Button
