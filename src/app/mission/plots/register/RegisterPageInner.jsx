@@ -269,11 +269,6 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* รูปต้น / ใบ / ผล */}
-        {renderImageUpload("รูปต้น", "tree")}
-        {renderImageUpload("รูปใบ", "leaf")}
-        {renderImageUpload("รูปผล", "fruit")}
-
         {/* พิกัด */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
