@@ -330,7 +330,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Line ID */}
-        <p className="text-sm text-gray-500">Line ID: {form.lineId}</p>
+        {/* <p className="text-sm text-gray-500">Line ID: {form.lineId}</p> */}
 
         <Button
           type="submit"
