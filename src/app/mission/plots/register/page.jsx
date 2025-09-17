@@ -42,11 +42,6 @@ export default function RegisterPage() {
     try {
       await liff.init({ liffId: "2007697520-ReVxGaBb" })
 
-      if (!liff.isLoggedIn()) {
-        liff.login({ redirectUri: window.location.href }) // ✅ กลับมาหน้าเดิม
-        return
-      }
-
       const profile = await liff.getProfile()
       const userId = profile.userId
 
