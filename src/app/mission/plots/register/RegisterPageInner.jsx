@@ -213,62 +213,63 @@ export default function RegisterPage() {
 
         {/* รูปทั่วไป */}
         <div className="space-y-2">
-          <Label className="text-green-700 font-semibold">ถ่ายรูปลักษณะ (สูงสุด 4 รูป)</Label>
-          <div className="flex gap-3 flex-wrap">
-            {[0, 1, 2, 3].map((index) => (
-              <div
-                key={index}
-                className="relative w-28 h-28 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50"
-              >
-                {form.images.general[index] ? (
-                  <>
-                    <img
-                      src={URL.createObjectURL(form.images.general[index])}
-                      alt={`ลักษณะ ${index + 1}`}
-                      className="object-cover w-full h-full rounded-xl"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updated = [...form.images.general]
-                        updated[index] = null
-                        setForm({
-                          ...form,
-                          images: { ...form.images, general: updated },
-                        })
-                      }}
-                      className="absolute top-[-6px] right-[-6px] bg-red-500 text-white p-1 rounded-full shadow"
-                    >
-                      <X size={14} />
-                    </button>
-                  </>
-                ) : (
-                  <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-green-600">
-                    <Camera className="mb-1" size={26} />
-                    <span className="text-xs">กดเพื่อถ่ายรูป</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment" // ✅ ใช้กล้องหลัง
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) {
-                          const updated = [...form.images.general]
-                          updated[index] = file
-                          setForm({
-                            ...form,
-                            images: { ...form.images, general: updated },
-                          })
-                        }
-                      }}
-                    />
-                  </label>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+  <Label className="text-green-700 font-semibold">ถ่ายรูปลักษณะ (สูงสุด 4 รูป)</Label>
+  <div className="flex flex-wrap justify-center gap-3"> {/* ✅ เพิ่ม justify-center */}
+    {[0, 1, 2, 3].map((index) => (
+      <div
+        key={index}
+        className="relative w-28 h-28 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50"
+      >
+        {form.images.general[index] ? (
+          <>
+            <img
+              src={URL.createObjectURL(form.images.general[index])}
+              alt={`ลักษณะ ${index + 1}`}
+              className="object-cover w-full h-full rounded-xl"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const updated = [...form.images.general]
+                updated[index] = null
+                setForm({
+                  ...form,
+                  images: { ...form.images, general: updated },
+                })
+              }}
+              className="absolute top-[-6px] right-[-6px] bg-red-500 text-white p-1 rounded-full shadow"
+            >
+              <X size={14} />
+            </button>
+          </>
+        ) : (
+          <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-green-600">
+            <Camera className="mb-1" size={26} />
+            <span className="text-xs">กดเพื่อถ่ายรูป</span>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  const updated = [...form.images.general]
+                  updated[index] = file
+                  setForm({
+                    ...form,
+                    images: { ...form.images, general: updated },
+                  })
+                }
+              }}
+            />
+          </label>
+        )}
+      </div>
+    ))}
+  </div>
+</div>
+
 
         {/* รูปต้น / ใบ / ผล */}
         <div className="space-y-2">

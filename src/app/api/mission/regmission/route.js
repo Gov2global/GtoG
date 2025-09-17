@@ -12,25 +12,27 @@ const s3 = new S3Client({
   },
 })
 
-// 🔧 ฟังก์ชันอัปโหลดไฟล์ไป S3
 async function uploadToS3(file, fileName) {
-  if (!file || typeof file.arrayBuffer !== "function") return null
+  if (!file) return null // ✅ ถ้าไม่มีไฟล์ ให้ข้ามได้เลย
 
-  const bucket = process.env.AWS_S3_BUCKET || process.env.S3_BUCKET_NAME
-  if (!bucket) throw new Error("❌ Missing AWS_S3_BUCKET or S3_BUCKET_NAME in environment variables")
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const bucket = process.env.AWS_S3_BUCKET || process.env.S3_BUCKET_NAME
+    if (!bucket) throw new Error("❌ Missing AWS_S3_BUCKET or S3_BUCKET_NAME in env")
 
-  const buffer = Buffer.from(await file.arrayBuffer())
+    const uploadParams = {
+      Bucket: bucket,
+      Key: `regplots/${fileName}`,
+      Body: buffer,
+      ContentType: file.type || "application/octet-stream",
+    }
 
-  const uploadParams = {
-    Bucket: bucket,
-    Key: `regplots/${fileName}`, // ✅ แก้ path ให้สะกดถูก
-    Body: buffer,
-    ContentType: file.type || "application/octet-stream",
+    await s3.send(new PutObjectCommand(uploadParams))
+    return `https://${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/regplots/${fileName}`
+  } catch (err) {
+    console.error("❌ Upload Error:", err.message)
+    return null // ✅ ถ้าอัปโหลดล้มเหลว ให้คืน null (ไม่โยน error)
   }
-
-  await s3.send(new PutObjectCommand(uploadParams))
-
-  return `https://${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/regplots/${fileName}`
 }
 
 export async function POST(req) {
@@ -45,7 +47,7 @@ export async function POST(req) {
     const spacing = formData.get("spacing")
     const lineId = formData.get("lineId")
 
-    // 📸 รับไฟล์จาก formData
+    // ✅ รับไฟล์ (ไม่บังคับ)
     const generalFiles = [
       formData.get("general1"),
       formData.get("general2"),
@@ -57,7 +59,7 @@ export async function POST(req) {
     const leafFile = formData.get("leaf")
     const fruitFile = formData.get("fruit")
 
-    // 🆔 สร้างรหัส PYYMMDDxxxxx
+    // 🆔 Generate regCode
     const now = new Date()
     const year = String(now.getFullYear()).slice(-2)
     const month = String(now.getMonth() + 1).padStart(2, "0")
@@ -74,7 +76,7 @@ export async function POST(req) {
     const runningNumber = String(countToday + 1).padStart(5, "0")
     const regCode = `P${year}${month}${day}${runningNumber}`
 
-    // 📤 อัปโหลดรูปไป S3
+    // 📤 Upload (เฉพาะไฟล์ที่มี)
     const imageUrls = { general: [], tree: null, leaf: null, fruit: null }
 
     for (let i = 0; i < generalFiles.length; i++) {
@@ -86,7 +88,7 @@ export async function POST(req) {
     if (leafFile) imageUrls.leaf = await uploadToS3(leafFile, `${regCode}_leaf.jpg`)
     if (fruitFile) imageUrls.fruit = await uploadToS3(fruitFile, `${regCode}_fruit.jpg`)
 
-    // 💾 บันทึก DB
+    // 💾 Save DB
     const newPlot = await Plot.create({
       regCode,
       name,
@@ -101,21 +103,10 @@ export async function POST(req) {
     return NextResponse.json({
       success: true,
       regCode,
-      plot: {
-        id: newPlot._id,
-        regCode: newPlot.regCode,
-        name: newPlot.name,
-        lat: newPlot.lat,
-        lon: newPlot.lon,
-        plantType: newPlot.plantType,
-        spacing: newPlot.spacing,
-        lineId: newPlot.lineId,
-        images: newPlot.images,
-        createdAt: newPlot.createdAt,
-      },
+      plot: newPlot,
     })
   } catch (err) {
-    console.error("❌ Error:", err)
+    console.error("❌ API Error:", err)
     return NextResponse.json({ success: false, error: err.message }, { status: 500 })
   }
 }
