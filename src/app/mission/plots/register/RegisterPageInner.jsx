@@ -132,54 +132,52 @@ export default function RegisterPage() {
   }
 
   const renderImageUpload = (label, key) => (
-  <div className="space-y-2">
-    <Label className="text-green-700 font-semibold">{label}</Label>
-    <div className="relative w-40 h-40 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50">
-      {form.images[key] ? (
-        <>
-          <img
-            src={URL.createObjectURL(form.images[key])}
-            alt={label}
-            className="object-cover w-full h-full rounded-xl"
-          />
-          <button
-            type="button"
-            onClick={() =>
+  <div className="relative w-24 h-24 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50">
+    {form.images[key] ? (
+      <>
+        <img
+          src={URL.createObjectURL(form.images[key])}
+          alt={label}
+          className="object-cover w-full h-full rounded-xl"
+        />
+        <button
+          type="button"
+          onClick={() =>
+            setForm((prev) => ({
+              ...prev,
+              images: { ...prev.images, [key]: null },
+            }))
+          }
+          className="absolute top-[-6px] right-[-6px] bg-red-500 text-white p-1 rounded-full shadow"
+          aria-label="ลบรูป"
+        >
+          <X size={14} />
+        </button>
+      </>
+    ) : (
+      <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-green-600 text-xs">
+        <Camera className="mb-1" size={20} />
+        กดเพื่อถ่ายรูป
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) {
               setForm((prev) => ({
                 ...prev,
-                images: { ...prev.images, [key]: null },
+                images: { ...prev.images, [key]: file },
               }))
             }
-            className="absolute top-[-6px] right-[-6px] bg-red-500 text-white p-1 rounded-full shadow"
-            aria-label="ลบรูป"
-          >
-            <X size={14} />
-          </button>
-        </>
-      ) : (
-        <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-green-600">
-          <Camera className="mb-1" size={26} />
-          <span className="text-xs">กดเพื่อถ่ายรูป</span>
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"   // ✅ เพิ่มตรงนี้ เพื่อใช้กล้องหลัง
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) {
-                setForm((prev) => ({
-                  ...prev,
-                  images: { ...prev.images, [key]: file },
-                }))
-              }
-            }}
-          />
-        </label>
-      )}
-    </div>
+          }}
+        />
+      </label>
+    )}
   </div>
 )
+
 
 
   return (
@@ -273,9 +271,15 @@ export default function RegisterPage() {
         </div>
 
         {/* รูปต้น / ใบ / ผล */}
-        {renderImageUpload("รูปต้น", "tree")}
-        {renderImageUpload("รูปใบ", "leaf")}
-        {renderImageUpload("รูปผล", "fruit")}
+        <div className="space-y-2">
+        <Label className="text-green-700 font-semibold">รูปต้น / ใบ / ผล</Label>
+        <div className="grid grid-cols-3 gap-3">
+            {renderImageUpload("รูปต้น", "tree")}
+            {renderImageUpload("รูปใบ", "leaf")}
+            {renderImageUpload("รูปผล", "fruit")}
+        </div>
+        </div>
+
 
         {/* พิกัด */}
         <div className="grid grid-cols-2 gap-4">
