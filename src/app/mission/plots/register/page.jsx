@@ -11,7 +11,9 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select"
-import { LocateIcon, CheckCircle2, Plus, X } from "lucide-react"
+import { LocateIcon, CheckCircle2, Camera, X, ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
+import liff from "@line/liff"
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -20,7 +22,7 @@ export default function RegisterPage() {
     lon: "",
     plantType: "",
     spacing: "",
-    lineId: "",
+    lineId: "", // ✅ เก็บ userId จาก LIFF
     images: {
       general: [null, null, null, null],
       tree: null,
@@ -29,7 +31,49 @@ export default function RegisterPage() {
     },
   })
 
+  const router = useRouter()
   const [locating, setLocating] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  // --- Init LIFF ---
+  useEffect(() => {
+    liff.init({ liffId: "2007697520-ReVxGaBb" })
+      .then(() => {
+        if (liff.isLoggedIn()) {
+          liff.getProfile().then((profile) => {
+            const userId = profile.userId
+
+            // ✅ เซ็ต lineId ตรง ๆ
+            setForm((prev) => ({ ...prev, lineId: userId }))
+
+            // ✅ ดึงข้อมูลจาก API เสริม
+            fetch(`/api/farmer/get/line-get/${userId}`)
+              .then((res) => res.json())
+              .then((result) => {
+                if (result.success && result.data) {
+                  const user = result.data
+                  setForm((prev) => ({
+                    ...prev,
+                    lineId: userId,
+                    firstName: user.regName || prev.firstName,
+                    lastName: user.regSurname || prev.lastName,
+                    phone: user.regTel || prev.phone,
+                  }))
+                }
+              })
+              .finally(() => setLoading(false))
+          })
+        } else {
+          liff.login()
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.error("❌ LIFF init error:", err)
+        setLoading(false)
+      })
+  }, [])
 
   const handleInputChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -63,36 +107,99 @@ export default function RegisterPage() {
     handleGetLocation()
   }, [])
 
-  const handleSubmit = (e) => {
+  // --- Submit ---
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log("📦 ส่งข้อมูล:", form)
+    setLoading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append("name", form.name)
+      formData.append("lat", form.lat)
+      formData.append("lon", form.lon)
+      formData.append("plantType", form.plantType)
+      formData.append("spacing", form.spacing)
+      formData.append("lineId", form.lineId) // ✅ ส่งค่า userId จาก LIFF
+
+      // general images
+      form.images.general.forEach((file, i) => {
+        if (file) formData.append(`general${i + 1}`, file)
+      })
+      if (form.images.tree) formData.append("tree", form.images.tree)
+      if (form.images.leaf) formData.append("leaf", form.images.leaf)
+      if (form.images.fruit) formData.append("fruit", form.images.fruit)
+
+      const res = await fetch("/api/mission/regmission", {
+        method: "POST",
+        body: formData,
+      })
+      const data = await res.json()
+
+      if (data.success) {
+        console.log("✅ ลงทะเบียนสำเร็จ:", data)
+        setSuccess(true)
+        setTimeout(() => {
+          setSuccess(false)
+          router.push("/mission") // redirect
+        }, 2000)
+      } else {
+        alert("❌ บันทึกไม่สำเร็จ: " + data.error)
+      }
+    } catch (err) {
+      console.error("Error:", err)
+      alert("❌ เกิดข้อผิดพลาด")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <main className="min-h-screen bg-white p-4 pb-24 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">ลงทะเบียนแปลงปลูก</h1>
+    <main className="min-h-screen bg-gradient-to-b from-green-50 to-white p-4 pb-24 max-w-md mx-auto">
+      {/* ปุ่มกลับ */}
+      <div className="flex items-center mb-4">
+        <Button
+          type="button"
+          variant="ghost"
+          className="flex items-center gap-2 text-green-700 hover:text-green-900"
+          onClick={() => router.push("/mission")}
+          aria-label="กลับไปที่ Mission"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          กลับ
+        </Button>
+      </div>
+      <h1 className="text-2xl font-extrabold text-center mb-6 text-green-800 flex items-center justify-center gap-2">
+        🌱 ลงทะเบียนแปลงปลูก
+      </h1>
 
-      <form onSubmit={handleSubmit} className="space-y-6 text-sm">
-        <div className="space-y-1">
-          <Label>ชื่อแปลง</Label>
-          <Input name="name" value={form.name} onChange={handleInputChange} placeholder="เช่น แปลงมีความสุข" />
+      <form onSubmit={handleSubmit} className="space-y-6 text-base bg-white p-6 rounded-2xl shadow-md">
+        {/* ชื่อแปลง */}
+        <div className="space-y-2">
+          <Label className="text-green-700 font-semibold">ชื่อแปลง</Label>
+          <Input
+            name="name"
+            value={form.name}
+            onChange={handleInputChange}
+            placeholder="เช่น แปลงมีความสุข"
+            className="h-12 text-lg"
+          />
         </div>
 
-        {/* ถ่ายรูปลักษณะ แบบ 4 ช่อง */}
-        <div className="space-y-1">
-          <Label>ถ่ายรูปลักษณะ</Label>
+        {/* รูปภาพ */}
+        <div className="space-y-2">
+          <Label className="text-green-700 font-semibold">ถ่ายรูปลักษณะ (สูงสุด 4 รูป)</Label>
           <div className="flex gap-3 flex-wrap">
             {[0, 1, 2, 3].map((index) => (
               <div
                 key={index}
-                className="relative w-24 h-24 border border-dashed rounded-md flex items-center justify-center"
+                className="relative w-28 h-28 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50"
               >
                 {form.images.general[index] ? (
                   <>
                     <img
-                      src={form.images.general[index]}
+                      src={URL.createObjectURL(form.images.general[index])}
                       alt={`ลักษณะ ${index + 1}`}
-                      className="object-cover w-full h-full rounded-md"
+                      className="object-cover w-full h-full rounded-xl"
                     />
                     <button
                       type="button"
@@ -111,8 +218,9 @@ export default function RegisterPage() {
                     </button>
                   </>
                 ) : (
-                  <label className="cursor-pointer w-full h-full flex items-center justify-center">
-                    <Plus className="text-blue-500" size={28} />
+                  <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-green-600">
+                    <Camera className="mb-1" size={26} />
+                    <span className="text-xs">กดเพื่อถ่ายรูป</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -120,9 +228,8 @@ export default function RegisterPage() {
                       onChange={(e) => {
                         const file = e.target.files?.[0]
                         if (file) {
-                          const url = URL.createObjectURL(file)
                           const updated = [...form.images.general]
-                          updated[index] = url
+                          updated[index] = file
                           setForm({
                             ...form,
                             images: { ...form.images, general: updated },
@@ -140,33 +247,31 @@ export default function RegisterPage() {
         {/* พิกัด */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label>ละติจูด</Label>
-            <Input name="lat" value={form.lat} onChange={handleInputChange} placeholder="16.9xxxxxx" />
+            <Label className="text-green-700 font-semibold">ละติจูด</Label>
+            <Input name="lat" value={form.lat} onChange={handleInputChange} placeholder="16.9xxxxxx" className="h-12" />
           </div>
           <div className="space-y-1">
-            <Label>ลองจิจูด</Label>
-            <Input name="lon" value={form.lon} onChange={handleInputChange} placeholder="99.1xxxxxx" />
+            <Label className="text-green-700 font-semibold">ลองจิจูด</Label>
+            <Input name="lon" value={form.lon} onChange={handleInputChange} placeholder="99.1xxxxxx" className="h-12" />
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            onClick={handleGetLocation}
-            disabled={locating}
-            variant="outline"
-            className="text-blue-600 border-blue-500 gap-2"
-          >
-            <LocateIcon className="w-4 h-4" />
-            {locating ? "กำลังดึงพิกัด..." : "ดึงจาก GPS"}
-          </Button>
-        </div>
+        <Button
+          type="button"
+          onClick={handleGetLocation}
+          disabled={locating}
+          variant="outline"
+          className="w-full text-blue-700 border-blue-400 gap-2 py-3 font-semibold"
+        >
+          <LocateIcon className="w-5 h-5" />
+          {locating ? "กำลังดึงพิกัด..." : "📍 ดึงพิกัดจาก GPS"}
+        </Button>
 
         {/* ชนิดพืช */}
-        <div className="space-y-1">
-          <Label>ชนิดพืช</Label>
+        <div className="space-y-2">
+          <Label className="text-green-700 font-semibold">ชนิดพืช</Label>
           <Select onValueChange={(v) => setForm({ ...form, plantType: v })}>
-            <SelectTrigger>
+            <SelectTrigger className="h-12 text-lg">
               <SelectValue placeholder="เลือกชนิดพืช" />
             </SelectTrigger>
             <SelectContent>
@@ -178,10 +283,10 @@ export default function RegisterPage() {
         </div>
 
         {/* ระยะพืช */}
-        <div className="space-y-1">
-          <Label>ระยะพืช</Label>
+        <div className="space-y-2">
+          <Label className="text-green-700 font-semibold">ระยะพืช</Label>
           <Select onValueChange={(v) => setForm({ ...form, spacing: v })}>
-            <SelectTrigger>
+            <SelectTrigger className="h-12 text-lg">
               <SelectValue placeholder="เลือกระยะพืช" />
             </SelectTrigger>
             <SelectContent>
@@ -191,20 +296,27 @@ export default function RegisterPage() {
           </Select>
         </div>
 
-        {/* Line ID */}
-        <div className="space-y-1">
-          <Label>Line ID</Label>
-          <Input name="lineId" value={form.lineId} onChange={handleInputChange} placeholder="@yourlineid" />
-        </div>
-
+        {/* ปุ่ม Submit */}
         <Button
           type="submit"
-          className="w-full bg-green-500 text-white text-lg hover:bg-green-600 py-4 rounded-xl gap-2"
+          disabled={loading}
+          className="w-full bg-green-600 text-white text-xl hover:bg-green-700 py-4 rounded-2xl gap-2 shadow-lg"
         >
-          <CheckCircle2 className="w-5 h-5" />
-          ลงทะเบียน
+          {loading ? "⏳ กำลังบันทึก..." : (
+            <>
+              <CheckCircle2 className="w-6 h-6" />
+              ลงทะเบียน
+            </>
+          )}
         </Button>
       </form>
+
+      {/* Success Popup */}
+      {success && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-bounce">
+          ✅ ลงทะเบียนสำเร็จ!
+        </div>
+      )}
     </main>
   )
 }
