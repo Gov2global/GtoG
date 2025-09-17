@@ -37,24 +37,23 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
 
   // --- Init LIFF ---
-  // --- Init LIFF ---
-useEffect(() => {
+ useEffect(() => {
   async function initLiff() {
     try {
       await liff.init({ liffId: "2007697520-ReVxGaBb" })
 
       if (!liff.isLoggedIn()) {
-        liff.login({ redirectUri: window.location.href }) // ✅ กลับมาที่หน้านี้
+        liff.login({ redirectUri: window.location.href }) // ✅ กลับมาหน้าเดิม
         return
       }
 
       const profile = await liff.getProfile()
       const userId = profile.userId
 
-      // ✅ set lineId ทันที
+      // ✅ เซ็ต lineId
       setForm((prev) => ({ ...prev, lineId: userId }))
 
-      // ✅ ดึงข้อมูลจาก API เพิ่ม (optional)
+      // ✅ ดึงข้อมูลเสริม
       const res = await fetch(`/api/farmer/get/line-get/${userId}`)
       const result = await res.json()
       if (result.success && result.data) {
@@ -76,6 +75,7 @@ useEffect(() => {
 
   initLiff()
 }, [])
+
 
 
   const handleInputChange = (e) => {
