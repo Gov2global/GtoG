@@ -38,49 +38,45 @@ export default function RegisterPage() {
 
   // --- Init LIFF ---
   useEffect(() => {
-    let mounted = true
+  let mounted = true
 
-    async function initLiff() {
-      try {
-        await liff.init({ liffId: "2007697520-ReVxGaBb" })
+  async function initLiff() {
+    try {
+      await liff.init({ liffId: "2007697520-ReVxGaBb" })
 
-        if (!liff.isLoggedIn()) {
-          liff.login({ redirectUri: window.location.href }) // กลับมาหน้าเดิม
-          return
-        }
-
-        const profile = await liff.getProfile()
-        const userId = profile.userId
-
-        if (mounted) {
-          setForm((prev) => ({ ...prev, lineId: userId }))
-        }
-
-        // ✅ ดึงข้อมูลเสริมจาก API
-        const res = await fetch(`/api/farmer/get/line-get/${userId}`)
-        const result = await res.json()
-        if (mounted && result.success && result.data) {
-          const user = result.data
-          setForm((prev) => ({
-            ...prev,
-            lineId: userId,
-            firstName: user.regName || prev.firstName,
-            lastName: user.regSurname || prev.lastName,
-            phone: user.regTel || prev.phone,
-          }))
-        }
-      } catch (err) {
-        console.error("❌ LIFF init error:", err)
-      } finally {
-        if (mounted) setLoading(false)
+      if (!liff.isLoggedIn()) {
+        liff.login({ redirectUri: window.location.href }) // กลับมาหน้าเดิม
+        return
       }
-    }
 
-    initLiff()
-    return () => {
-      mounted = false
+      const profile = await liff.getProfile()
+      const userId = profile.userId
+
+      if (mounted) {
+        console.log("✅ ได้ Line UserID:", userId) // debug
+        setForm((prev) => ({ ...prev, lineId: userId }))
+      }
+
+      // ✅ ถ้าอยากดึงข้อมูลจาก backend ด้วย
+      const res = await fetch(`/api/farmer/get/line-get/${userId}`)
+      const result = await res.json()
+      if (mounted && result.success && result.data) {
+        console.log("ℹ️ Data from API:", result.data)
+        // จะใช้หรือไม่ใช้ก็ได้ ขึ้นอยู่กับ schema
+      }
+    } catch (err) {
+      console.error("❌ LIFF init error:", err)
+    } finally {
+      if (mounted) setLoading(false)
     }
-  }, [])
+  }
+
+  initLiff()
+  return () => {
+    mounted = false
+  }
+}, [])
+
 
   const handleInputChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -116,48 +112,49 @@ export default function RegisterPage() {
 
   // --- Submit ---
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+  e.preventDefault()
+  setLoading(true)
 
-    try {
-      const formData = new FormData()
-      formData.append("name", form.name)
-      formData.append("lat", form.lat)
-      formData.append("lon", form.lon)
-      formData.append("plantType", form.plantType)
-      formData.append("spacing", form.spacing)
-      formData.append("lineId", form.lineId) // ✅ ส่งค่า userId จาก LIFF
+  try {
+    const formData = new FormData()
+    formData.append("name", form.name)
+    formData.append("lat", form.lat)
+    formData.append("lon", form.lon)
+    formData.append("plantType", form.plantType)
+    formData.append("spacing", form.spacing)
+    formData.append("lineId", form.lineId) // ✅ ส่ง Line ID ไป DB
 
-      form.images.general.forEach((file, i) => {
-        if (file) formData.append(`general${i + 1}`, file)
-      })
-      if (form.images.tree) formData.append("tree", form.images.tree)
-      if (form.images.leaf) formData.append("leaf", form.images.leaf)
-      if (form.images.fruit) formData.append("fruit", form.images.fruit)
+    form.images.general.forEach((file, i) => {
+      if (file) formData.append(`general${i + 1}`, file)
+    })
+    if (form.images.tree) formData.append("tree", form.images.tree)
+    if (form.images.leaf) formData.append("leaf", form.images.leaf)
+    if (form.images.fruit) formData.append("fruit", form.images.fruit)
 
-      const res = await fetch("/api/mission/regmission", {
-        method: "POST",
-        body: formData,
-      })
-      const data = await res.json()
+    const res = await fetch("/api/mission/regmission", {
+      method: "POST",
+      body: formData,
+    })
+    const data = await res.json()
 
-      if (data.success) {
-        console.log("✅ ลงทะเบียนสำเร็จ:", data)
-        setSuccess(true)
-        setTimeout(() => {
-          setSuccess(false)
-          router.push("/mission")
-        }, 2000)
-      } else {
-        alert("❌ บันทึกไม่สำเร็จ: " + data.error)
-      }
-    } catch (err) {
-      console.error("Error:", err)
-      alert("❌ เกิดข้อผิดพลาด")
-    } finally {
-      setLoading(false)
+    if (data.success) {
+      console.log("✅ ลงทะเบียนสำเร็จ:", data)
+      setSuccess(true)
+      setTimeout(() => {
+        setSuccess(false)
+        router.push("/mission")
+      }, 2000)
+    } else {
+      alert("❌ บันทึกไม่สำเร็จ: " + data.error)
     }
+  } catch (err) {
+    console.error("Error:", err)
+    alert("❌ เกิดข้อผิดพลาด")
+  } finally {
+    setLoading(false)
   }
+}
+
 
   if (loading) {
     return (
