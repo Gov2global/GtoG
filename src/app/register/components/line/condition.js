@@ -94,7 +94,11 @@ const MONGO_URI = process.env.MONGODB_URI;
 
 // --- RichMenu IDs ---
 const REGISTER_MENU_ID = 'richmenu-fc4e718786460aae6d82a6b4626492ec';      // ยังไม่สมัคร
-const MEMBER_MENU_ID_FARMER = 'richmenu-18f73008af491c6da72bfb7cd172a8b0'; // สมัครแล้ว (เกษตรกร)
+const MEMBER_MENU_ID_FARMER = 'richmenu-16e17a02f240d93a616d16459f1d4372'; // สมัครแล้ว (เกษตรกร)
+// const MEMBER_MENU_ID_Education = 'richmenu-04cdf97f4f0e2b9a2ec76a6def97cd5c'; // สมัครแล้ว (การศึกษา)
+// const MEMBER_MENU_ID_Government = 'richmenu-728d7327a84ac897f0da1feee720464d'; // สมัครแล้ว (ราชการ)
+// const MEMBER_MENU_ID_Local = 'richmenu-5d54c92a6c45110d76aafd4c0e4e2ab9'; // สมัครแล้ว (ท้องถิ่ง)
+// const MEMBER_MENU_ID_Private = 'richmenu-7e49f13ffed71dfa674a5cb978a1a06c'; // สมัครแล้ว (เอกชน)
 
 // --- Mongoose Model ---
 const registerSchema = new mongoose.Schema({
@@ -184,7 +188,7 @@ const userIds = [
   // 'U9522cc6ee5337c62188de55406470c41', //Dhhd Shdh
   // 'Ucaf64698f8074f90cb676cacbfbb9ae6', //JoeSF
   // 'U3541771420558f3a0464800cc8853fa1', 
-  'Ucc62ebd20b5becbb1f39fe2fa8bba40f' //กู้เกียรติ ชัยวัณณคุปต์
+  // 'Ucc62ebd20b5becbb1f39fe2fa8bba40f' //กู้เกียรติ ชัยวัณณคุปต์
   
 ];
 

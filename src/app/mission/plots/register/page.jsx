@@ -37,43 +37,46 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
 
   // --- Init LIFF ---
-  useEffect(() => {
-    liff.init({ liffId: "2007697520-ReVxGaBb" })
-      .then(() => {
-        if (liff.isLoggedIn()) {
-          liff.getProfile().then((profile) => {
-            const userId = profile.userId
+  // --- Init LIFF ---
+useEffect(() => {
+  async function initLiff() {
+    try {
+      await liff.init({ liffId: "2007697520-ReVxGaBb" })
 
-            // ✅ เซ็ต lineId ตรง ๆ
-            setForm((prev) => ({ ...prev, lineId: userId }))
+      if (!liff.isLoggedIn()) {
+        liff.login({ redirectUri: window.location.href }) // ✅ กลับมาที่หน้านี้
+        return
+      }
 
-            // ✅ ดึงข้อมูลจาก API เสริม
-            fetch(`/api/farmer/get/line-get/${userId}`)
-              .then((res) => res.json())
-              .then((result) => {
-                if (result.success && result.data) {
-                  const user = result.data
-                  setForm((prev) => ({
-                    ...prev,
-                    lineId: userId,
-                    firstName: user.regName || prev.firstName,
-                    lastName: user.regSurname || prev.lastName,
-                    phone: user.regTel || prev.phone,
-                  }))
-                }
-              })
-              .finally(() => setLoading(false))
-          })
-        } else {
-          liff.login()
-          setLoading(false)
-        }
-      })
-      .catch((err) => {
-        console.error("❌ LIFF init error:", err)
-        setLoading(false)
-      })
-  }, [])
+      const profile = await liff.getProfile()
+      const userId = profile.userId
+
+      // ✅ set lineId ทันที
+      setForm((prev) => ({ ...prev, lineId: userId }))
+
+      // ✅ ดึงข้อมูลจาก API เพิ่ม (optional)
+      const res = await fetch(`/api/farmer/get/line-get/${userId}`)
+      const result = await res.json()
+      if (result.success && result.data) {
+        const user = result.data
+        setForm((prev) => ({
+          ...prev,
+          lineId: userId,
+          firstName: user.regName || prev.firstName,
+          lastName: user.regSurname || prev.lastName,
+          phone: user.regTel || prev.phone,
+        }))
+      }
+    } catch (err) {
+      console.error("❌ LIFF init error:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  initLiff()
+}, [])
+
 
   const handleInputChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })

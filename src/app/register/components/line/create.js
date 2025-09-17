@@ -53,7 +53,7 @@ const richMenuBody = {
     areas: [
     {
       bounds: { x: 321, y: 1094, width: 574, height: 293 },
-      action: { type: "message", text: "เช็คภาระกิจ" }
+      action: { type: "uri", uri: "https://liff.line.me/2007697520-ReVxGaBb" }
     },
     {
       bounds: { x: 987, y: 1094, width: 640, height:293 },
