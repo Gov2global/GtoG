@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -13,18 +12,17 @@ import {
   SelectItem,
 } from "@/components/ui/select"
 import { LocateIcon, CheckCircle2, Camera, X, ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
+import liff from "@line/liff"
 
 export default function RegisterPage() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-
   const [form, setForm] = useState({
     name: "",
     lat: "",
     lon: "",
     plantType: "",
     spacing: "",
-    lineId: "", // ✅ จะถูกดึงจาก query string
+    lineId: "", // ✅ เก็บจาก LIFF
     images: {
       general: [null, null, null, null],
       tree: null,
@@ -32,30 +30,41 @@ export default function RegisterPage() {
       fruit: null,
     },
   })
+  const router = useRouter()
 
   const [locating, setLocating] = useState(false)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // ✅ ดึงค่า lineId จาก query string
+  // --- Init LIFF ---
   useEffect(() => {
-    const qLineId = searchParams.get("lineId")
-    if (qLineId) {
-      setForm((prev) => ({ ...prev, lineId: qLineId }))
-      console.log("✅ รับค่า lineId จาก query:", qLineId)
-    }
-  }, [searchParams])
+    liff.init({ liffId: "2007697520-ReVxGaBb" })
+      .then(() => {
+        if (liff.isLoggedIn()) {
+          liff.getProfile().then((profile) => {
+            const userId = profile.userId
+            console.log("✅ ได้ Line UserID:", userId)
+            setForm((prev) => ({ ...prev, lineId: userId }))
+          })
+        } else {
+          liff.login({ redirectUri: window.location.href })
+        }
+      })
+      .catch((err) => {
+        console.error("❌ LIFF init error:", err)
+      })
+  }, [])
 
   const handleInputChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  // ✅ ดึงพิกัด GPS
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
       alert("อุปกรณ์นี้ไม่รองรับการใช้ GPS")
       return
     }
+
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -78,7 +87,6 @@ export default function RegisterPage() {
     handleGetLocation()
   }, [])
 
-  // ✅ ส่งข้อมูลไป API
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -90,7 +98,7 @@ export default function RegisterPage() {
       formData.append("lon", form.lon)
       formData.append("plantType", form.plantType)
       formData.append("spacing", form.spacing)
-      formData.append("lineId", form.lineId) // ✅ ส่งค่า lineId ที่ได้จาก query
+      formData.append("lineId", form.lineId)
 
       form.images.general.forEach((file, i) => {
         if (file) formData.append(`general${i + 1}`, file)
@@ -123,16 +131,63 @@ export default function RegisterPage() {
     }
   }
 
+  const renderImageUpload = (label, key) => (
+    <div className="space-y-2">
+      <Label className="text-green-700 font-semibold">{label}</Label>
+      <div className="relative w-40 h-40 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50">
+        {form.images[key] ? (
+          <>
+            <img
+              src={URL.createObjectURL(form.images[key])}
+              alt={label}
+              className="object-cover w-full h-full rounded-xl"
+            />
+            <button
+              type="button"
+              onClick={() =>
+                setForm((prev) => ({
+                  ...prev,
+                  images: { ...prev.images, [key]: null },
+                }))
+              }
+              className="absolute top-[-6px] right-[-6px] bg-red-500 text-white p-1 rounded-full shadow"
+              aria-label="ลบรูป"
+            >
+              <X size={14} />
+            </button>
+          </>
+        ) : (
+          <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-green-600">
+            <Camera className="mb-1" size={26} />
+            <span className="text-xs">กดเพื่อถ่ายรูป</span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  setForm((prev) => ({
+                    ...prev,
+                    images: { ...prev.images, [key]: file },
+                  }))
+                }
+              }}
+            />
+          </label>
+        )}
+      </div>
+    </div>
+  )
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-green-50 to-white p-4 pb-24 max-w-md mx-auto">
-      {/* ปุ่มกลับ */}
       <div className="flex items-center mb-4">
         <Button
           type="button"
           variant="ghost"
           className="flex items-center gap-2 text-green-700 hover:text-green-900"
           onClick={() => router.push("/mission")}
-          aria-label="กลับไปที่ Mission"
         >
           <ArrowLeft className="w-5 h-5" />
           กลับ
@@ -156,35 +211,78 @@ export default function RegisterPage() {
           />
         </div>
 
-        {/* ✅ แสดง Line ID ที่ได้จาก query */}
-        {form.lineId && (
-          <div className="space-y-2">
-            <Label className="text-green-700 font-semibold">Line ID</Label>
-            <Input value={form.lineId} disabled className="h-12 bg-gray-100" />
+        {/* รูปทั่วไป */}
+        <div className="space-y-2">
+          <Label className="text-green-700 font-semibold">ถ่ายรูปลักษณะ (สูงสุด 4 รูป)</Label>
+          <div className="flex gap-3 flex-wrap">
+            {[0, 1, 2, 3].map((index) => (
+              <div
+                key={index}
+                className="relative w-28 h-28 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50"
+              >
+                {form.images.general[index] ? (
+                  <>
+                    <img
+                      src={URL.createObjectURL(form.images.general[index])}
+                      alt={`ลักษณะ ${index + 1}`}
+                      className="object-cover w-full h-full rounded-xl"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = [...form.images.general]
+                        updated[index] = null
+                        setForm({
+                          ...form,
+                          images: { ...form.images, general: updated },
+                        })
+                      }}
+                      className="absolute top-[-6px] right-[-6px] bg-red-500 text-white p-1 rounded-full shadow"
+                    >
+                      <X size={14} />
+                    </button>
+                  </>
+                ) : (
+                  <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-green-600">
+                    <Camera className="mb-1" size={26} />
+                    <span className="text-xs">กดเพื่อถ่ายรูป</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          const updated = [...form.images.general]
+                          updated[index] = file
+                          setForm({
+                            ...form,
+                            images: { ...form.images, general: updated },
+                          })
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+
+        {/* รูปต้น / ใบ / ผล */}
+        {renderImageUpload("รูปต้น", "tree")}
+        {renderImageUpload("รูปใบ", "leaf")}
+        {renderImageUpload("รูปผล", "fruit")}
 
         {/* พิกัด */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label className="text-green-700 font-semibold">ละติจูด</Label>
-            <Input
-              name="lat"
-              value={form.lat}
-              onChange={handleInputChange}
-              placeholder="16.9xxxxxx"
-              className="h-12"
-            />
+            <Input name="lat" value={form.lat} onChange={handleInputChange} />
           </div>
           <div className="space-y-1">
             <Label className="text-green-700 font-semibold">ลองจิจูด</Label>
-            <Input
-              name="lon"
-              value={form.lon}
-              onChange={handleInputChange}
-              placeholder="99.1xxxxxx"
-              className="h-12"
-            />
+            <Input name="lon" value={form.lon} onChange={handleInputChange} />
           </div>
         </div>
 
@@ -228,7 +326,9 @@ export default function RegisterPage() {
           </Select>
         </div>
 
-        {/* ปุ่ม Submit */}
+        {/* Line ID */}
+        <p className="text-sm text-gray-500">Line ID: {form.lineId}</p>
+
         <Button
           type="submit"
           disabled={loading}
@@ -243,7 +343,6 @@ export default function RegisterPage() {
         </Button>
       </form>
 
-      {/* Success Popup */}
       {success && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-bounce">
           ✅ ลงทะเบียนสำเร็จ!
