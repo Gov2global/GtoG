@@ -37,45 +37,45 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(true) // ✅ เริ่มต้นเป็น true ตอน init
 
   // --- Init LIFF ---
-  useEffect(() => {
-  let mounted = true
+//   useEffect(() => {
+//   let mounted = true
 
-  async function initLiff() {
-    try {
-      await liff.init({ liffId: "2007697520-ReVxGaBb" })
+//   async function initLiff() {
+//     try {
+//       await liff.init({ liffId: "2007697520-ReVxGaBb" })
 
-      if (!liff.isLoggedIn()) {
-        liff.login({ redirectUri: window.location.href }) // กลับมาหน้าเดิม
-        return
-      }
+//       if (!liff.isLoggedIn()) {
+//         liff.login({ redirectUri: window.location.href }) // กลับมาหน้าเดิม
+//         return
+//       }
 
-      const profile = await liff.getProfile()
-      const userId = profile.userId
+//       const profile = await liff.getProfile()
+//       const userId = profile.userId
 
-      if (mounted) {
-        console.log("✅ ได้ Line UserID:", userId) // debug
-        setForm((prev) => ({ ...prev, lineId: userId }))
-      }
+//       if (mounted) {
+//         console.log("✅ ได้ Line UserID:", userId) // debug
+//         setForm((prev) => ({ ...prev, lineId: userId }))
+//       }
 
-      // ✅ ถ้าอยากดึงข้อมูลจาก backend ด้วย
-      const res = await fetch(`/api/farmer/get/line-get/${userId}`)
-      const result = await res.json()
-      if (mounted && result.success && result.data) {
-        console.log("ℹ️ Data from API:", result.data)
-        // จะใช้หรือไม่ใช้ก็ได้ ขึ้นอยู่กับ schema
-      }
-    } catch (err) {
-      console.error("❌ LIFF init error:", err)
-    } finally {
-      if (mounted) setLoading(false)
-    }
-  }
+//       // ✅ ถ้าอยากดึงข้อมูลจาก backend ด้วย
+//       const res = await fetch(`/api/farmer/get/line-get/${userId}`)
+//       const result = await res.json()
+//       if (mounted && result.success && result.data) {
+//         console.log("ℹ️ Data from API:", result.data)
+//         // จะใช้หรือไม่ใช้ก็ได้ ขึ้นอยู่กับ schema
+//       }
+//     } catch (err) {
+//       console.error("❌ LIFF init error:", err)
+//     } finally {
+//       if (mounted) setLoading(false)
+//     }
+//   }
 
-  initLiff()
-  return () => {
-    mounted = false
-  }
-}, [])
+//   initLiff()
+//   return () => {
+//     mounted = false
+//   }
+// }, [])
 
 
   const handleInputChange = (e) => {
