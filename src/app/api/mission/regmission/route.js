@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 import { connectDB } from "../../../../../lib/mongodb"
 import Plot from "../../../../../models/plots" // [CHANGED: แก้ให้ชื่อไฟล์ตรงกับ model จริง]
-/// [ADDED: config S3 client]
+// 🔧 Config S3 Client
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
@@ -12,7 +12,7 @@ const s3 = new S3Client({
   },
 })
 
-// [CHANGED: ฟังก์ชัน upload รองรับทั้ง AWS_S3_BUCKET และ S3_BUCKET_NAME]
+// 🔧 ฟังก์ชันอัปโหลดไฟล์ไป S3
 async function uploadToS3(file, fileName) {
   if (!file || typeof file.arrayBuffer !== "function") return null
 
@@ -20,16 +20,17 @@ async function uploadToS3(file, fileName) {
   if (!bucket) throw new Error("❌ Missing AWS_S3_BUCKET or S3_BUCKET_NAME in environment variables")
 
   const buffer = Buffer.from(await file.arrayBuffer())
+
   const uploadParams = {
     Bucket: bucket,
-    Key: `regplorts/${fileName}`,
+    Key: `regplots/${fileName}`, // ✅ แก้ path ให้สะกดถูก
     Body: buffer,
     ContentType: file.type || "application/octet-stream",
-    // ACL: "public-read", // [REMOVED: bucket ไม่รองรับ ACL]
   }
 
   await s3.send(new PutObjectCommand(uploadParams))
-  return `https://${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/regplorts/${fileName}`
+
+  return `https://${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/regplots/${fileName}`
 }
 
 export async function POST(req) {
@@ -44,18 +45,19 @@ export async function POST(req) {
     const spacing = formData.get("spacing")
     const lineId = formData.get("lineId")
 
-    // [ADDED: files จาก FormData]
+    // 📸 รับไฟล์จาก formData
     const generalFiles = [
       formData.get("general1"),
       formData.get("general2"),
       formData.get("general3"),
       formData.get("general4"),
     ].filter(Boolean)
+
     const treeFile = formData.get("tree")
     const leafFile = formData.get("leaf")
     const fruitFile = formData.get("fruit")
 
-    // [ADDED: สร้างรหัส PYYMMDDxxxxx]
+    // 🆔 สร้างรหัส PYYMMDDxxxxx
     const now = new Date()
     const year = String(now.getFullYear()).slice(-2)
     const month = String(now.getMonth() + 1).padStart(2, "0")
@@ -66,16 +68,13 @@ export async function POST(req) {
     endOfDay.setDate(endOfDay.getDate() + 1)
 
     const countToday = await Plot.countDocuments({
-      createdAt: {
-        $gte: startOfDay,
-        $lt: endOfDay,
-      },
+      createdAt: { $gte: startOfDay, $lt: endOfDay },
     })
 
     const runningNumber = String(countToday + 1).padStart(5, "0")
     const regCode = `P${year}${month}${day}${runningNumber}`
 
-    // [ADDED: upload images → ตั้งชื่อไฟล์ตาม regCode]
+    // 📤 อัปโหลดรูปไป S3
     const imageUrls = { general: [], tree: null, leaf: null, fruit: null }
 
     for (let i = 0; i < generalFiles.length; i++) {
@@ -87,9 +86,9 @@ export async function POST(req) {
     if (leafFile) imageUrls.leaf = await uploadToS3(leafFile, `${regCode}_leaf.jpg`)
     if (fruitFile) imageUrls.fruit = await uploadToS3(fruitFile, `${regCode}_fruit.jpg`)
 
-    // [ADDED: save to DB]
+    // 💾 บันทึก DB
     const newPlot = await Plot.create({
-      regCode, // [ADDED: เก็บรหัสลงทะเบียนใน DB]
+      regCode,
       name,
       lat,
       lon,
