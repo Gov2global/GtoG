@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -12,12 +13,10 @@ import {
   SelectItem,
 } from "@/components/ui/select"
 import { LocateIcon, CheckCircle2, Camera, X, ArrowLeft } from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
-import liff from "@line/liff"
 
-export default function RegisterPageInner() {
+export default function RegisterPage() {
   const searchParams = useSearchParams()
-  const lineIdFromQuery = searchParams.get("lineId") || "" // ✅ ดึงจาก query string
+  const router = useRouter()
 
   const [form, setForm] = useState({
     name: "",
@@ -25,53 +24,38 @@ export default function RegisterPageInner() {
     lon: "",
     plantType: "",
     spacing: "",
-    lineId: lineIdFromQuery, // ✅ ตั้งค่าเริ่มต้นจาก query
-    images: { general: [null, null, null, null], tree: null, leaf: null, fruit: null },
+    lineId: "", // ✅ จะถูกดึงจาก query string
+    images: {
+      general: [null, null, null, null],
+      tree: null,
+      leaf: null,
+      fruit: null,
+    },
   })
 
-  const router = useRouter()
   const [locating, setLocating] = useState(false)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // --- Init LIFF ---
+  // ✅ ดึงค่า lineId จาก query string
   useEffect(() => {
-    let mounted = true
-
-    async function initLiff() {
-      try {
-        await liff.init({ liffId: "2007697520-ReVxGaBb" })
-
-        if (!liff.isLoggedIn()) {
-          liff.login({ redirectUri: window.location.href })
-          return
-        }
-
-        const profile = await liff.getProfile()
-        const userId = profile.userId
-
-        if (mounted) {
-          setForm((prev) => ({ ...prev, lineId: userId }))
-        }
-      } catch (err) {
-        console.error("❌ LIFF init error:", err)
-      }
+    const qLineId = searchParams.get("lineId")
+    if (qLineId) {
+      setForm((prev) => ({ ...prev, lineId: qLineId }))
+      console.log("✅ รับค่า lineId จาก query:", qLineId)
     }
-
-    initLiff()
-    return () => { mounted = false }
-  }, [])
+  }, [searchParams])
 
   const handleInputChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
+  // ✅ ดึงพิกัด GPS
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
       alert("อุปกรณ์นี้ไม่รองรับการใช้ GPS")
       return
     }
-
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -90,7 +74,11 @@ export default function RegisterPageInner() {
     )
   }
 
-  // --- Submit ---
+  useEffect(() => {
+    handleGetLocation()
+  }, [])
+
+  // ✅ ส่งข้อมูลไป API
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -102,7 +90,7 @@ export default function RegisterPageInner() {
       formData.append("lon", form.lon)
       formData.append("plantType", form.plantType)
       formData.append("spacing", form.spacing)
-      formData.append("lineId", form.lineId) // ✅ ส่ง Line ID ไป DB
+      formData.append("lineId", form.lineId) // ✅ ส่งค่า lineId ที่ได้จาก query
 
       form.images.general.forEach((file, i) => {
         if (file) formData.append(`general${i + 1}`, file)
@@ -137,6 +125,7 @@ export default function RegisterPageInner() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-green-50 to-white p-4 pb-24 max-w-md mx-auto">
+      {/* ปุ่มกลับ */}
       <div className="flex items-center mb-4">
         <Button
           type="button"
@@ -155,6 +144,7 @@ export default function RegisterPageInner() {
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6 text-base bg-white p-6 rounded-2xl shadow-md">
+        {/* ชื่อแปลง */}
         <div className="space-y-2">
           <Label className="text-green-700 font-semibold">ชื่อแปลง</Label>
           <Input
@@ -166,13 +156,77 @@ export default function RegisterPageInner() {
           />
         </div>
 
-        {/* ✅ แสดง Line ID แต่ไม่ให้แก้ */}
+        {/* ✅ แสดง Line ID ที่ได้จาก query */}
         {form.lineId && (
           <div className="space-y-2">
             <Label className="text-green-700 font-semibold">Line ID</Label>
             <Input value={form.lineId} disabled className="h-12 bg-gray-100" />
           </div>
         )}
+
+        {/* พิกัด */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label className="text-green-700 font-semibold">ละติจูด</Label>
+            <Input
+              name="lat"
+              value={form.lat}
+              onChange={handleInputChange}
+              placeholder="16.9xxxxxx"
+              className="h-12"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-green-700 font-semibold">ลองจิจูด</Label>
+            <Input
+              name="lon"
+              value={form.lon}
+              onChange={handleInputChange}
+              placeholder="99.1xxxxxx"
+              className="h-12"
+            />
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          onClick={handleGetLocation}
+          disabled={locating}
+          variant="outline"
+          className="w-full text-blue-700 border-blue-400 gap-2 py-3 font-semibold"
+        >
+          <LocateIcon className="w-5 h-5" />
+          {locating ? "กำลังดึงพิกัด..." : "📍 ดึงพิกัดจาก GPS"}
+        </Button>
+
+        {/* ชนิดพืช */}
+        <div className="space-y-2">
+          <Label className="text-green-700 font-semibold">ชนิดพืช</Label>
+          <Select onValueChange={(v) => setForm({ ...form, plantType: v })}>
+            <SelectTrigger className="h-12 text-lg">
+              <SelectValue placeholder="เลือกชนิดพืช" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ทุเรียน">ทุเรียน</SelectItem>
+              <SelectItem value="มังคุด">มังคุด</SelectItem>
+              <SelectItem value="ลองกอง">ลองกอง</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* ระยะพืช */}
+        <div className="space-y-2">
+          <Label className="text-green-700 font-semibold">ระยะพืช</Label>
+          <Select onValueChange={(v) => setForm({ ...form, spacing: v })}>
+            <SelectTrigger className="h-12 text-lg">
+              <SelectValue placeholder="เลือกระยะพืช" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ระยะไข่ปลา">ระยะไข่ปลา</SelectItem>
+              <SelectItem value="ระยะหว่าน">ระยะหว่าน</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* ปุ่ม Submit */}
         <Button
@@ -189,6 +243,7 @@ export default function RegisterPageInner() {
         </Button>
       </form>
 
+      {/* Success Popup */}
       {success && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-bounce">
           ✅ ลงทะเบียนสำเร็จ!
