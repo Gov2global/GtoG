@@ -34,44 +34,53 @@ export default function RegisterPage() {
   const router = useRouter()
   const [locating, setLocating] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true) // ✅ เริ่มต้นเป็น true ตอน init
 
   // --- Init LIFF ---
- useEffect(() => {
-  async function initLiff() {
-    try {
-      await liff.init({ liffId: "2007697520-ReVxGaBb" })
+  useEffect(() => {
+    let mounted = true
 
-      const profile = await liff.getProfile()
-      const userId = profile.userId
+    async function initLiff() {
+      try {
+        await liff.init({ liffId: "2007697520-ReVxGaBb" })
 
-      // ✅ เซ็ต lineId
-      setForm((prev) => ({ ...prev, lineId: userId }))
+        if (!liff.isLoggedIn()) {
+          liff.login({ redirectUri: window.location.href }) // กลับมาหน้าเดิม
+          return
+        }
 
-      // ✅ ดึงข้อมูลเสริม
-      const res = await fetch(`/api/farmer/get/line-get/${userId}`)
-      const result = await res.json()
-      if (result.success && result.data) {
-        const user = result.data
-        setForm((prev) => ({
-          ...prev,
-          lineId: userId,
-          firstName: user.regName || prev.firstName,
-          lastName: user.regSurname || prev.lastName,
-          phone: user.regTel || prev.phone,
-        }))
+        const profile = await liff.getProfile()
+        const userId = profile.userId
+
+        if (mounted) {
+          setForm((prev) => ({ ...prev, lineId: userId }))
+        }
+
+        // ✅ ดึงข้อมูลเสริมจาก API
+        const res = await fetch(`/api/farmer/get/line-get/${userId}`)
+        const result = await res.json()
+        if (mounted && result.success && result.data) {
+          const user = result.data
+          setForm((prev) => ({
+            ...prev,
+            lineId: userId,
+            firstName: user.regName || prev.firstName,
+            lastName: user.regSurname || prev.lastName,
+            phone: user.regTel || prev.phone,
+          }))
+        }
+      } catch (err) {
+        console.error("❌ LIFF init error:", err)
+      } finally {
+        if (mounted) setLoading(false)
       }
-    } catch (err) {
-      console.error("❌ LIFF init error:", err)
-    } finally {
-      setLoading(false)
     }
-  }
 
-  initLiff()
-}, [])
-
-
+    initLiff()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const handleInputChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -119,7 +128,6 @@ export default function RegisterPage() {
       formData.append("spacing", form.spacing)
       formData.append("lineId", form.lineId) // ✅ ส่งค่า userId จาก LIFF
 
-      // general images
       form.images.general.forEach((file, i) => {
         if (file) formData.append(`general${i + 1}`, file)
       })
@@ -138,7 +146,7 @@ export default function RegisterPage() {
         setSuccess(true)
         setTimeout(() => {
           setSuccess(false)
-          router.push("/mission") // redirect
+          router.push("/mission")
         }, 2000)
       } else {
         alert("❌ บันทึกไม่สำเร็จ: " + data.error)
@@ -149,6 +157,14 @@ export default function RegisterPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <main className="flex items-center justify-center min-h-screen text-lg text-gray-600">
+        ⏳ กำลังโหลด...
+      </main>
+    )
   }
 
   return (
