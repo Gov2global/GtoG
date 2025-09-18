@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import DailyForecastTMD from "../components/DailyForecastTMD" // 👈 ใส่ไว้ถ้ามี
 
 export default function ManagePageInner() {
   const { id } = useParams()
@@ -36,37 +37,36 @@ export default function ManagePageInner() {
     fetchData()
   }, [id])
 
-  if (loading) {
-    return <p className="text-center mt-10">⏳ กำลังโหลด...</p>
-  }
-
-  if (!plot) {
-    return <p className="text-center mt-10">❌ ไม่พบข้อมูลแปลง</p>
-  }
+  if (loading) return <p className="text-center mt-10">⏳ กำลังโหลด...</p>
+  if (!plot) return <p className="text-center mt-10">❌ ไม่พบข้อมูลแปลง</p>
 
   return (
     <div className="p-4">
-      {/* Card + Button on right */}
-      <div className="flex items-start justify-between bg-gray-100 p-4 rounded-lg shadow mb-4">
-        <div>
-          <h2 className="text-xl font-bold">
-            {plot.name}{" "}
-            <span className="text-sm text-gray-500">#{plot.regCode}</span>
-          </h2>
-          <p>ชนิดพืช: {plot.plantType}</p>
-          <p>ระยะ: {plot.spacing}</p>
-          {plot.lat && plot.lon && <p>พิกัด: {plot.lat}, {plot.lon}</p>}
-          {weather && <p>อุณหภูมิปัจจุบัน: {weather.temperature}°C</p>}
-        </div>
-
+      {/* Card + ปุ่มขวาบน */}
+      <div className="relative bg-gray-100 p-4 rounded-lg shadow mb-4">
         {/* ปุ่มออกจากแปลง */}
         <Button
-          className="bg-red-600 hover:bg-red-700 text-white ml-4 mt-2"
+          className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white"
           onClick={() => router.push("/mission")}
         >
           ออกจากแปลง
         </Button>
+
+        {/* รายละเอียดแปลง */}
+        <h2 className="text-xl font-bold">
+          {plot.name}{" "}
+          <span className="text-sm text-gray-500">#{plot.regCode}</span>
+        </h2>
+        <p>ชนิดพืช: {plot.plantType}</p>
+        <p>ระยะ: {plot.spacing}</p>
+        {plot.lat && plot.lon && <p>พิกัด: {plot.lat}, {plot.lon}</p>}
+        {weather && <p>อุณหภูมิปัจจุบัน: {weather.temperature}°C</p>}
       </div>
+
+      {/* ✅ ต่อ weather forecast (TMD) ถ้ามี lat/lon */}
+      {plot.lat && plot.lon && (
+        <DailyForecastTMD lat={plot.lat} lon={plot.lon} />
+      )}
     </div>
   )
 }
