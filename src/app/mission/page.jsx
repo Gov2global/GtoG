@@ -88,7 +88,11 @@ export default function PlotsPage() {
     .sort((a, b) => {
       if (sortBy === "az") return a.name.localeCompare(b.name)
       if (sortBy === "za") return b.name.localeCompare(a.name)
-      return new Date(b.createdAt) - new Date(a.createdAt)
+      
+      // ✅ Default: ล่าสุด
+      const dateA = new Date(a.createdAt || 0)
+      const dateB = new Date(b.createdAt || 0)
+      return dateB - dateA
     })
 
   if (loading) {
