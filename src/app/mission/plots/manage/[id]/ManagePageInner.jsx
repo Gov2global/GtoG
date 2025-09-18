@@ -46,20 +46,27 @@ export default function ManagePageInner() {
 
   return (
     <div className="p-4">
-      <div className="bg-gray-100 p-4 rounded-lg shadow mb-4">
-        <h2 className="text-xl font-bold">{plot.name} <span className="text-sm text-gray-500">#{plot.regCode}</span></h2>
-        <p>ชนิดพืช: {plot.plantType}</p>
-        <p>ระยะ: {plot.spacing}</p>
-        {plot.lat && plot.lon && <p>พิกัด: {plot.lat}, {plot.lon}</p>}
-        {weather && <p>อุณหภูมิปัจจุบัน: {weather.temperature}°C</p>}
-      </div>
+      {/* Card + Button on right */}
+      <div className="flex items-start justify-between bg-gray-100 p-4 rounded-lg shadow mb-4">
+        <div>
+          <h2 className="text-xl font-bold">
+            {plot.name}{" "}
+            <span className="text-sm text-gray-500">#{plot.regCode}</span>
+          </h2>
+          <p>ชนิดพืช: {plot.plantType}</p>
+          <p>ระยะ: {plot.spacing}</p>
+          {plot.lat && plot.lon && <p>พิกัด: {plot.lat}, {plot.lon}</p>}
+          {weather && <p>อุณหภูมิปัจจุบัน: {weather.temperature}°C</p>}
+        </div>
 
-      <Button
-        className="bg-red-600 hover:bg-red-700 text-white"
-        onClick={() => router.push("/mission/plots")}
-      >
-        ออกจากแปลง
-      </Button>
+        {/* ปุ่มออกจากแปลง */}
+        <Button
+          className="bg-red-600 hover:bg-red-700 text-white ml-4 mt-2"
+          onClick={() => router.push("/mission")}
+        >
+          ออกจากแปลง
+        </Button>
+      </div>
     </div>
   )
 }
