@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus } from "lucide-react"
+import { Plus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input" // [ADDED: ช่องค้นหา]
 import liff from "@line/liff"
 
 export default function PlotsPage() {
@@ -11,9 +12,10 @@ export default function PlotsPage() {
   const [loading, setLoading] = useState(true)
   const [regLineID, setRegLineID] = useState("")
   const [user, setUser] = useState({ firstName: "", lastName: "" })
-  const [plots, setPlots] = useState([]) // [ADDED: เก็บรายการแปลง]
+  const [plots, setPlots] = useState([])
+  const [search, setSearch] = useState("") // [ADDED]
+  const [sortBy, setSortBy] = useState("latest") // [ADDED]
 
-  // --- Init LIFF ---
   useEffect(() => {
     let mounted = true
 
@@ -41,11 +43,10 @@ export default function PlotsPage() {
           })
         }
 
-        // ✅ ดึงข้อมูลแปลงปลูก
         const plotsRes = await fetch("/api/mission/get/regmissos")
         const plotsData = await plotsRes.json()
         if (mounted && plotsData.success && plotsData.data) {
-          setPlots(plotsData.data) // [ADDED]
+          setPlots(plotsData.data)
         }
       } catch (err) {
         console.error("❌ LIFF init error:", err)
@@ -69,8 +70,22 @@ export default function PlotsPage() {
   }
 
   const handleManagePlot = (plotId) => {
-    router.push(`/mission/plots/manage/${plotId}`) // [ADDED: สมมุติหน้าบริหารแปลง]
+    router.push(`/mission/plots/manage/${plotId}`)
   }
+
+  const filteredPlots = plots
+    .filter((plot) => {
+      const query = search.toLowerCase()
+      return (
+        plot.name?.toLowerCase().includes(query) ||
+        plot.plantType?.toLowerCase().includes(query)
+      )
+    })
+    .sort((a, b) => {
+      if (sortBy === "az") return a.name.localeCompare(b.name)
+      if (sortBy === "za") return b.name.localeCompare(a.name)
+      return new Date(b.createdAt) - new Date(a.createdAt)
+    })
 
   if (loading) {
     return (
@@ -82,7 +97,7 @@ export default function PlotsPage() {
 
   return (
     <main className="relative min-h-screen bg-white p-4 pb-28">
-      <header className="mb-6 text-center">
+      <header className="mb-4 text-center">
         <h1 className="text-xl font-bold text-gray-800">แปลงปลูกของท่าน</h1>
         {regLineID && (
           <p className="mt-2 text-gray-600">
@@ -91,29 +106,49 @@ export default function PlotsPage() {
         )}
       </header>
 
-      <div className="grid gap-4">
-        {plots.length === 0 ? (
-          <div className="text-center text-gray-400 mt-12">
-            ยังไม่มีแปลงปลูก
+      {/* [ADDED] Search + Sort */}
+      <div className="flex flex-col sm:flex-row justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2 w-full sm:w-1/2">
+          <Search className="w-5 h-5 text-gray-500" />
+          <Input
+            placeholder="ค้นหาแปลง / ชนิดพืช"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full"
+          />
+        </div>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="border rounded-md px-3 py-2 text-sm text-gray-700 bg-white w-full sm:w-auto"
+        >
+          <option value="latest">เรียงจากล่าสุด</option>
+          <option value="az">ชื่อสวน A-Z</option>
+          <option value="za">ชื่อสวน Z-A</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {filteredPlots.length === 0 ? (
+          <div className="text-center text-gray-400 col-span-full mt-8">
+            ไม่พบข้อมูลที่ค้นหา
           </div>
         ) : (
-          plots.map((plot) => (
+          filteredPlots.map((plot) => (
             <div
               key={plot._id}
-              className="border rounded-2xl p-4 shadow-sm bg-gray-50"
+              className="border rounded-xl px-4 py-3 shadow-sm bg-gray-50 text-sm hover:shadow-md transition"
             >
-              <h2 className="text-lg font-semibold text-gray-800">
-                🌱 {plot.name} <span className="text-sm text-gray-500">#{plot.regCode}</span>
+              <h2 className="font-semibold text-gray-700 flex items-center gap-1">
+                <span className="text-green-500 text-base">🌱</span>
+                {plot.name}
+                <span className="text-xs text-gray-400 ml-1">#{plot.regCode}</span>
               </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                ชนิดพืช: {plot.plantType}
-              </p>
-              <p className="text-sm text-gray-600">
-                ระยะ: {plot.spacing}
-              </p>
+              <p className="text-gray-600 mt-1">ชนิดพืช: {plot.plantType}</p>
+              <p className="text-gray-600">ระยะ: {plot.spacing}</p>
               <Button
                 size="sm"
-                className="mt-3"
+                className="mt-2"
                 onClick={() => handleManagePlot(plot._id)}
               >
                 บริหารสวน
