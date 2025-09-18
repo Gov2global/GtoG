@@ -152,7 +152,7 @@ export default function PlotsPage() {
                     <span className="text-green-500 text-base">🌱</span>
                     {plot.name}
                   </span>
-                  <span className="text-xs text-gray-500">#{plot.regCode}</span>
+                  
                 </div>
                 <p className="text-gray-600 mt-1">ชนิดพืช: {plot.plantType}</p>
                 <p className="text-gray-600">ระยะ: {plot.spacing}</p>
@@ -160,6 +160,7 @@ export default function PlotsPage() {
 
               {/* RIGHT: Button */}
               <div className="flex-shrink-0">
+                <span className="text-xs text-gray-500">#{plot.regCode}</span>
                 <Button
                   size="sm"
                   className="bg-black text-white hover:bg-gray-800"
