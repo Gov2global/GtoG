@@ -163,7 +163,7 @@ export default function PlotsPage() {
               </div>
 
               {/* RIGHT: Button */}
-              <div className="flex-shrink-0">
+              <div className="flex flex-col items-end gap-1 flex-shrink-0">
                 <span className="text-xs text-gray-500">#{plot.regCode}</span>
                 <Button
                   size="sm"
