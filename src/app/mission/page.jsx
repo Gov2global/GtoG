@@ -14,8 +14,8 @@ export default function PlotsPage() {
   const [user, setUser] = useState({ firstName: "", lastName: "" })
   const [plots, setPlots] = useState([])
   const [search, setSearch] = useState("")
-  const [showSearch, setShowSearch] = useState(false) // [ADDED: toggle ช่องค้นหา]
-  const [sortBy, setSortBy] = useState("latest") // latest | az | za
+  const [showSearch, setShowSearch] = useState(false)
+  const [sortBy, setSortBy] = useState("latest")
 
   useEffect(() => {
     let mounted = true
@@ -88,8 +88,6 @@ export default function PlotsPage() {
     .sort((a, b) => {
       if (sortBy === "az") return a.name.localeCompare(b.name)
       if (sortBy === "za") return b.name.localeCompare(a.name)
-      
-      // ✅ Default: ล่าสุด
       const dateA = new Date(a.createdAt || 0)
       const dateB = new Date(b.createdAt || 0)
       return dateB - dateA
@@ -147,24 +145,23 @@ export default function PlotsPage() {
           filteredPlots.map((plot) => (
             <div
               key={plot._id}
-              className="flex items-center justify-between border rounded-xl px-4 py-3 shadow-sm bg-gray-50 hover:shadow-md transition"
+              className="flex justify-between items-start border rounded-xl px-4 py-3 shadow-sm bg-gray-50 hover:shadow-md transition"
             >
               {/* LEFT: Info */}
-              <div className="text-sm text-gray-700 w-full pr-3">
-                <div className="flex justify-between font-semibold">
-                  <span className="flex items-center gap-1 text-gray-700">
-                    <span className="text-green-500 text-base">🌱</span>
-                    {plot.name}
-                  </span>
-                  
+              <div className="text-sm text-gray-700 w-full pr-4">
+                <div className="flex items-center gap-1 font-semibold text-gray-800">
+                  <span className="text-green-500 text-base">🌱</span>
+                  {plot.name}
                 </div>
                 <p className="text-gray-600 mt-1">ชนิดพืช: {plot.plantType}</p>
                 <p className="text-gray-600">ระยะ: {plot.spacing}</p>
               </div>
 
-              {/* RIGHT: Button */}
-              <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                <span className="text-xs text-gray-500">#{plot.regCode}</span>
+              {/* RIGHT: RegCode + Button */}
+              <div className="flex flex-col items-end gap-2 min-w-max">
+                <span className="text-xs text-gray-500 whitespace-nowrap">
+                  #{plot.regCode}
+                </span>
                 <Button
                   size="sm"
                   className="bg-black text-white hover:bg-gray-800"
