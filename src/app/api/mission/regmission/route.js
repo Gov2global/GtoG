@@ -4,6 +4,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 import { connectDB } from "../../../../../lib/mongodb"
 import Plot from "../../../../../models/plots" // [CHANGED: แก้ให้ชื่อไฟล์ตรงกับ model จริง]
 import Counter from "../../../../../models/counter" 
+
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
@@ -58,21 +59,21 @@ export async function POST(req) {
     const leafFile = formData.get("leaf")
     const fruitFile = formData.get("fruit")
 
-    // 🆔 [CHANGED: เปลี่ยนการสร้าง regCode ด้วย counter]
-    const now = new Date()
+    // 🆔 [CHANGED: ใช้เวลาประเทศไทย (UTC+7)]
+    const now = new Date(new Date().getTime() + 7 * 60 * 60 * 1000) // ✅ เวลาไทย
     const year = String(now.getFullYear()).slice(-2)
     const month = String(now.getMonth() + 1).padStart(2, "0")
     const day = String(now.getDate()).padStart(2, "0")
     const dateKey = `${now.getFullYear()}${month}${day}`
 
     const counter = await Counter.findByIdAndUpdate(
-      `regCode-${dateKey}`,                 // [ADDED] _id เช่น regCode-20250920
-      { $inc: { seq: 1 } },                 // [ADDED] เพิ่มตัวเลข
-      { new: true, upsert: true }          // [ADDED] สร้างใหม่ถ้าไม่มี
+      `regCode-${dateKey}`, // [ADDED: key ตัวนับตามวัน]
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
     )
 
     const runningNumber = String(counter.seq).padStart(5, "0")
-    const regCode = `P${year}${month}${day}${runningNumber}`
+    const regCode = `P${year}${month}${day}${runningNumber}` // เช่น P25092000001
 
     // 📤 Upload to S3
     const imageUrls = { general: [], tree: null, leaf: null, fruit: null }
