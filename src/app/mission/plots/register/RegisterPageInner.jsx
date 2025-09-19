@@ -14,7 +14,7 @@ import {
 import { LocateIcon, CheckCircle2, Camera, X, ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
 import liff from "@line/liff"
-import imageCompression from "browser-image-compression"  // [ADDED: ไลบรารีสำหรับย่อรูป]
+import imageCompression from "browser-image-compression"
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -43,7 +43,6 @@ export default function RegisterPage() {
         if (liff.isLoggedIn()) {
           liff.getProfile().then((profile) => {
             const userId = profile.userId
-            console.log("✅ ได้ Line UserID:", userId)
             setForm((prev) => ({ ...prev, lineId: userId }))
           })
         } else {
@@ -51,7 +50,7 @@ export default function RegisterPage() {
         }
       })
       .catch((err) => {
-        console.error("❌ LIFF init error:", err)
+        console.error("LIFF init error:", err)
       })
   }, [])
 
@@ -87,97 +86,78 @@ export default function RegisterPage() {
     handleGetLocation()
   }, [])
 
-  // ฟังก์ชันย่อรูป
+  const compressImage = async (file) => {
+    try {
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 3.8,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      })
+      return compressed
+    } catch (err) {
+      console.error("compress error:", err)
+      return file
+    }
+  }
 
-const compressUntilUnderSize = async (file, maxMB = 3.8) => {
-let sizeLimit = maxMB * 1024 * 1024
-let width = 2000
-let compressed = file
+  const handleFileChange = async (file, key, index = null) => {
+    const compressed = await compressImage(file)
+    if (key === "general") {
+      const updated = [...form.images.general]
+      updated[index] = compressed
+      setForm({ ...form, images: { ...form.images, general: updated } })
+    } else {
+      setForm({ ...form, images: { ...form.images, [key]: compressed } })
+    }
+  }
 
-
-try {
-while (true) {
-const options = {
-maxSizeMB: maxMB,
-maxWidthOrHeight: width,
-useWebWorker: true,
-}
-
-
-compressed = await imageCompression(file, options)
-
-
-if (compressed.size <= sizeLimit || width <= 640) break
-
-
-width -= 200
-}
-
-
-return compressed
-} catch (err) {
-console.error("compress error:", err)
-return file
-}
-}
-
-
-const appendImageToFormData = async (formData, key, file) => {
-const compressed = await compressUntilUnderSize(file)
-if (compressed.size > 3.8 * 1024 * 1024) {
-alert(`ข้ามรูป ${key} เพราะขนาดเกิน 3.8MB แม้หลังย่อแล้ว`)
-return
-}
-formData.append(key, compressed, compressed.name || `${key}.jpg`)
-}
+  const appendImageToFormData = async (formData, key, file) => {
+    formData.append(key, file, file.name || `${key}.jpg`)
+  }
 
   const handleSubmit = async (e) => {
-e.preventDefault()
-setLoading(true)
+    e.preventDefault()
+    setLoading(true)
 
+    try {
+      const formData = new FormData()
+      formData.append("name", form.name)
+      formData.append("lat", form.lat)
+      formData.append("lon", form.lon)
+      formData.append("plantType", form.plantType)
+      formData.append("spacing", form.spacing)
+      formData.append("lineId", form.lineId)
 
-try {
-const formData = new FormData()
-formData.append("name", form.name)
-formData.append("lat", form.lat)
-formData.append("lon", form.lon)
-formData.append("plantType", form.plantType)
-formData.append("spacing", form.spacing)
-formData.append("lineId", form.lineId)
+      for (let i = 0; i < form.images.general.length; i++) {
+        const file = form.images.general[i]
+        if (file) await appendImageToFormData(formData, `general${i + 1}`, file)
+      }
+      if (form.images.tree) await appendImageToFormData(formData, "tree", form.images.tree)
+      if (form.images.leaf) await appendImageToFormData(formData, "leaf", form.images.leaf)
+      if (form.images.fruit) await appendImageToFormData(formData, "fruit", form.images.fruit)
 
+      const res = await fetch("/api/mission/regmission", {
+        method: "POST",
+        body: formData,
+      })
+      const data = await res.json()
 
-for (let i = 0; i < form.images.general.length; i++) {
-const file = form.images.general[i]
-if (file) await appendImageToFormData(formData, `general${i + 1}`, file)
-}
-if (form.images.tree) await appendImageToFormData(formData, "tree", form.images.tree)
-if (form.images.leaf) await appendImageToFormData(formData, "leaf", form.images.leaf)
-if (form.images.fruit) await appendImageToFormData(formData, "fruit", form.images.fruit)
-
-
-const res = await fetch("/api/mission/regmission", {
-method: "POST",
-body: formData,
-})
-const data = await res.json()
-
-
-if (data.success) {
-setSuccess(true)
-setTimeout(() => {
-setSuccess(false)
-router.push("/mission")
-}, 2000)
-} else {
-alert("บันทึกไม่สำเร็จ: " + data.error)
-}
-} catch (err) {
-console.error("Error:", err)
-alert("เกิดข้อผิดพลาด")
-} finally {
-setLoading(false)
-}
-}
+      if (data.success) {
+        setSuccess(true)
+        setTimeout(() => {
+          setSuccess(false)
+          router.push("/mission")
+        }, 2000)
+      } else {
+        alert("บันทึกไม่สำเร็จ: " + data.error)
+      }
+    } catch (err) {
+      console.error("Error:", err)
+      alert("เกิดข้อผิดพลาด")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const renderImageUpload = (label, key) => (
     <div className="relative w-24 h-24 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50">
@@ -211,16 +191,9 @@ setLoading(false)
             accept="image/*"
             capture="environment"
             className="hidden"
-            onChange={async (e) => {
+            onChange={(e) => {
               const file = e.target.files?.[0]
-              if (file) {
-                // ถ้า file ใหญ่กว่า 4MB ก่อนย่อหรือ warn
-                // เราจะเก็บ file ชั่วคราวก่อนเพื่อ preview
-                setForm((prev) => ({
-                  ...prev,
-                  images: { ...prev.images, [key]: file },
-                }))
-              }
+              if (file) handleFileChange(file, key)
             }}
           />
         </label>
@@ -297,16 +270,9 @@ setLoading(false)
                       accept="image/*"
                       capture="environment"
                       className="hidden"
-                      onChange={async (e) => {
+                      onChange={(e) => {
                         const file = e.target.files?.[0]
-                        if (file) {
-                          const updated = [...form.images.general]
-                          updated[index] = file
-                          setForm({
-                            ...form,
-                            images: { ...form.images, general: updated },
-                          })
-                        }
+                        if (file) handleFileChange(file, "general", index)
                       }}
                     />
                   </label>
