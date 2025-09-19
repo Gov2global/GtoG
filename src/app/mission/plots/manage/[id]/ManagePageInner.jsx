@@ -1,8 +1,9 @@
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox" // [ADDED: ใช้ checkbox จาก shadcn/ui]
 import Weather7Day from "../components/Weather7Day"
 
 export default function ManagePageInner() {
@@ -12,9 +13,9 @@ export default function ManagePageInner() {
   const [weather, setWeather] = useState(null)
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState([])
-  const [codes, setCodes] = useState([]) // [ADDED: เก็บ code จาก learn52week]
+  const [codes, setCodes] = useState([])
+  const holdTimer = useRef(null) // [ADDED: สำหรับตรวจจับการกดค้าง]
 
-  // [CHANGED: Mapping Code-Doing ตามข้อมูลจริงใน MongoDB]
   const CATEGORY_MAP = {
     DG004: "💧 น้ำ",
     DG001: "🌱 ปุ๋ย",
@@ -24,7 +25,6 @@ export default function ManagePageInner() {
     DG006: "📌 อื่นๆ",
   }
 
-  // [CHANGED: ลำดับแสดงการ์ดตามหมวดของจริง]
   const CATEGORY_ORDER = ["DG004", "DG001", "DG005", "DG003", "DG002", "DG006"]
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function ManagePageInner() {
           const allTodos = todoJson.data || []
 
           const filtered = allTodos.filter((todo) => {
-            const farmerCode = todo["Code-farmer"]?.toLowerCase().trim().replace(",", "") // [CHANGED]
+            const farmerCode = todo["Code-farmer"]?.toLowerCase().trim().replace(",", "")
             return farmerCode && extractedCodes.map(c => c.toLowerCase()).includes(farmerCode)
           })
 
@@ -78,12 +78,16 @@ export default function ManagePageInner() {
     fetchData()
   }, [id])
 
+  const handleSubmit = () => {
+    alert("✅ ส่งข้อมูลสำเร็จแล้ว!")
+    // TODO: ต่อ API POST/PUT ที่นี่
+  }
+
   if (loading) return <p className="text-center mt-10">⏳ กำลังโหลด...</p>
   if (!plot) return <p className="text-center mt-10">❌ ไม่พบข้อมูลแปลง</p>
 
   return (
     <div className="p-4">
-      {/* Card + ปุ่มขวาบน */}
       <div className="relative bg-gray-100 p-4 rounded-lg shadow mb-4">
         <Button
           className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white"
@@ -92,7 +96,6 @@ export default function ManagePageInner() {
           ออกจากแปลง
         </Button>
 
-        {/* รายละเอียดแปลง */}
         <h2 className="text-xl font-bold">
           {plot.name}{" "}
           <span className="text-sm text-gray-500">#{plot.regCode}</span>
@@ -102,19 +105,19 @@ export default function ManagePageInner() {
         {plot.lat && plot.lon && <p>พิกัด: {plot.lat}, {plot.lon}</p>}
       </div>
 
-      {/* ✅ พยากรณ์อากาศ */}
       {plot.lat && plot.lon && (
-        <Weather7Day
-          lat={parseFloat(plot.lat)}
-          lon={parseFloat(plot.lon)}
-        />
+        <div className="mt-4"> 
+          <Weather7Day
+            lat={parseFloat(plot.lat)}
+            lon={parseFloat(plot.lon)}
+          />
+        </div>
       )}
 
-      {/* ✅ การ์ดภารกิจแยกตามหมวด */}
       {CATEGORY_ORDER.map((cat) => {
         const groupTasks = tasks.filter(
           (t) =>
-            t["Code-Doing"]?.replace(",", "").trim().toUpperCase() === cat // [CHANGED]
+            t["Code-Doing"]?.replace(",", "").trim().toUpperCase() === cat
         )
         if (groupTasks.length === 0) return null
 
@@ -125,12 +128,8 @@ export default function ManagePageInner() {
             </h3>
             <ul className="space-y-2">
               {groupTasks.map((task) => (
-                <li key={task._id} className="flex items-start space-x-2">
-                  <input
-                    type="checkbox"
-                    id={task.ID}
-                    className="h-4 w-4 text-blue-600 mt-1"
-                  />
+                <li key={task._id} className="flex items-start space-x-3">
+                  <Checkbox id={task.ID} /> {/* [CHANGED: ใช้ Checkbox จาก shadcn/ui] */}
                   <label htmlFor={task.ID} className="text-gray-700">
                     {task.Detail}
                   </label>
@@ -140,6 +139,20 @@ export default function ManagePageInner() {
           </div>
         )
       })}
+
+      {/* ✅ ปุ่มกดค้างเพื่อส่ง */}
+      <div className="mt-6 text-center">
+        <Button
+          className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 text-base rounded-lg"
+          onMouseDown={() => {
+            holdTimer.current = setTimeout(handleSubmit, 3000) // [ADDED: กดค้าง 3 วิ]
+          }}
+          onMouseUp={() => clearTimeout(holdTimer.current)} // [ADDED: ยกเลิกถ้าปล่อยก่อน]
+          onMouseLeave={() => clearTimeout(holdTimer.current)} // [ADDED: ยกเลิกถ้าหลุดปุ่ม]
+        >
+          กดค้าง 3 วินาทีเพื่อส่งข้อมูล
+        </Button>
+      </div>
     </div>
   )
 }
