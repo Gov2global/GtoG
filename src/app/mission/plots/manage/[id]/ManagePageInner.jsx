@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import Weather7Day from "../components/Weather7Day"
+import { v4 as uuidv4 } from "uuid" // [ADDED: สำหรับสร้าง UUID]
 
 export default function ManagePageInner() {
   const { id } = useParams()
@@ -14,6 +15,7 @@ export default function ManagePageInner() {
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState([])
   const [codes, setCodes] = useState([])
+  const [checked, setChecked] = useState({}) // [ADDED: เก็บ state checkbox]
 
   const CATEGORY_MAP = {
     DG004: "💧 น้ำ",
@@ -73,12 +75,49 @@ export default function ManagePageInner() {
     fetchData()
   }, [id])
 
-  const handleSubmit = () => {
-    const confirm = window.confirm("คุณแน่ใจหรือไม่ว่าต้องการส่งข้อมูล?")
-    if (!confirm) return
-    alert("✅ ส่งข้อมูลสำเร็จแล้ว!")
-    // TODO: ต่อ API POST/PUT ที่นี่
+  const handleCheckboxChange = (taskId) => {
+    setChecked((prev) => ({ ...prev, [taskId]: !prev[taskId] }))
   }
+
+  const handleSubmit = async () => {
+    const confirmed = window.confirm("ยืนยันที่จะส่งข้อมูลหรือไม่?")
+    if (!confirmed) return
+
+    const selected = tasks.filter((t) => checked[t.ID])
+
+    if (selected.length === 0) {
+      alert("ไม่พบงานที่เลือก")
+      return
+    }
+
+    const payload = selected.map((task) => ({
+      id: task.ID,
+      regCode: plot.regCode,
+      done: true,
+      uuid: uuidv4(),
+    }))
+
+    try {
+      const res = await fetch("/api/mission/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json()
+      if (json.success) {
+        alert("✅ บันทึกสำเร็จแล้ว")
+        setChecked({})
+      } else {
+        alert("❌ เกิดปัญหาในการบันทึก")
+      }
+    } catch (err) {
+      console.error(err)
+      alert("❌ บันทึกล้ม")
+    }
+  }
+
+  if (loading) return <p className="text-center mt-10">⏳ กำลังโหลด...</p>
+  if (!plot) return <p className="text-center mt-10">❌ ไม่พบข้อมูลแปลง</p>
 
   return (
     <div className="p-4">
@@ -117,7 +156,7 @@ export default function ManagePageInner() {
             <ul className="space-y-2">
               {groupTasks.map((task) => (
                 <li key={task._id} className="flex items-start space-x-3">
-                  <Checkbox id={task.ID} />
+                  <Checkbox id={task.ID} checked={checked[task.ID] || false} onCheckedChange={() => handleCheckboxChange(task.ID)} />
                   <label htmlFor={task.ID} className="text-gray-700">
                     {task.Detail}
                   </label>
@@ -128,13 +167,12 @@ export default function ManagePageInner() {
         )
       })}
 
-      {/* ✅ ปุ่มส่งธรรมดา */}
       <div className="mt-6 text-center">
         <Button
           className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 text-base rounded-lg"
           onClick={handleSubmit}
         >
-          ส่งข้อมูล
+          ยืนยันการส่งญี่เช็คไว้
         </Button>
       </div>
     </div>
