@@ -1,7 +1,7 @@
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import Weather7Day from "../components/Weather7Day"
@@ -14,7 +14,6 @@ export default function ManagePageInner() {
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState([])
   const [codes, setCodes] = useState([])
-  const holdTimer = useRef(null)
 
   const CATEGORY_MAP = {
     DG004: "💧 น้ำ",
@@ -75,6 +74,8 @@ export default function ManagePageInner() {
   }, [id])
 
   const handleSubmit = () => {
+    const confirm = window.confirm("คุณแน่ใจหรือไม่ว่าต้องการส่งข้อมูล?")
+    if (!confirm) return
     alert("✅ ส่งข้อมูลสำเร็จแล้ว!")
     // TODO: ต่อ API POST/PUT ที่นี่
   }
@@ -127,42 +128,14 @@ export default function ManagePageInner() {
         )
       })}
 
-      {/* ✅ ปุ่มกดค้างเพื่อส่ง พร้อมแถบ progress */}
+      {/* ✅ ปุ่มส่งธรรมดา */}
       <div className="mt-6 text-center">
-        <div className="relative w-full max-w-xs mx-auto">
-          <Button
-            className="w-full bg-gray-400 text-white py-2 px-4 rounded-lg relative overflow-hidden"
-            onMouseDown={() => {
-              const bar = document.getElementById("progress-bar")
-              bar.style.width = "100%"
-              bar.classList.remove("hidden")
-              holdTimer.current = setTimeout(() => {
-                bar.classList.add("hidden")
-                bar.style.width = "0%"
-                handleSubmit()
-              }, 3000)
-            }}
-            onMouseUp={() => {
-              clearTimeout(holdTimer.current)
-              const bar = document.getElementById("progress-bar")
-              bar.classList.add("hidden")
-              bar.style.width = "0%"
-            }}
-            onMouseLeave={() => {
-              clearTimeout(holdTimer.current)
-              const bar = document.getElementById("progress-bar")
-              bar.classList.add("hidden")
-              bar.style.width = "0%"
-            }}
-          >
-            <div
-              id="progress-bar"
-              className="hidden absolute left-0 top-0 h-full bg-green-600 transition-all duration-[3000ms] ease-linear z-0"
-              style={{ width: "0%", borderRadius: "0.5rem" }}
-            ></div>
-            <span className="relative z-10">กดค้าง 3 วินาทีเพื่อส่งข้อมูล</span>
-          </Button>
-        </div>
+        <Button
+          className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 text-base rounded-lg"
+          onClick={handleSubmit}
+        >
+          ส่งข้อมูล
+        </Button>
       </div>
     </div>
   )
