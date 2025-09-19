@@ -11,7 +11,7 @@ export default function ManagePageInner() {
   const [plot, setPlot] = useState(null)
   const [weather, setWeather] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [tasks, setTasks] = useState([]) // [ADDED: state เก็บ todolist]
+  const [tasks, setTasks] = useState([])
 
   useEffect(() => {
     async function fetchData() {
@@ -38,25 +38,30 @@ export default function ManagePageInner() {
           )
           const learnJson = await learnRes.json()
           const learnRecords = learnJson.data || []
+          console.log("✅ learn52week:", learnRecords)
 
-          // เอา codes จาก learn52week มาใช้
-          const codes = learnRecords.map((r) => r.code)
+          // ดึงรหัส code
+          const codes = learnRecords.map((r) => r.code?.toLowerCase())
+          console.log("✅ codes:", codes)
 
           if (codes.length > 0) {
             // 🔹 4) โหลด todolist
             const todoRes = await fetch("/api/mission/get/todolist")
             const todoJson = await todoRes.json()
             const allTodos = todoJson.data || []
+            console.log("✅ allTodos:", allTodos)
 
-            // 🔹 5) filter ให้ code === Code-farmer
+            // 🔹 5) filter โดย match code กับ Code-farmer
             const filtered = allTodos.filter((todo) =>
-              codes.includes(todo["Code-farmer"])
+              codes.includes(todo["Code-farmer"]?.toLowerCase())
             )
+            console.log("✅ filtered tasks:", filtered)
+
             setTasks(filtered)
           }
         }
       } catch (err) {
-        console.error("error:", err)
+        console.error("❌ error:", err)
       } finally {
         setLoading(false)
       }
@@ -90,9 +95,9 @@ export default function ManagePageInner() {
       </div>
 
       {/* ✅ แสดง Tasks จาก todolist */}
-      {tasks.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <h3 className="text-lg font-semibold mb-2">📝 งานที่ต้องทำ</h3>
+      <div className="bg-white rounded-lg shadow p-4 mb-4">
+        <h3 className="text-lg font-semibold mb-2">📝 งานที่ต้องทำ</h3>
+        {tasks.length > 0 ? (
           <ul className="space-y-2">
             {tasks.map((task) => (
               <li key={task._id} className="flex items-center space-x-2">
@@ -107,8 +112,10 @@ export default function ManagePageInner() {
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        ) : (
+          <p className="text-gray-500">ไม่มีงานที่ต้องทำ</p>
+        )}
+      </div>
 
       {/* ✅ ต่อ weather forecast (TMD) */}
       {plot.lat && plot.lon && (
