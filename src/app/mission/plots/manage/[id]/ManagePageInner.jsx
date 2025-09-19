@@ -66,7 +66,7 @@ export default function ManagePageInner() {
           console.log("✅ allTodos Code-farmer:", allTodos.map(t => t["Code-farmer"]))
 
           const filtered = allTodos.filter((todo) => {
-            const farmerCode = todo["Code-farmer"]?.toLowerCase().trim()
+            const farmerCode = todo["Code-farmer"]?.toLowerCase().trim().replace(",", "") // [CHANGED: ลบ , จาก code-farmer]
             return farmerCode && extractedCodes.map(c => c.toLowerCase()).includes(farmerCode)
           })
           console.log("✅ filtered tasks:", filtered)
@@ -117,7 +117,9 @@ export default function ManagePageInner() {
 
       {/* ✅ แสดง Tasks แยกตามหมวด */}
       {CATEGORY_ORDER.map((cat) => {
-        const groupTasks = tasks.filter((t) => t["Code-Doing"]?.trim() === cat)
+        const groupTasks = tasks.filter(
+          (t) => t["Code-Doing"]?.trim().replace(",", "") === cat // [CHANGED: ลบ , ที่อาจติดมาจาก DB]
+        )
         if (groupTasks.length === 0) return null
 
         return (
