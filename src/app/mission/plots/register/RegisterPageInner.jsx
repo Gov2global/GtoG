@@ -23,6 +23,7 @@ export default function RegisterPage() {
     lon: "",
     plantType: "",
     spacing: "",
+    week: "",
     lineId: "",
     images: {
       general: [null, null, null, null],
@@ -36,6 +37,12 @@ export default function RegisterPage() {
   const [locating, setLocating] = useState(false)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  // 3-2-1 data
+  const [data, setData] = useState([])
+  const [types, setTypes] = useState([])
+  const [spans, setSpans] = useState([])
+  const [weeks, setWeeks] = useState([])
 
   useEffect(() => {
     liff.init({ liffId: "2007697520-ReVxGaBb" })
@@ -53,6 +60,36 @@ export default function RegisterPage() {
         console.error("LIFF init error:", err)
       })
   }, [])
+
+  // โหลดข้อมูล learn52week
+  useEffect(() => {
+    fetch("/api/mission/get/learn52week")
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.ok) {
+          setData(res.data)
+          setTypes([...new Set(res.data.map((d) => d.type))])
+        }
+      })
+      .catch((err) => console.error("fetch error:", err))
+  }, [])
+
+  const handleTypeChange = (type) => {
+    setForm((prev) => ({ ...prev, plantType: type, spacing: "", week: "" }))
+    const filtered = data.filter((d) => d.type === type)
+    setSpans([...new Set(filtered.map((d) => d.span))])
+    setWeeks([])
+  }
+
+  const handleSpanChange = (span) => {
+    setForm((prev) => ({ ...prev, spacing: span, week: "" }))
+    const filtered = data.filter((d) => d.type === form.plantType && d.span === span)
+    setWeeks([...new Set(filtered.map((d) => d.week))])
+  }
+
+  const handleWeekChange = (week) => {
+    setForm((prev) => ({ ...prev, week }))
+  }
 
   const handleInputChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -89,9 +126,9 @@ export default function RegisterPage() {
   const compressImage = async (file) => {
     try {
       const compressed = await imageCompression(file, {
-        maxSizeMB: 1.5, // [CHANGED: ลดขนาดสูงสุดของไฟล์เหลือ 1.5MB]
-        maxWidthOrHeight: 1280, // [CHANGED: ลดขนาดความกว้าง/สูงของรูปลงเพื่อให้เล็กลง]
-        initialQuality: 0.6, // [ADDED: ตั้งคุณภาพเริ่มต้นให้บีบอัดมากขึ้น]
+        maxSizeMB: 1.5,
+        maxWidthOrHeight: 1280,
+        initialQuality: 0.6,
         useWebWorker: true,
       })
       return compressed
@@ -102,18 +139,13 @@ export default function RegisterPage() {
   }
 
   const handleFileChange = async (fileInput, key, index = null) => {
-    console.log("handleFileChange input:", fileInput)
     let actualFile = fileInput
-
-    // ถ้าไม่มี name หรือไม่ใช่ File → แปลงเป็น File
     if (!(fileInput instanceof File)) {
       const blobType = fileInput.type || "image/jpeg"
       actualFile = new File([fileInput], `${key}-${Date.now()}.jpg`, { type: blobType })
-      console.log("Converted blob to File:", actualFile)
     }
 
     const compressed = await compressImage(actualFile)
-    console.log("Compressed file:", compressed, "size:", compressed.size)
 
     if (key === "general") {
       const updated = [...form.images.general]
@@ -125,7 +157,6 @@ export default function RegisterPage() {
   }
 
   const appendImageToFormData = (formData, key, file) => {
-    console.log("Appending to FormData:", key, file)
     formData.append(key, file, file.name || `${key}.jpg`)
   }
 
@@ -140,24 +171,18 @@ export default function RegisterPage() {
       formData.append("lon", form.lon)
       formData.append("plantType", form.plantType)
       formData.append("spacing", form.spacing)
+      formData.append("week", form.week)
       formData.append("lineId", form.lineId)
 
-      // general 4
       for (let i = 0; i < form.images.general.length; i++) {
         const file = form.images.general[i]
         if (file) {
           appendImageToFormData(formData, `general${i + 1}`, file)
         }
       }
-      // tree, leaf, fruit
       if (form.images.tree) appendImageToFormData(formData, "tree", form.images.tree)
       if (form.images.leaf) appendImageToFormData(formData, "leaf", form.images.leaf)
       if (form.images.fruit) appendImageToFormData(formData, "fruit", form.images.fruit)
-
-      console.log("Sending formData entries:")
-      for (let pair of formData.entries()) {
-        console.log(pair[0], pair[1])
-      }
 
       const res = await fetch("/api/mission/regmission", {
         method: "POST",
@@ -223,6 +248,7 @@ export default function RegisterPage() {
       )}
     </div>
   )
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-green-50 to-white p-4 pb-24 max-w-md mx-auto">
       <div className="flex items-center mb-4">
@@ -335,32 +361,54 @@ export default function RegisterPage() {
           {locating ? "กำลังดึงพิกัด..." : "📍 ดึงพิกัดจาก GPS"}
         </Button>
 
+        {/* Step 1: Type */}
         <div className="space-y-2">
           <Label className="text-green-700 font-semibold">ชนิดพืช</Label>
-          <Select onValueChange={(v) => setForm({ ...form, plantType: v })}>
+          <Select onValueChange={handleTypeChange}>
             <SelectTrigger className="h-12 text-lg">
               <SelectValue placeholder="เลือกชนิดพืช" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ทุเรียน">ทุเรียน</SelectItem>
-              <SelectItem value="มังคุด">มังคุด</SelectItem>
-              <SelectItem value="ลองกอง">ลองกอง</SelectItem>
+              {types.map((t) => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-green-700 font-semibold">ระยะพืช</Label>
-          <Select onValueChange={(v) => setForm({ ...form, spacing: v })}>
-            <SelectTrigger className="h-12 text-lg">
-              <SelectValue placeholder="เลือกระยะพืช" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ระยะไข่ปลา">ระยะไข่ปลา</SelectItem>
-              <SelectItem value="ระยะหว่าน">ระยะหว่าน</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Step 2: Span */}
+        {spans.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-green-700 font-semibold">ระยะพืช</Label>
+            <Select onValueChange={handleSpanChange}>
+              <SelectTrigger className="h-12 text-lg">
+                <SelectValue placeholder="เลือกระยะพืช" />
+              </SelectTrigger>
+              <SelectContent>
+                {spans.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Step 3: Week */}
+        {weeks.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-green-700 font-semibold">สัปดาห์</Label>
+            <Select onValueChange={handleWeekChange}>
+              <SelectTrigger className="h-12 text-lg">
+                <SelectValue placeholder="เลือกสัปดาห์" />
+              </SelectTrigger>
+              <SelectContent>
+                {weeks.map((w) => (
+                  <SelectItem key={w} value={w}>{w}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <Button
           type="submit"
