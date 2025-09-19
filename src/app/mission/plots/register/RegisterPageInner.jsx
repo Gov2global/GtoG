@@ -42,7 +42,6 @@ export default function RegisterPage() {
   const [data, setData] = useState([])
   const [types, setTypes] = useState([])
   const [spans, setSpans] = useState([])
-  const [weeks, setWeeks] = useState([])
 
   useEffect(() => {
     liff.init({ liffId: "2007697520-ReVxGaBb" })
@@ -78,17 +77,6 @@ export default function RegisterPage() {
     setForm((prev) => ({ ...prev, plantType: type, spacing: "", week: "" }))
     const filtered = data.filter((d) => d.type === type)
     setSpans([...new Set(filtered.map((d) => d.span))])
-    setWeeks([])
-  }
-
-  const handleSpanChange = (span) => {
-    setForm((prev) => ({ ...prev, spacing: span, week: "" }))
-    const filtered = data.filter((d) => d.type === form.plantType && d.span === span)
-    setWeeks([...new Set(filtered.map((d) => d.week))])
-  }
-
-  const handleWeekChange = (week) => {
-    setForm((prev) => ({ ...prev, week }))
   }
 
   const handleInputChange = (e) => {
@@ -387,23 +375,6 @@ export default function RegisterPage() {
               <SelectContent>
                 {spans.map((s) => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Step 3: Week */}
-        {weeks.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-green-700 font-semibold">สัปดาห์</Label>
-            <Select onValueChange={handleWeekChange}>
-              <SelectTrigger className="h-12 text-lg">
-                <SelectValue placeholder="เลือกสัปดาห์" />
-              </SelectTrigger>
-              <SelectContent>
-                {weeks.map((w) => (
-                  <SelectItem key={w} value={w}>{w}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
