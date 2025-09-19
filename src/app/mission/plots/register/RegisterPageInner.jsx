@@ -100,25 +100,31 @@ export default function RegisterPage() {
     }
   }
 
-const handleFileChange = async (file, key, index = null) => {
-const actualFile = file instanceof File
-? file
-: new File([file], "photo.jpg", { type: file.type })
+  const handleFileChange = async (fileInput, key, index = null) => {
+    console.log("handleFileChange input:", fileInput)
+    let actualFile = fileInput
 
+    // ถ้าไม่มี name หรือไม่ใช่ File → แปลงเป็น File
+    if (!(fileInput instanceof File)) {
+      const blobType = fileInput.type || "image/jpeg"
+      actualFile = new File([fileInput], `${key}-${Date.now()}.jpg`, { type: blobType })
+      console.log("Converted blob to File:", actualFile)
+    }
 
-const compressed = await compressImage(actualFile)
+    const compressed = await compressImage(actualFile)
+    console.log("Compressed file:", compressed, "size:", compressed.size)
 
+    if (key === "general") {
+      const updated = [...form.images.general]
+      updated[index] = compressed
+      setForm({ ...form, images: { ...form.images, general: updated } })
+    } else {
+      setForm({ ...form, images: { ...form.images, [key]: compressed } })
+    }
+  }
 
-if (key === "general") {
-const updated = [...form.images.general]
-updated[index] = compressed
-setForm({ ...form, images: { ...form.images, general: updated } })
-} else {
-setForm({ ...form, images: { ...form.images, [key]: compressed } })
-}
-}
-
-  const appendImageToFormData = async (formData, key, file) => {
+  const appendImageToFormData = (formData, key, file) => {
+    console.log("Appending to FormData:", key, file)
     formData.append(key, file, file.name || `${key}.jpg`)
   }
 
@@ -135,13 +141,22 @@ setForm({ ...form, images: { ...form.images, [key]: compressed } })
       formData.append("spacing", form.spacing)
       formData.append("lineId", form.lineId)
 
+      // general 4
       for (let i = 0; i < form.images.general.length; i++) {
         const file = form.images.general[i]
-        if (file) await appendImageToFormData(formData, `general${i + 1}`, file)
+        if (file) {
+          appendImageToFormData(formData, `general${i + 1}`, file)
+        }
       }
-      if (form.images.tree) await appendImageToFormData(formData, "tree", form.images.tree)
-      if (form.images.leaf) await appendImageToFormData(formData, "leaf", form.images.leaf)
-      if (form.images.fruit) await appendImageToFormData(formData, "fruit", form.images.fruit)
+      // tree, leaf, fruit
+      if (form.images.tree) appendImageToFormData(formData, "tree", form.images.tree)
+      if (form.images.leaf) appendImageToFormData(formData, "leaf", form.images.leaf)
+      if (form.images.fruit) appendImageToFormData(formData, "fruit", form.images.fruit)
+
+      console.log("Sending formData entries:")
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1])
+      }
 
       const res = await fetch("/api/mission/regmission", {
         method: "POST",
@@ -159,7 +174,7 @@ setForm({ ...form, images: { ...form.images, [key]: compressed } })
         alert("บันทึกไม่สำเร็จ: " + data.error)
       }
     } catch (err) {
-      console.error("Error:", err)
+      console.error("Error submitting:", err)
       alert("เกิดข้อผิดพลาด")
     } finally {
       setLoading(false)
@@ -207,7 +222,6 @@ setForm({ ...form, images: { ...form.images, [key]: compressed } })
       )}
     </div>
   )
-
   return (
     <main className="min-h-screen bg-gradient-to-b from-green-50 to-white p-4 pb-24 max-w-md mx-auto">
       <div className="flex items-center mb-4">
