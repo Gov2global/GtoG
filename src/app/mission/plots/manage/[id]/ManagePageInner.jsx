@@ -62,7 +62,7 @@ export default function ManagePageInner() {
         <p>ชนิดพืช: {plot.plantType}</p>
         <p>ระยะ: {plot.spacing}</p>
         {plot.lat && plot.lon && <p>พิกัด: {plot.lat}, {plot.lon}</p>}
-        {weather && <p>อุณหภูมิปัจจุบัน: {weather.temperature}°C</p>}
+        {/* {weather && <p>อุณหภูมิปัจจุบัน: {weather.temperature}°C</p>} */}
       </div>
 
       {/* ✅ ต่อ weather forecast (TMD) ถ้ามี lat/lon */}
