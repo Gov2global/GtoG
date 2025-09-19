@@ -18,46 +18,58 @@ export default function PlotsPage() {
   const [sortBy, setSortBy] = useState("latest")
 
   useEffect(() => {
-    let mounted = true
+  let mounted = true
 
-    async function initLiff() {
-      try {
-        await liff.init({ liffId: "2007697520-ReVxGaBb" })
-        if (!liff.isLoggedIn()) {
-          liff.login({ redirectUri: window.location.href })
-          return
-        }
+  async function initLiff() {
+    try {
+      await liff.init({ liffId: "2007697520-ReVxGaBb" })
 
-        const profile = await liff.getProfile()
-        const userId = profile.userId
-        if (mounted) setRegLineID(userId)
-
-        const res = await fetch(`/api/farmer/get/line-get/${userId}`)
-        const result = await res.json()
-        if (mounted && result.success && result.data) {
-          setUser({
-            firstName: result.data.regName || "",
-            lastName: result.data.regSurname || "",
-          })
-        }
-
-        const plotsRes = await fetch("/api/mission/get/regmissos")
-        const plotsData = await plotsRes.json()
-        if (mounted && plotsData.success && plotsData.data) {
-          setPlots(plotsData.data)
-        }
-      } catch (err) {
-        console.error("❌ LIFF init error:", err)
-      } finally {
-        if (mounted) setLoading(false)
+      if (!liff.isLoggedIn()) {
+        console.log("🔁 Login redirecting...")
+        liff.login({ redirectUri: window.location.href })
+        return
       }
-    }
 
-    initLiff()
-    return () => {
-      mounted = false
+      const profile = await liff.getProfile()
+      const userId = profile.userId
+      console.log("✅ Logged in as:", userId)
+
+      if (mounted) setRegLineID(userId)
+
+      const res = await fetch(`/api/farmer/get/line-get/${userId}`)
+      const result = await res.json()
+      console.log("👤 Farmer data:", result)
+
+      if (mounted && result.success && result.data) {
+        setUser({
+          firstName: result.data.regName || "",
+          lastName: result.data.regSurname || "",
+        })
+      }
+
+      const plotsRes = await fetch("/api/mission/get/regmissos")
+      const plotsData = await plotsRes.json()
+      console.log("🌱 All plots:", plotsData)
+
+      if (mounted && plotsData.success && plotsData.data) {
+        const onlyMyPlots = plotsData.data.filter(
+          (p) => p.regLineID === userId
+        )
+        setPlots(onlyMyPlots)
+      }
+    } catch (err) {
+      console.error("❌ LIFF init error:", err)
+    } finally {
+      if (mounted) setLoading(false)
     }
-  }, [])
+  }
+
+  initLiff()
+  return () => {
+    mounted = false
+  }
+}, [])
+
 
   const handleAddPlot = () => {
     if (!regLineID) {
