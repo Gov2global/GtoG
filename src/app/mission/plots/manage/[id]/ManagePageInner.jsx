@@ -106,7 +106,7 @@ export default function ManagePageInner() {
       </div>
 
       {plot.lat && plot.lon && (
-        <div className="mt-4"> 
+        <div className="mt-4 mb-4"> 
           <Weather7Day
             lat={parseFloat(plot.lat)}
             lon={parseFloat(plot.lon)}
