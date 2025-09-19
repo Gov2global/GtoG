@@ -88,79 +88,96 @@ export default function RegisterPage() {
   }, [])
 
   // ฟังก์ชันย่อรูป
-  const compressFile = async (file) => {
-    try {
-      const options = {
-        maxSizeMB: 4,  // กำหนดขนาดสูงสุด 4MB
-        maxWidthOrHeight: 2000, // กำหนดด้านกว้าง/สูงสูงสุด (ปรับได้ตามต้องการ)
-        useWebWorker: true,
-      }
-      const compressedFile = await imageCompression(file, options)
-      console.log("Original size:", file.size / 1024 / 1024, "MB; Compressed:", compressedFile.size / 1024 / 1024, "MB")
-      return compressedFile
-    } catch (err) {
-      console.error("❌ compress error:", err)
-      return file
-    }
-  }
+
+const compressUntilUnderSize = async (file, maxMB = 3.8) => {
+let sizeLimit = maxMB * 1024 * 1024
+let width = 2000
+let compressed = file
+
+
+try {
+while (true) {
+const options = {
+maxSizeMB: maxMB,
+maxWidthOrHeight: width,
+useWebWorker: true,
+}
+
+
+compressed = await imageCompression(file, options)
+
+
+if (compressed.size <= sizeLimit || width <= 640) break
+
+
+width -= 200
+}
+
+
+return compressed
+} catch (err) {
+console.error("compress error:", err)
+return file
+}
+}
+
+
+const appendImageToFormData = async (formData, key, file) => {
+const compressed = await compressUntilUnderSize(file)
+if (compressed.size > 3.8 * 1024 * 1024) {
+alert(`ข้ามรูป ${key} เพราะขนาดเกิน 3.8MB แม้หลังย่อแล้ว`)
+return
+}
+formData.append(key, compressed, compressed.name || `${key}.jpg`)
+}
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+e.preventDefault()
+setLoading(true)
 
-    try {
-      const formData = new FormData()
-      formData.append("name", form.name)
-      formData.append("lat", form.lat)
-      formData.append("lon", form.lon)
-      formData.append("plantType", form.plantType)
-      formData.append("spacing", form.spacing)
-      formData.append("lineId", form.lineId)
 
-      // general
-      for (let i = 0; i < form.images.general.length; i++) {
-        const file = form.images.general[i]
-        if (file) {
-          const compressed = await compressFile(file)
-          formData.append(`general${i + 1}`, compressed, compressed.name || `general${i+1}.jpg`)
-        }
-      }
-      if (form.images.tree) {
-        const compressedTree = await compressFile(form.images.tree)
-        formData.append("tree", compressedTree, compressedTree.name || "tree.jpg")
-      }
-      if (form.images.leaf) {
-        const compressedLeaf = await compressFile(form.images.leaf)
-        formData.append("leaf", compressedLeaf, compressedLeaf.name || "leaf.jpg")
-      }
-      if (form.images.fruit) {
-        const compressedFruit = await compressFile(form.images.fruit)
-        formData.append("fruit", compressedFruit, compressedFruit.name || "fruit.jpg")
-      }
+try {
+const formData = new FormData()
+formData.append("name", form.name)
+formData.append("lat", form.lat)
+formData.append("lon", form.lon)
+formData.append("plantType", form.plantType)
+formData.append("spacing", form.spacing)
+formData.append("lineId", form.lineId)
 
-      const res = await fetch("/api/mission/regmission", {
-        method: "POST",
-        body: formData,
-      })
-      const data = await res.json()
 
-      if (data.success) {
-        console.log("✅ ลงทะเบียนสำเร็จ:", data)
-        setSuccess(true)
-        setTimeout(() => {
-          setSuccess(false)
-          router.push("/mission")
-        }, 2000)
-      } else {
-        alert("❌ บันทึกไม่สำเร็จ: " + data.error)
-      }
-    } catch (err) {
-      console.error("Error:", err)
-      alert("❌ เกิดข้อผิดพลาด")
-    } finally {
-      setLoading(false)
-    }
-  }
+for (let i = 0; i < form.images.general.length; i++) {
+const file = form.images.general[i]
+if (file) await appendImageToFormData(formData, `general${i + 1}`, file)
+}
+if (form.images.tree) await appendImageToFormData(formData, "tree", form.images.tree)
+if (form.images.leaf) await appendImageToFormData(formData, "leaf", form.images.leaf)
+if (form.images.fruit) await appendImageToFormData(formData, "fruit", form.images.fruit)
+
+
+const res = await fetch("/api/mission/regmission", {
+method: "POST",
+body: formData,
+})
+const data = await res.json()
+
+
+if (data.success) {
+setSuccess(true)
+setTimeout(() => {
+setSuccess(false)
+router.push("/mission")
+}, 2000)
+} else {
+alert("บันทึกไม่สำเร็จ: " + data.error)
+}
+} catch (err) {
+console.error("Error:", err)
+alert("เกิดข้อผิดพลาด")
+} finally {
+setLoading(false)
+}
+}
 
   const renderImageUpload = (label, key) => (
     <div className="relative w-24 h-24 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50">
