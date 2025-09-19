@@ -12,6 +12,7 @@ export default function ManagePageInner() {
   const [weather, setWeather] = useState(null)
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState([])
+  const [codes, setCodes] = useState([]) // [ADDED: เก็บ code ที่ดึงมา]
 
   useEffect(() => {
     async function fetchData() {
@@ -41,12 +42,13 @@ export default function ManagePageInner() {
           console.log("✅ learn52week:", learnRecords)
 
           // ดึงรหัส code และกันค่า null/ว่าง
-          const codes = learnRecords
-            .map((r) => r.code?.toLowerCase().trim())
+          const extractedCodes = learnRecords
+            .map((r) => r.code?.trim())
             .filter(Boolean)
-          console.log("✅ codes จาก learn52week:", codes)
+          setCodes(extractedCodes) // [ADDED: เก็บค่า code ไว้ state]
+          console.log("✅ codes:", extractedCodes)
 
-          if (codes.length > 0) {
+          if (extractedCodes.length > 0) {
             // 🔹 4) โหลด todolist
             const todoRes = await fetch("/api/mission/get/todolist")
             const todoJson = await todoRes.json()
@@ -56,7 +58,7 @@ export default function ManagePageInner() {
             // 🔹 5) filter โดย match code กับ Code-farmer
             const filtered = allTodos.filter((todo) => {
               const farmerCode = todo["Code-farmer"]?.toLowerCase().trim()
-              return farmerCode && codes.includes(farmerCode)
+              return farmerCode && extractedCodes.map(c => c.toLowerCase()).includes(farmerCode)
             })
             console.log("✅ filtered tasks:", filtered)
 
@@ -95,6 +97,15 @@ export default function ManagePageInner() {
         <p>ชนิดพืช: {plot.plantType}</p>
         <p>ระยะ: {plot.spacing}</p>
         {plot.lat && plot.lon && <p>พิกัด: {plot.lat}, {plot.lon}</p>}
+
+        {/* ✅ แสดง code ที่ได้จาก learn52week */}
+        {codes.length > 0 ? (
+          <p className="mt-2 text-blue-700">
+            📌 รหัสที่ได้จาก learn52week: {codes.join(", ")}
+          </p>
+        ) : (
+          <p className="mt-2 text-gray-500">⚠️ ไม่มี code สำหรับระยะนี้</p>
+        )}
       </div>
 
       {/* ✅ ต่อ weather forecast (TMD) */}
