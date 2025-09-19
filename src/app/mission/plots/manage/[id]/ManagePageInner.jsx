@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import Weather7Day from "../components/Weather7Day"
-import { v4 as uuidv4 } from "uuid" // [ADDED: สำหรับสร้าง UUID]
+import { v4 as uuidv4 } from "uuid"
 
 export default function ManagePageInner() {
   const { id } = useParams()
@@ -15,7 +15,7 @@ export default function ManagePageInner() {
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState([])
   const [codes, setCodes] = useState([])
-  const [checked, setChecked] = useState({}) // [ADDED: เก็บ state checkbox]
+  const [checked, setChecked] = useState({})
 
   const CATEGORY_MAP = {
     DG004: "💧 น้ำ",
@@ -31,11 +31,13 @@ export default function ManagePageInner() {
   useEffect(() => {
     async function fetchData() {
       try {
+        // 🔹 โหลดข้อมูล plot
         const res = await fetch("/api/mission/get/regmissos")
         const json = await res.json()
         const found = json.data?.find((p) => p._id === id)
         setPlot(found)
 
+        // 🔹 โหลดพยากรณ์อากาศ
         if (found?.lat && found?.lon) {
           const weatherRes = await fetch(
             `https://api.open-meteo.com/v1/forecast?latitude=${found.lat}&longitude=${found.lon}&current_weather=true`
@@ -44,6 +46,7 @@ export default function ManagePageInner() {
           setWeather(weatherJson.current_weather)
         }
 
+        // 🔹 โหลด learn52week
         const learnRes = await fetch("/api/mission/get/learn52week")
         const learnJson = await learnRes.json()
         const matched = (learnJson.data || []).filter(
@@ -54,16 +57,28 @@ export default function ManagePageInner() {
         setCodes(extractedCodes)
 
         if (extractedCodes.length > 0) {
+          // 🔹 โหลด todolist
           const todoRes = await fetch("/api/mission/get/todolist")
           const todoJson = await todoRes.json()
           const allTodos = todoJson.data || []
 
-          const filtered = allTodos.filter((todo) => {
+          const filteredTodos = allTodos.filter((todo) => {
             const farmerCode = todo["Code-farmer"]?.toLowerCase().trim().replace(",", "")
             return farmerCode && extractedCodes.map(c => c.toLowerCase()).includes(farmerCode)
           })
 
-          setTasks(filtered)
+          // 🔹 โหลด progress เพื่อกรอง task ที่ทำแล้ว
+          const progressRes = await fetch(`/api/mission/get/progress?regCode=${found.regCode}`)
+          const progressJson = await progressRes.json()
+          const doneList = progressJson.data || []
+
+          const notDoneTasks = filteredTodos.filter((todo) => {
+            return !doneList.some(
+              (p) => p.id === todo.ID && p.regCode === found.regCode
+            )
+          })
+
+          setTasks(notDoneTasks)
         }
       } catch (err) {
         console.error("❌ error:", err)
@@ -106,13 +121,15 @@ export default function ManagePageInner() {
       const json = await res.json()
       if (json.success) {
         alert("✅ บันทึกสำเร็จแล้ว")
+        // ลบ task ที่เลือกออกจาก state ทันที
+        setTasks((prev) => prev.filter((t) => !checked[t.ID]))
         setChecked({})
       } else {
         alert("❌ เกิดปัญหาในการบันทึก")
       }
     } catch (err) {
       console.error(err)
-      alert("❌ บันทึกล้ม")
+      alert("❌ บันทึกล้มเหลว")
     }
   }
 
@@ -121,6 +138,7 @@ export default function ManagePageInner() {
 
   return (
     <div className="p-4">
+      {/* 🔹 ข้อมูลแปลง */}
       <div className="relative bg-gray-100 p-4 rounded-lg shadow mb-4">
         <Button
           className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white"
@@ -136,12 +154,14 @@ export default function ManagePageInner() {
         {plot?.lat && plot?.lon && <p>พิกัด: {plot.lat}, {plot.lon}</p>}
       </div>
 
+      {/* 🔹 พยากรณ์อากาศ */}
       {plot?.lat && plot?.lon && (
         <div className="mt-5 mb-5">
           <Weather7Day lat={parseFloat(plot.lat)} lon={parseFloat(plot.lon)} />
         </div>
       )}
 
+      {/* 🔹 Task list */}
       {CATEGORY_ORDER.map((cat) => {
         const groupTasks = tasks.filter(
           (t) => t["Code-Doing"]?.replace(",", "").trim().toUpperCase() === cat
@@ -156,7 +176,11 @@ export default function ManagePageInner() {
             <ul className="space-y-2">
               {groupTasks.map((task) => (
                 <li key={task._id} className="flex items-start space-x-3">
-                  <Checkbox id={task.ID} checked={checked[task.ID] || false} onCheckedChange={() => handleCheckboxChange(task.ID)} />
+                  <Checkbox
+                    id={task.ID}
+                    checked={checked[task.ID] || false}
+                    onCheckedChange={() => handleCheckboxChange(task.ID)}
+                  />
                   <label htmlFor={task.ID} className="text-gray-700">
                     {task.Detail}
                   </label>
@@ -167,12 +191,13 @@ export default function ManagePageInner() {
         )
       })}
 
+      {/* 🔹 Submit button */}
       <div className="mt-6 text-center">
         <Button
           className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 text-base rounded-lg"
           onClick={handleSubmit}
         >
-          ยืนยันการส่งญี่เช็คไว้
+          ส่งภารกิจ
         </Button>
       </div>
     </div>
