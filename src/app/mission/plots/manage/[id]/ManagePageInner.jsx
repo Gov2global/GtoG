@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import DailyForecastTMD from "../components/DailyForecastTMD" // 👈 ใส่ไว้ถ้ามี
+import DailyForecastTMD from "../components/DailyForecastTMD" // 👈 ตรวจให้แน่ใจว่ามีไฟล์นี้จริง
 
 export default function ManagePageInner() {
   const { id } = useParams()
@@ -65,7 +65,10 @@ export default function ManagePageInner() {
 
       {/* ✅ ต่อ weather forecast (TMD) ถ้ามี lat/lon */}
       {plot.lat && plot.lon && (
-        <DailyForecastTMD lat={plot.lat} lon={plot.lon} />
+        <DailyForecastTMD
+          lat={parseFloat(plot.lat)}
+          lon={parseFloat(plot.lon)}
+        />
       )}
     </div>
   )
