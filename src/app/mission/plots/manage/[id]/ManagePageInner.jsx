@@ -3,9 +3,7 @@
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-// import DailyForecastTMD from "../components/DailyForecastTMD" 
 import Weather7Day from "../components/Weather7Day"
-
 
 export default function ManagePageInner() {
   const { id } = useParams()
@@ -13,21 +11,49 @@ export default function ManagePageInner() {
   const [plot, setPlot] = useState(null)
   const [weather, setWeather] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [tasks, setTasks] = useState([]) // [ADDED: state เก็บ todolist]
 
   useEffect(() => {
     async function fetchData() {
       try {
+        // 🔹 1) โหลด plot
         const res = await fetch("/api/mission/get/regmissos")
         const json = await res.json()
         const found = json.data?.find((p) => p._id === id)
         setPlot(found)
 
+        // 🔹 2) โหลด weather
         if (found?.lat && found?.lon) {
           const weatherRes = await fetch(
             `https://api.open-meteo.com/v1/forecast?latitude=${found.lat}&longitude=${found.lon}&current_weather=true`
           )
           const weatherJson = await weatherRes.json()
           setWeather(weatherJson.current_weather)
+        }
+
+        // 🔹 3) โหลด learn52week ตาม spacing
+        if (found?.spacing) {
+          const learnRes = await fetch(
+            `/api/mission/get/learn52week?week=${found.spacing}`
+          )
+          const learnJson = await learnRes.json()
+          const learnRecords = learnJson.data || []
+
+          // เอา codes จาก learn52week มาใช้
+          const codes = learnRecords.map((r) => r.code)
+
+          if (codes.length > 0) {
+            // 🔹 4) โหลด todolist
+            const todoRes = await fetch("/api/mission/get/todolist")
+            const todoJson = await todoRes.json()
+            const allTodos = todoJson.data || []
+
+            // 🔹 5) filter ให้ code === Code-farmer
+            const filtered = allTodos.filter((todo) =>
+              codes.includes(todo["Code-farmer"])
+            )
+            setTasks(filtered)
+          }
         }
       } catch (err) {
         console.error("error:", err)
@@ -46,7 +72,6 @@ export default function ManagePageInner() {
     <div className="p-4">
       {/* Card + ปุ่มขวาบน */}
       <div className="relative bg-gray-100 p-4 rounded-lg shadow mb-4">
-        {/* ปุ่มออกจากแปลง */}
         <Button
           className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white"
           onClick={() => router.push("/mission")}
@@ -62,17 +87,36 @@ export default function ManagePageInner() {
         <p>ชนิดพืช: {plot.plantType}</p>
         <p>ระยะ: {plot.spacing}</p>
         {plot.lat && plot.lon && <p>พิกัด: {plot.lat}, {plot.lon}</p>}
-        {/* {weather && <p>อุณหภูมิปัจจุบัน: {weather.temperature}°C</p>} */}
       </div>
 
-      {/* ✅ ต่อ weather forecast (TMD) ถ้ามี lat/lon */}
+      {/* ✅ แสดง Tasks จาก todolist */}
+      {tasks.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-4 mb-4">
+          <h3 className="text-lg font-semibold mb-2">📝 งานที่ต้องทำ</h3>
+          <ul className="space-y-2">
+            {tasks.map((task) => (
+              <li key={task._id} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id={task.ID}
+                  className="h-4 w-4 text-blue-600"
+                />
+                <label htmlFor={task.ID} className="text-gray-700">
+                  {task.Detail}
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* ✅ ต่อ weather forecast (TMD) */}
       {plot.lat && plot.lon && (
         <Weather7Day
           lat={parseFloat(plot.lat)}
           lon={parseFloat(plot.lon)}
         />
       )}
-
     </div>
   )
 }
