@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox" // [ADDED: ใช้ checkbox จาก shadcn/ui]
+import { Checkbox } from "@/components/ui/checkbox"
 import Weather7Day from "../components/Weather7Day"
 
 export default function ManagePageInner() {
@@ -14,7 +14,7 @@ export default function ManagePageInner() {
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState([])
   const [codes, setCodes] = useState([])
-  const holdTimer = useRef(null) // [ADDED: สำหรับตรวจจับการกดค้าง]
+  const holdTimer = useRef(null)
 
   const CATEGORY_MAP = {
     DG004: "💧 น้ำ",
@@ -45,15 +45,11 @@ export default function ManagePageInner() {
 
         const learnRes = await fetch("/api/mission/get/learn52week")
         const learnJson = await learnRes.json()
-        const learnRecords = learnJson.data || []
-
-        const matched = learnRecords.filter(
+        const matched = (learnJson.data || []).filter(
           (r) => r.span?.trim() === found?.spacing?.trim()
         )
 
-        const extractedCodes = matched
-          .map((r) => r.code?.trim())
-          .filter(Boolean)
+        const extractedCodes = matched.map((r) => r.code?.trim()).filter(Boolean)
         setCodes(extractedCodes)
 
         if (extractedCodes.length > 0) {
@@ -83,9 +79,6 @@ export default function ManagePageInner() {
     // TODO: ต่อ API POST/PUT ที่นี่
   }
 
-  if (loading) return <p className="text-center mt-10">⏳ กำลังโหลด...</p>
-  if (!plot) return <p className="text-center mt-10">❌ ไม่พบข้อมูลแปลง</p>
-
   return (
     <div className="p-4">
       <div className="relative bg-gray-100 p-4 rounded-lg shadow mb-4">
@@ -95,29 +88,23 @@ export default function ManagePageInner() {
         >
           ออกจากแปลง
         </Button>
-
         <h2 className="text-xl font-bold">
-          {plot.name}{" "}
-          <span className="text-sm text-gray-500">#{plot.regCode}</span>
+          {plot?.name} <span className="text-sm text-gray-500">#{plot?.regCode}</span>
         </h2>
-        <p>ชนิดพืช: {plot.plantType}</p>
-        <p>ระยะ: {plot.spacing}</p>
-        {plot.lat && plot.lon && <p>พิกัด: {plot.lat}, {plot.lon}</p>}
+        <p>ชนิดพืช: {plot?.plantType}</p>
+        <p>ระยะ: {plot?.spacing}</p>
+        {plot?.lat && plot?.lon && <p>พิกัด: {plot.lat}, {plot.lon}</p>}
       </div>
 
-      {plot.lat && plot.lon && (
-        <div className="mt-4 mb-10"> 
-          <Weather7Day
-            lat={parseFloat(plot.lat)}
-            lon={parseFloat(plot.lon)}
-          />
+      {plot?.lat && plot?.lon && (
+        <div className="mt-5 mb-5">
+          <Weather7Day lat={parseFloat(plot.lat)} lon={parseFloat(plot.lon)} />
         </div>
       )}
 
       {CATEGORY_ORDER.map((cat) => {
         const groupTasks = tasks.filter(
-          (t) =>
-            t["Code-Doing"]?.replace(",", "").trim().toUpperCase() === cat
+          (t) => t["Code-Doing"]?.replace(",", "").trim().toUpperCase() === cat
         )
         if (groupTasks.length === 0) return null
 
@@ -129,7 +116,7 @@ export default function ManagePageInner() {
             <ul className="space-y-2">
               {groupTasks.map((task) => (
                 <li key={task._id} className="flex items-start space-x-3">
-                  <Checkbox id={task.ID} /> {/* [CHANGED: ใช้ Checkbox จาก shadcn/ui] */}
+                  <Checkbox id={task.ID} />
                   <label htmlFor={task.ID} className="text-gray-700">
                     {task.Detail}
                   </label>
@@ -140,18 +127,42 @@ export default function ManagePageInner() {
         )
       })}
 
-      {/* ✅ ปุ่มกดค้างเพื่อส่ง */}
+      {/* ✅ ปุ่มกดค้างเพื่อส่ง พร้อมแถบ progress */}
       <div className="mt-6 text-center">
-        <Button
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 text-base rounded-lg"
-          onMouseDown={() => {
-            holdTimer.current = setTimeout(handleSubmit, 3000) // [ADDED: กดค้าง 3 วิ]
-          }}
-          onMouseUp={() => clearTimeout(holdTimer.current)} // [ADDED: ยกเลิกถ้าปล่อยก่อน]
-          onMouseLeave={() => clearTimeout(holdTimer.current)} // [ADDED: ยกเลิกถ้าหลุดปุ่ม]
-        >
-          กดค้าง 3 วินาทีเพื่อส่งข้อมูล
-        </Button>
+        <div className="relative w-full max-w-xs mx-auto">
+          <Button
+            className="w-full bg-gray-400 text-white py-2 px-4 rounded-lg relative overflow-hidden"
+            onMouseDown={() => {
+              const bar = document.getElementById("progress-bar")
+              bar.style.width = "100%"
+              bar.classList.remove("hidden")
+              holdTimer.current = setTimeout(() => {
+                bar.classList.add("hidden")
+                bar.style.width = "0%"
+                handleSubmit()
+              }, 3000)
+            }}
+            onMouseUp={() => {
+              clearTimeout(holdTimer.current)
+              const bar = document.getElementById("progress-bar")
+              bar.classList.add("hidden")
+              bar.style.width = "0%"
+            }}
+            onMouseLeave={() => {
+              clearTimeout(holdTimer.current)
+              const bar = document.getElementById("progress-bar")
+              bar.classList.add("hidden")
+              bar.style.width = "0%"
+            }}
+          >
+            <div
+              id="progress-bar"
+              className="hidden absolute left-0 top-0 h-full bg-green-600 transition-all duration-[3000ms] ease-linear z-0"
+              style={{ width: "0%", borderRadius: "0.5rem" }}
+            ></div>
+            <span className="relative z-10">กดค้าง 3 วินาทีเพื่อส่งข้อมูล</span>
+          </Button>
+        </div>
       </div>
     </div>
   )
