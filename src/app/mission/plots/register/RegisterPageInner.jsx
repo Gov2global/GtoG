@@ -100,16 +100,23 @@ export default function RegisterPage() {
     }
   }
 
-  const handleFileChange = async (file, key, index = null) => {
-    const compressed = await compressImage(file)
-    if (key === "general") {
-      const updated = [...form.images.general]
-      updated[index] = compressed
-      setForm({ ...form, images: { ...form.images, general: updated } })
-    } else {
-      setForm({ ...form, images: { ...form.images, [key]: compressed } })
-    }
-  }
+const handleFileChange = async (file, key, index = null) => {
+const actualFile = file instanceof File
+? file
+: new File([file], "photo.jpg", { type: file.type })
+
+
+const compressed = await compressImage(actualFile)
+
+
+if (key === "general") {
+const updated = [...form.images.general]
+updated[index] = compressed
+setForm({ ...form, images: { ...form.images, general: updated } })
+} else {
+setForm({ ...form, images: { ...form.images, [key]: compressed } })
+}
+}
 
   const appendImageToFormData = async (formData, key, file) => {
     formData.append(key, file, file.name || `${key}.jpg`)
