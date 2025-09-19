@@ -12,7 +12,7 @@ export default function ManagePageInner() {
   const [weather, setWeather] = useState(null)
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState([])
-  const [codes, setCodes] = useState([]) // [ADDED: เก็บ code ที่ดึงมา]
+  const [codes, setCodes] = useState([]) // [ADDED: เก็บ code จาก learn52week]
 
   useEffect(() => {
     async function fetchData() {
@@ -32,38 +32,40 @@ export default function ManagePageInner() {
           setWeather(weatherJson.current_weather)
         }
 
-        // 🔹 3) โหลด learn52week ตาม spacing
-        if (found?.spacing) {
-          const learnRes = await fetch(
-            `/api/mission/get/learn52week?week=${found.spacing}`
-          )
-          const learnJson = await learnRes.json()
-          const learnRecords = learnJson.data || []
-          console.log("✅ learn52week:", learnRecords)
+        // 🔹 3) โหลด learn52week ทั้งหมด
+        const learnRes = await fetch("/api/mission/get/learn52week")
+        const learnJson = await learnRes.json()
+        const learnRecords = learnJson.data || []
+        console.log("✅ learn52week ทั้งหมด:", learnRecords)
 
-          // ดึงรหัส code และกันค่า null/ว่าง
-          const extractedCodes = learnRecords
-            .map((r) => r.code?.trim())
-            .filter(Boolean)
-          setCodes(extractedCodes) // [ADDED: เก็บค่า code ไว้ state]
-          console.log("✅ codes:", extractedCodes)
+        // filter โดยใช้ span === plot.spacing
+        const matched = learnRecords.filter(
+          (r) => r.span?.trim() === found?.spacing?.trim()
+        )
+        console.log("✅ matched records:", matched)
 
-          if (extractedCodes.length > 0) {
-            // 🔹 4) โหลด todolist
-            const todoRes = await fetch("/api/mission/get/todolist")
-            const todoJson = await todoRes.json()
-            const allTodos = todoJson.data || []
-            console.log("✅ allTodos Code-farmer:", allTodos.map(t => t["Code-farmer"]))
+        // ดึงรหัส code
+        const extractedCodes = matched
+          .map((r) => r.code?.trim())
+          .filter(Boolean)
+        setCodes(extractedCodes)
+        console.log("✅ codes:", extractedCodes)
 
-            // 🔹 5) filter โดย match code กับ Code-farmer
-            const filtered = allTodos.filter((todo) => {
-              const farmerCode = todo["Code-farmer"]?.toLowerCase().trim()
-              return farmerCode && extractedCodes.map(c => c.toLowerCase()).includes(farmerCode)
-            })
-            console.log("✅ filtered tasks:", filtered)
+        if (extractedCodes.length > 0) {
+          // 🔹 4) โหลด todolist
+          const todoRes = await fetch("/api/mission/get/todolist")
+          const todoJson = await todoRes.json()
+          const allTodos = todoJson.data || []
+          console.log("✅ allTodos Code-farmer:", allTodos.map(t => t["Code-farmer"]))
 
-            setTasks(filtered)
-          }
+          // 🔹 5) filter โดย match code กับ Code-farmer
+          const filtered = allTodos.filter((todo) => {
+            const farmerCode = todo["Code-farmer"]?.toLowerCase().trim()
+            return farmerCode && extractedCodes.map(c => c.toLowerCase()).includes(farmerCode)
+          })
+          console.log("✅ filtered tasks:", filtered)
+
+          setTasks(filtered)
         }
       } catch (err) {
         console.error("❌ error:", err)
@@ -104,7 +106,7 @@ export default function ManagePageInner() {
             📌 รหัสที่ได้จาก learn52week: {codes.join(", ")}
           </p>
         ) : (
-          <p className="mt-2 text-gray-500">⚠️ ไม่มี code สำหรับระยะนี้</p>
+          <p className="mt-2 text-gray-500">⚠️ ไม่มี code สำหรับ span นี้</p>
         )}
       </div>
 
