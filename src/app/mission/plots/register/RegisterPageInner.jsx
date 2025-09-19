@@ -14,6 +14,7 @@ import {
 import { LocateIcon, CheckCircle2, Camera, X, ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
 import liff from "@line/liff"
+import imageCompression from "browser-image-compression"  // [ADDED: ไลบรารีสำหรับย่อรูป]
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -22,7 +23,7 @@ export default function RegisterPage() {
     lon: "",
     plantType: "",
     spacing: "",
-    lineId: "", // ✅ เก็บจาก LIFF
+    lineId: "",
     images: {
       general: [null, null, null, null],
       tree: null,
@@ -36,7 +37,6 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // --- Init LIFF ---
   useEffect(() => {
     liff.init({ liffId: "2007697520-ReVxGaBb" })
       .then(() => {
@@ -87,6 +87,23 @@ export default function RegisterPage() {
     handleGetLocation()
   }, [])
 
+  // ฟังก์ชันย่อรูป
+  const compressFile = async (file) => {
+    try {
+      const options = {
+        maxSizeMB: 4,  // กำหนดขนาดสูงสุด 4MB
+        maxWidthOrHeight: 2000, // กำหนดด้านกว้าง/สูงสูงสุด (ปรับได้ตามต้องการ)
+        useWebWorker: true,
+      }
+      const compressedFile = await imageCompression(file, options)
+      console.log("Original size:", file.size / 1024 / 1024, "MB; Compressed:", compressedFile.size / 1024 / 1024, "MB")
+      return compressedFile
+    } catch (err) {
+      console.error("❌ compress error:", err)
+      return file
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -100,12 +117,26 @@ export default function RegisterPage() {
       formData.append("spacing", form.spacing)
       formData.append("lineId", form.lineId)
 
-      form.images.general.forEach((file, i) => {
-        if (file) formData.append(`general${i + 1}`, file)
-      })
-      if (form.images.tree) formData.append("tree", form.images.tree)
-      if (form.images.leaf) formData.append("leaf", form.images.leaf)
-      if (form.images.fruit) formData.append("fruit", form.images.fruit)
+      // general
+      for (let i = 0; i < form.images.general.length; i++) {
+        const file = form.images.general[i]
+        if (file) {
+          const compressed = await compressFile(file)
+          formData.append(`general${i + 1}`, compressed, compressed.name || `general${i+1}.jpg`)
+        }
+      }
+      if (form.images.tree) {
+        const compressedTree = await compressFile(form.images.tree)
+        formData.append("tree", compressedTree, compressedTree.name || "tree.jpg")
+      }
+      if (form.images.leaf) {
+        const compressedLeaf = await compressFile(form.images.leaf)
+        formData.append("leaf", compressedLeaf, compressedLeaf.name || "leaf.jpg")
+      }
+      if (form.images.fruit) {
+        const compressedFruit = await compressFile(form.images.fruit)
+        formData.append("fruit", compressedFruit, compressedFruit.name || "fruit.jpg")
+      }
 
       const res = await fetch("/api/mission/regmission", {
         method: "POST",
@@ -132,53 +163,53 @@ export default function RegisterPage() {
   }
 
   const renderImageUpload = (label, key) => (
-  <div className="relative w-24 h-24 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50">
-    {form.images[key] ? (
-      <>
-        <img
-          src={URL.createObjectURL(form.images[key])}
-          alt={label}
-          className="object-cover w-full h-full rounded-xl"
-        />
-        <button
-          type="button"
-          onClick={() =>
-            setForm((prev) => ({
-              ...prev,
-              images: { ...prev.images, [key]: null },
-            }))
-          }
-          className="absolute top-[-6px] right-[-6px] bg-red-500 text-white p-1 rounded-full shadow"
-          aria-label="ลบรูป"
-        >
-          <X size={14} />
-        </button>
-      </>
-    ) : (
-      <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-green-600 text-xs">
-        <Camera className="mb-1" size={20} />
-        กดเพื่อถ่ายรูป
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) {
+    <div className="relative w-24 h-24 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50">
+      {form.images[key] ? (
+        <>
+          <img
+            src={URL.createObjectURL(form.images[key])}
+            alt={label}
+            className="object-cover w-full h-full rounded-xl"
+          />
+          <button
+            type="button"
+            onClick={() =>
               setForm((prev) => ({
                 ...prev,
-                images: { ...prev.images, [key]: file },
+                images: { ...prev.images, [key]: null },
               }))
             }
-          }}
-        />
-      </label>
-    )}
-  </div>
-)
-
-
+            className="absolute top-[-6px] right-[-6px] bg-red-500 text-white p-1 rounded-full shadow"
+            aria-label="ลบรูป"
+          >
+            <X size={14} />
+          </button>
+        </>
+      ) : (
+        <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-green-600 text-xs">
+          <Camera className="mb-1" size={20} />
+          กดเพื่อถ่ายรูป
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              if (file) {
+                // ถ้า file ใหญ่กว่า 4MB ก่อนย่อหรือ warn
+                // เราจะเก็บ file ชั่วคราวก่อนเพื่อ preview
+                setForm((prev) => ({
+                  ...prev,
+                  images: { ...prev.images, [key]: file },
+                }))
+              }
+            }}
+          />
+        </label>
+      )}
+    </div>
+  )
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-green-50 to-white p-4 pb-24 max-w-md mx-auto">
@@ -199,7 +230,6 @@ export default function RegisterPage() {
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6 text-base bg-white p-6 rounded-2xl shadow-md">
-        {/* ชื่อแปลง */}
         <div className="space-y-2">
           <Label className="text-green-700 font-semibold">ชื่อแปลง</Label>
           <Input
@@ -211,78 +241,73 @@ export default function RegisterPage() {
           />
         </div>
 
-        {/* รูปทั่วไป */}
         <div className="space-y-2">
-  <Label className="text-green-700 font-semibold">ถ่ายรูปลักษณะ (สูงสุด 4 รูป)</Label>
-  <div className="flex flex-wrap justify-center gap-3"> {/* ✅ เพิ่ม justify-center */}
-    {[0, 1, 2, 3].map((index) => (
-      <div
-        key={index}
-        className="relative w-28 h-28 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50"
-      >
-        {form.images.general[index] ? (
-          <>
-            <img
-              src={URL.createObjectURL(form.images.general[index])}
-              alt={`ลักษณะ ${index + 1}`}
-              className="object-cover w-full h-full rounded-xl"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                const updated = [...form.images.general]
-                updated[index] = null
-                setForm({
-                  ...form,
-                  images: { ...form.images, general: updated },
-                })
-              }}
-              className="absolute top-[-6px] right-[-6px] bg-red-500 text-white p-1 rounded-full shadow"
-            >
-              <X size={14} />
-            </button>
-          </>
-        ) : (
-          <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-green-600">
-            <Camera className="mb-1" size={26} />
-            <span className="text-xs">กดเพื่อถ่ายรูป</span>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) {
-                  const updated = [...form.images.general]
-                  updated[index] = file
-                  setForm({
-                    ...form,
-                    images: { ...form.images, general: updated },
-                  })
-                }
-              }}
-            />
-          </label>
-        )}
-      </div>
-    ))}
-  </div>
-</div>
+          <Label className="text-green-700 font-semibold">ถ่ายรูปลักษณะ (สูงสุด 4 รูป)</Label>
+          <div className="flex flex-wrap justify-center gap-3">
+            {[0, 1, 2, 3].map((index) => (
+              <div
+                key={index}
+                className="relative w-28 h-28 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50"
+              >
+                {form.images.general[index] ? (
+                  <>
+                    <img
+                      src={URL.createObjectURL(form.images.general[index])}
+                      alt={`ลักษณะ ${index + 1}`}
+                      className="object-cover w-full h-full rounded-xl"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = [...form.images.general]
+                        updated[index] = null
+                        setForm({
+                          ...form,
+                          images: { ...form.images, general: updated },
+                        })
+                      }}
+                      className="absolute top-[-6px] right-[-6px] bg-red-500 text-white p-1 rounded-full shadow"
+                    >
+                      <X size={14} />
+                    </button>
+                  </>
+                ) : (
+                  <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-green-600">
+                    <Camera className="mb-1" size={26} />
+                    <span className="text-xs">กดเพื่อถ่ายรูป</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          const updated = [...form.images.general]
+                          updated[index] = file
+                          setForm({
+                            ...form,
+                            images: { ...form.images, general: updated },
+                          })
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
 
-
-        {/* รูปต้น / ใบ / ผล */}
         <div className="space-y-2">
-        <Label className="text-green-700 font-semibold">รูปต้น / ใบ / ผล</Label>
-        <div className="grid grid-cols-3 gap-3">
+          <Label className="text-green-700 font-semibold">รูปต้น / ใบ / ผล</Label>
+          <div className="grid grid-cols-3 gap-3">
             {renderImageUpload("รูปต้น", "tree")}
             {renderImageUpload("รูปใบ", "leaf")}
             {renderImageUpload("รูปผล", "fruit")}
-        </div>
+          </div>
         </div>
 
-
-        {/* พิกัด */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label className="text-green-700 font-semibold">ละติจูด</Label>
@@ -305,7 +330,6 @@ export default function RegisterPage() {
           {locating ? "กำลังดึงพิกัด..." : "📍 ดึงพิกัดจาก GPS"}
         </Button>
 
-        {/* ชนิดพืช */}
         <div className="space-y-2">
           <Label className="text-green-700 font-semibold">ชนิดพืช</Label>
           <Select onValueChange={(v) => setForm({ ...form, plantType: v })}>
@@ -320,7 +344,6 @@ export default function RegisterPage() {
           </Select>
         </div>
 
-        {/* ระยะพืช */}
         <div className="space-y-2">
           <Label className="text-green-700 font-semibold">ระยะพืช</Label>
           <Select onValueChange={(v) => setForm({ ...form, spacing: v })}>
@@ -333,9 +356,6 @@ export default function RegisterPage() {
             </SelectContent>
           </Select>
         </div>
-
-        {/* Line ID */}
-        {/* <p className="text-sm text-gray-500">Line ID: {form.lineId}</p> */}
 
         <Button
           type="submit"
