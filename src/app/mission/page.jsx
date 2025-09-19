@@ -18,58 +18,57 @@ export default function PlotsPage() {
   const [sortBy, setSortBy] = useState("latest")
 
   useEffect(() => {
-  let mounted = true
+    let mounted = true
 
-  async function initLiff() {
-    try {
-      await liff.init({ liffId: "2007697520-ReVxGaBb" })
+    async function initLiff() {
+      try {
+        await liff.init({ liffId: "2007697520-ReVxGaBb" })
 
-      if (!liff.isLoggedIn()) {
-        console.log("🔁 Login redirecting...")
-        liff.login({ redirectUri: window.location.href })
-        return
+        if (!liff.isLoggedIn()) {
+          console.log("🔁 Login redirecting...")
+          liff.login({ redirectUri: window.location.href })
+          return
+        }
+
+        const profile = await liff.getProfile()
+        const userId = profile.userId
+        console.log("✅ Logged in as:", userId)
+
+        if (mounted) setRegLineID(userId)
+
+        const res = await fetch(`/api/farmer/get/line-get/${userId}`)
+        const result = await res.json()
+        console.log("👤 Farmer data:", result)
+
+        if (mounted && result.success && result.data) {
+          setUser({
+            firstName: result.data.regName || "",
+            lastName: result.data.regSurname || "",
+          })
+        }
+
+        const plotsRes = await fetch("/api/mission/get/regmissos")
+        const plotsData = await plotsRes.json()
+        console.log("🌱 All plots:", plotsData)
+
+        if (mounted && plotsData.success && plotsData.data) {
+          const onlyMyPlots = plotsData.data.filter(
+            (p) => p.lineId === userId
+          )
+          setPlots(onlyMyPlots)
+        }
+      } catch (err) {
+        console.error("❌ LIFF init error:", err)
+      } finally {
+        if (mounted) setLoading(false)
       }
-
-      const profile = await liff.getProfile()
-      const userId = profile.userId
-      console.log("✅ Logged in as:", userId)
-
-      if (mounted) setRegLineID(userId)
-
-      const res = await fetch(`/api/farmer/get/line-get/${userId}`)
-      const result = await res.json()
-      console.log("👤 Farmer data:", result)
-
-      if (mounted && result.success && result.data) {
-        setUser({
-          firstName: result.data.regName || "",
-          lastName: result.data.regSurname || "",
-        })
-      }
-
-      const plotsRes = await fetch("/api/mission/get/regmissos")
-      const plotsData = await plotsRes.json()
-      console.log("🌱 All plots:", plotsData)
-
-      if (mounted && plotsData.success && plotsData.data) {
-        const onlyMyPlots = plotsData.data.filter(
-          (p) => p.regLineID === userId
-        )
-        setPlots(onlyMyPlots)
-      }
-    } catch (err) {
-      console.error("❌ LIFF init error:", err)
-    } finally {
-      if (mounted) setLoading(false)
     }
-  }
 
-  initLiff()
-  return () => {
-    mounted = false
-  }
-}, [])
-
+    initLiff()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const handleAddPlot = () => {
     if (!regLineID) {
@@ -115,7 +114,6 @@ export default function PlotsPage() {
 
   return (
     <main className="relative min-h-screen bg-white p-4 pb-28">
-      {/* Header */}
       <header className="mb-4 text-center">
         <h1 className="text-xl font-bold text-gray-800">แปลงปลูกของท่าน</h1>
         {regLineID && (
@@ -125,7 +123,6 @@ export default function PlotsPage() {
         )}
       </header>
 
-      {/* Search & Sort */}
       <div className="flex items-center justify-between mb-3">
         <button onClick={() => setShowSearch(!showSearch)} className="p-2">
           <Search className="w-5 h-5 text-gray-600" />
@@ -147,7 +144,6 @@ export default function PlotsPage() {
         </div>
       )}
 
-      {/* Plot Cards */}
       <div className="grid grid-cols-1 gap-3">
         {filteredPlots.length === 0 ? (
           <div className="text-center text-gray-400 col-span-full mt-8">
@@ -159,7 +155,6 @@ export default function PlotsPage() {
               key={plot._id}
               className="flex justify-between items-start border rounded-xl px-4 py-3 shadow-sm bg-gray-50 hover:shadow-md transition"
             >
-              {/* LEFT: Info */}
               <div className="text-sm text-gray-700 w-full pr-4">
                 <div className="flex items-center gap-1 font-semibold text-gray-800">
                   <span className="text-green-500 text-base">🌱</span>
@@ -168,8 +163,6 @@ export default function PlotsPage() {
                 <p className="text-gray-600 mt-1">ชนิดพืช: {plot.plantType}</p>
                 <p className="text-gray-600">ระยะ: {plot.spacing}</p>
               </div>
-
-              {/* RIGHT: RegCode + Button */}
               <div className="flex flex-col items-end gap-2 min-w-max">
                 <span className="text-xs text-gray-500 whitespace-nowrap">
                   #{plot.regCode}
@@ -187,7 +180,6 @@ export default function PlotsPage() {
         )}
       </div>
 
-      {/* Floating Add Button */}
       <Button
         onClick={handleAddPlot}
         className="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg"
