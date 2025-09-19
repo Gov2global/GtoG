@@ -12,9 +12,9 @@ export default function ManagePageInner() {
   const [weather, setWeather] = useState(null)
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState([])
-  const [codes, setCodes] = useState([])
+  const [codes, setCodes] = useState([]) // [ADDED: เก็บ code จาก learn52week]
 
-  // [ADDED: Mapping หมวดงาน]
+  // [ADDED: Mapping Code-Doing → ชื่อหมวด]
   const CATEGORY_MAP = {
     DGP004: "💧 น้ำ",
     DGP001: "🌱 ปุ๋ย",
@@ -105,15 +105,15 @@ export default function ManagePageInner() {
         />
       )}
 
-      {/* [CHANGED: แสดง task แยกตามหมวดหมู่แทนรวมทุกอัน] */}
+      {/* [CHANGED: แสดง tasks แยกตาม Code-Doing แบบมีหัวหมวด] */}
       {CATEGORY_ORDER.map((cat) => {
-        const groupTasks = tasks.filter((t) => t["Code-Doing"] === cat)
+        const groupTasks = tasks.filter((t) => t["Code-Doing"]?.trim() === cat)
         if (groupTasks.length === 0) return null
 
         return (
           <div key={cat} className="bg-white rounded-lg shadow p-4 mb-4">
             <h3 className="text-lg font-semibold mb-2">
-              {CATEGORY_MAP[cat] || "📁 หมวดอื่นๆ"}
+              {CATEGORY_MAP[cat] || "📁 ไม่ทราบหมวด"}
             </h3>
             <ul className="space-y-2">
               {groupTasks.map((task) => (
