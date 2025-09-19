@@ -40,21 +40,24 @@ export default function ManagePageInner() {
           const learnRecords = learnJson.data || []
           console.log("✅ learn52week:", learnRecords)
 
-          // ดึงรหัส code
-          const codes = learnRecords.map((r) => r.code?.toLowerCase())
-          console.log("✅ codes:", codes)
+          // ดึงรหัส code และกันค่า null/ว่าง
+          const codes = learnRecords
+            .map((r) => r.code?.toLowerCase().trim())
+            .filter(Boolean)
+          console.log("✅ codes จาก learn52week:", codes)
 
           if (codes.length > 0) {
             // 🔹 4) โหลด todolist
             const todoRes = await fetch("/api/mission/get/todolist")
             const todoJson = await todoRes.json()
             const allTodos = todoJson.data || []
-            console.log("✅ allTodos:", allTodos)
+            console.log("✅ allTodos Code-farmer:", allTodos.map(t => t["Code-farmer"]))
 
             // 🔹 5) filter โดย match code กับ Code-farmer
-            const filtered = allTodos.filter((todo) =>
-              codes.includes(todo["Code-farmer"]?.toLowerCase())
-            )
+            const filtered = allTodos.filter((todo) => {
+              const farmerCode = todo["Code-farmer"]?.toLowerCase().trim()
+              return farmerCode && codes.includes(farmerCode)
+            })
             console.log("✅ filtered tasks:", filtered)
 
             setTasks(filtered)
@@ -94,6 +97,14 @@ export default function ManagePageInner() {
         {plot.lat && plot.lon && <p>พิกัด: {plot.lat}, {plot.lon}</p>}
       </div>
 
+      {/* ✅ ต่อ weather forecast (TMD) */}
+      {plot.lat && plot.lon && (
+        <Weather7Day
+          lat={parseFloat(plot.lat)}
+          lon={parseFloat(plot.lon)}
+        />
+      )}
+
       {/* ✅ แสดง Tasks จาก todolist */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
         <h3 className="text-lg font-semibold mb-2">📝 งานที่ต้องทำ</h3>
@@ -116,14 +127,6 @@ export default function ManagePageInner() {
           <p className="text-gray-500">ไม่มีงานที่ต้องทำ</p>
         )}
       </div>
-
-      {/* ✅ ต่อ weather forecast (TMD) */}
-      {plot.lat && plot.lon && (
-        <Weather7Day
-          lat={parseFloat(plot.lat)}
-          lon={parseFloat(plot.lon)}
-        />
-      )}
     </div>
   )
 }
