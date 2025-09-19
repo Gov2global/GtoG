@@ -23,7 +23,6 @@ export default function RegisterPage() {
     lon: "",
     plantType: "",
     spacing: "",
-    week: "",
     lineId: "",
     images: {
       general: [null, null, null, null],
@@ -38,7 +37,7 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // 3-2-1 data
+  // 2-1 data
   const [data, setData] = useState([])
   const [types, setTypes] = useState([])
   const [spans, setSpans] = useState([])
@@ -74,9 +73,13 @@ export default function RegisterPage() {
   }, [])
 
   const handleTypeChange = (type) => {
-    setForm((prev) => ({ ...prev, plantType: type, spacing: "", week: "" }))
+    setForm((prev) => ({ ...prev, plantType: type, spacing: "" }))
     const filtered = data.filter((d) => d.type === type)
     setSpans([...new Set(filtered.map((d) => d.span))])
+  }
+
+  const handleSpanChange = (span) => {
+    setForm((prev) => ({ ...prev, spacing: span }))
   }
 
   const handleInputChange = (e) => {
@@ -159,7 +162,6 @@ export default function RegisterPage() {
       formData.append("lon", form.lon)
       formData.append("plantType", form.plantType)
       formData.append("spacing", form.spacing)
-      formData.append("week", form.week)
       formData.append("lineId", form.lineId)
 
       for (let i = 0; i < form.images.general.length; i++) {
@@ -266,88 +268,6 @@ export default function RegisterPage() {
             className="h-12 text-lg"
           />
         </div>
-
-        <div className="space-y-2">
-          <Label className="text-green-700 font-semibold">ถ่ายรูปลักษณะ (สูงสุด 4 รูป)</Label>
-          <div className="flex flex-wrap justify-center gap-3">
-            {[0, 1, 2, 3].map((index) => (
-              <div
-                key={index}
-                className="relative w-28 h-28 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50"
-              >
-                {form.images.general[index] ? (
-                  <>
-                    <img
-                      src={URL.createObjectURL(form.images.general[index])}
-                      alt={`ลักษณะ ${index + 1}`}
-                      className="object-cover w-full h-full rounded-xl"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updated = [...form.images.general]
-                        updated[index] = null
-                        setForm({
-                          ...form,
-                          images: { ...form.images, general: updated },
-                        })
-                      }}
-                      className="absolute top-[-6px] right-[-6px] bg-red-500 text-white p-1 rounded-full shadow"
-                    >
-                      <X size={14} />
-                    </button>
-                  </>
-                ) : (
-                  <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-green-600">
-                    <Camera className="mb-1" size={26} />
-                    <span className="text-xs">กดเพื่อถ่ายรูป</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) handleFileChange(file, "general", index)
-                      }}
-                    />
-                  </label>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-green-700 font-semibold">รูปต้น / ใบ / ผล</Label>
-          <div className="grid grid-cols-3 gap-3">
-            {renderImageUpload("รูปต้น", "tree")}
-            {renderImageUpload("รูปใบ", "leaf")}
-            {renderImageUpload("รูปผล", "fruit")}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label className="text-green-700 font-semibold">ละติจูด</Label>
-            <Input name="lat" value={form.lat} onChange={handleInputChange} />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-green-700 font-semibold">ลองจิจูด</Label>
-            <Input name="lon" value={form.lon} onChange={handleInputChange} />
-          </div>
-        </div>
-
-        <Button
-          type="button"
-          onClick={handleGetLocation}
-          disabled={locating}
-          variant="outline"
-          className="w-full text-blue-700 border-blue-400 gap-2 py-3 font-semibold"
-        >
-          <LocateIcon className="w-5 h-5" />
-          {locating ? "กำลังดึงพิกัด..." : "📍 ดึงพิกัดจาก GPS"}
-        </Button>
 
         {/* Step 1: Type */}
         <div className="space-y-2">
