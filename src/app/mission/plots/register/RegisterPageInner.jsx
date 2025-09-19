@@ -89,8 +89,9 @@ export default function RegisterPage() {
   const compressImage = async (file) => {
     try {
       const compressed = await imageCompression(file, {
-        maxSizeMB: 3.8,
-        maxWidthOrHeight: 1920,
+        maxSizeMB: 1.5, // [CHANGED: ลดขนาดสูงสุดของไฟล์เหลือ 1.5MB]
+        maxWidthOrHeight: 1280, // [CHANGED: ลดขนาดความกว้าง/สูงของรูปลงเพื่อให้เล็กลง]
+        initialQuality: 0.6, // [ADDED: ตั้งคุณภาพเริ่มต้นให้บีบอัดมากขึ้น]
         useWebWorker: true,
       })
       return compressed
