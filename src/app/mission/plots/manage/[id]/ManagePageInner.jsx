@@ -162,44 +162,50 @@ export default function ManagePageInner() {
       )}
 
       {/* 🔹 Task list */}
-      {CATEGORY_ORDER.map((cat) => {
-        const groupTasks = tasks.filter(
-          (t) => t["Code-Doing"]?.replace(",", "").trim().toUpperCase() === cat
-        )
-        if (groupTasks.length === 0) return null
+      {tasks.length > 0 ? (
+        <>
+          {CATEGORY_ORDER.map((cat) => {
+            const groupTasks = tasks.filter(
+              (t) => t["Code-Doing"]?.replace(",", "").trim().toUpperCase() === cat
+            )
+            if (groupTasks.length === 0) return null
 
-        return (
-          <div key={cat} className="bg-white rounded-lg shadow p-4 mb-4">
-            <h3 className="text-lg font-semibold mb-2">
-              {CATEGORY_MAP[cat] || "📁 ไม่ทราบหมวด"}
-            </h3>
-            <ul className="space-y-2">
-              {groupTasks.map((task) => (
-                <li key={task._id} className="flex items-start space-x-3">
-                  <Checkbox
-                    id={task.ID}
-                    checked={checked[task.ID] || false}
-                    onCheckedChange={() => handleCheckboxChange(task.ID)}
-                  />
-                  <label htmlFor={task.ID} className="text-gray-700">
-                    {task.Detail}
-                  </label>
-                </li>
-              ))}
-            </ul>
+            return (
+              <div key={cat} className="bg-white rounded-lg shadow p-4 mb-4">
+                <h3 className="text-lg font-semibold mb-2">
+                  {CATEGORY_MAP[cat] || "📁 ไม่ทราบหมวด"}
+                </h3>
+                <ul className="space-y-2">
+                  {groupTasks.map((task) => (
+                    <li key={task._id} className="flex items-start space-x-3">
+                      <Checkbox
+                        id={task.ID}
+                        checked={checked[task.ID] || false}
+                        onCheckedChange={() => handleCheckboxChange(task.ID)}
+                      />
+                      <label htmlFor={task.ID} className="text-gray-700">
+                        {task.Detail}
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          })}
+
+          {/* ปุ่มส่งจะแสดงเฉพาะถ้ามีภารกิจ */}
+          <div className="mt-6 text-center">
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 text-base rounded-lg"
+              onClick={handleSubmit}
+            >
+              ส่งภารกิจ
+            </Button>
           </div>
-        )
-      })}
-
-      {/* 🔹 Submit button */}
-      <div className="mt-6 text-center">
-        <Button
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 text-base rounded-lg"
-          onClick={handleSubmit}
-        >
-          ส่งภารกิจ
-        </Button>
-      </div>
+        </>
+      ) : (
+        <p className="text-center text-gray-500 mt-10">❌ ไม่พบภารกิจ</p>
+      )}
     </div>
   )
 }
