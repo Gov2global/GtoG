@@ -14,18 +14,18 @@ export default function ManagePageInner() {
   const [tasks, setTasks] = useState([])
   const [codes, setCodes] = useState([]) // [ADDED: เก็บ code จาก learn52week]
 
-  // [ADDED: Mapping Code-Doing → ชื่อหมวด]
+  // [CHANGED: Mapping Code-Doing ตามข้อมูลจริงใน MongoDB]
   const CATEGORY_MAP = {
-    DGP004: "💧 น้ำ",
-    DGP001: "🌱 ปุ๋ย",
-    DGP005: "✂️ ตัดแต่งกิ่ง",
-    DGP003: "🐛 แมลง",
-    DGP002: "🦠 โรค",
-    DGP006: "📌 อื่นๆ",
+    DG004: "💧 น้ำ",
+    DG001: "🌱 ปุ๋ย",
+    DG005: "✂️ ตัดแต่งกิ่ง",
+    DG003: "🐛 แมลง",
+    DG002: "🦠 โรค",
+    DG006: "📌 อื่นๆ",
   }
 
-  // [ADDED: ลำดับการ์ดตามหมวด]
-  const CATEGORY_ORDER = ["DGP004", "DGP001", "DGP005", "DGP003", "DGP002", "DGP006"]
+  // [CHANGED: ลำดับแสดงการ์ดตามหมวดของจริง]
+  const CATEGORY_ORDER = ["DG004", "DG001", "DG005", "DG003", "DG002", "DG006"]
 
   useEffect(() => {
     async function fetchData() {
@@ -46,30 +46,25 @@ export default function ManagePageInner() {
         const learnRes = await fetch("/api/mission/get/learn52week")
         const learnJson = await learnRes.json()
         const learnRecords = learnJson.data || []
-        console.log("✅ learn52week ทั้งหมด:", learnRecords)
 
         const matched = learnRecords.filter(
           (r) => r.span?.trim() === found?.spacing?.trim()
         )
-        console.log("✅ matched records:", matched)
 
         const extractedCodes = matched
           .map((r) => r.code?.trim())
           .filter(Boolean)
         setCodes(extractedCodes)
-        console.log("✅ codes:", extractedCodes)
 
         if (extractedCodes.length > 0) {
           const todoRes = await fetch("/api/mission/get/todolist")
           const todoJson = await todoRes.json()
           const allTodos = todoJson.data || []
-          console.log("✅ allTodos Code-farmer:", allTodos.map(t => t["Code-farmer"]))
 
           const filtered = allTodos.filter((todo) => {
-            const farmerCode = todo["Code-farmer"]?.toLowerCase().trim().replace(",", "") // [CHANGED: ลบ , จาก code-farmer]
+            const farmerCode = todo["Code-farmer"]?.toLowerCase().trim().replace(",", "") // [CHANGED]
             return farmerCode && extractedCodes.map(c => c.toLowerCase()).includes(farmerCode)
           })
-          console.log("✅ filtered tasks:", filtered)
 
           setTasks(filtered)
         }
@@ -107,7 +102,7 @@ export default function ManagePageInner() {
         {plot.lat && plot.lon && <p>พิกัด: {plot.lat}, {plot.lon}</p>}
       </div>
 
-      {/* ✅ ต่อ weather forecast */}
+      {/* ✅ พยากรณ์อากาศ */}
       {plot.lat && plot.lon && (
         <Weather7Day
           lat={parseFloat(plot.lat)}
@@ -115,10 +110,11 @@ export default function ManagePageInner() {
         />
       )}
 
-      {/* ✅ แสดง Tasks แยกตามหมวด */}
+      {/* ✅ การ์ดภารกิจแยกตามหมวด */}
       {CATEGORY_ORDER.map((cat) => {
         const groupTasks = tasks.filter(
-          (t) => t["Code-Doing"]?.trim().replace(",", "") === cat // [CHANGED: ลบ , ที่อาจติดมาจาก DB]
+          (t) =>
+            t["Code-Doing"]?.replace(",", "").trim().toUpperCase() === cat // [CHANGED]
         )
         if (groupTasks.length === 0) return null
 
