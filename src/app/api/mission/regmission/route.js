@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 import { connectDB } from "../../../../../lib/mongodb"
 import Plot from "../../../../../models/plots" // [CHANGED: แก้ให้ชื่อไฟล์ตรงกับ model จริง]
-// 🔧 Config S3 Client
+import Counter from "../../../../../models/counter" 
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
@@ -13,7 +13,7 @@ const s3 = new S3Client({
 })
 
 async function uploadToS3(file, fileName) {
-  if (!file) return null // ✅ ถ้าไม่มีไฟล์ ให้ข้ามได้เลย
+  if (!file) return null
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer())
@@ -31,7 +31,7 @@ async function uploadToS3(file, fileName) {
     return `https://${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/regplots/${fileName}`
   } catch (err) {
     console.error("❌ Upload Error:", err.message)
-    return null // ✅ ถ้าอัปโหลดล้มเหลว ให้คืน null (ไม่โยน error)
+    return null
   }
 }
 
@@ -47,7 +47,6 @@ export async function POST(req) {
     const spacing = formData.get("spacing")
     const lineId = formData.get("lineId")
 
-    // ✅ รับไฟล์ (ไม่บังคับ)
     const generalFiles = [
       formData.get("general1"),
       formData.get("general2"),
@@ -59,24 +58,23 @@ export async function POST(req) {
     const leafFile = formData.get("leaf")
     const fruitFile = formData.get("fruit")
 
-    // 🆔 Generate regCode
+    // 🆔 [CHANGED: เปลี่ยนการสร้าง regCode ด้วย counter]
     const now = new Date()
     const year = String(now.getFullYear()).slice(-2)
     const month = String(now.getMonth() + 1).padStart(2, "0")
     const day = String(now.getDate()).padStart(2, "0")
+    const dateKey = `${now.getFullYear()}${month}${day}`
 
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const endOfDay = new Date(startOfDay)
-    endOfDay.setDate(endOfDay.getDate() + 1)
+    const counter = await Counter.findByIdAndUpdate(
+      `regCode-${dateKey}`,                 // [ADDED] _id เช่น regCode-20250920
+      { $inc: { seq: 1 } },                 // [ADDED] เพิ่มตัวเลข
+      { new: true, upsert: true }          // [ADDED] สร้างใหม่ถ้าไม่มี
+    )
 
-    const countToday = await Plot.countDocuments({
-      createdAt: { $gte: startOfDay, $lt: endOfDay },
-    })
-
-    const runningNumber = String(countToday + 1).padStart(5, "0")
+    const runningNumber = String(counter.seq).padStart(5, "0")
     const regCode = `P${year}${month}${day}${runningNumber}`
 
-    // 📤 Upload (เฉพาะไฟล์ที่มี)
+    // 📤 Upload to S3
     const imageUrls = { general: [], tree: null, leaf: null, fruit: null }
 
     for (let i = 0; i < generalFiles.length; i++) {
@@ -88,7 +86,7 @@ export async function POST(req) {
     if (leafFile) imageUrls.leaf = await uploadToS3(leafFile, `${regCode}_leaf.jpg`)
     if (fruitFile) imageUrls.fruit = await uploadToS3(fruitFile, `${regCode}_fruit.jpg`)
 
-    // 💾 Save DB
+    // 💾 Save to DB
     const newPlot = await Plot.create({
       regCode,
       name,
