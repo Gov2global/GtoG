@@ -10,46 +10,48 @@ export default function ManagePageInner() {
   const router = useRouter()
   const [plot, setPlot] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
+  const [images, setImages] = useState([]) // [ADDED: เก็บ preview ของภาพ]
 
   useEffect(() => {
     async function fetchData() {
-      const res = await fetch("/api/mission/get/regmissos")
-      const json = await res.json()
-      const found = json.data?.find((p) => p._id === id)
-      setPlot(found)
-      setLoading(false)
+      try {
+        const res = await fetch("/api/mission/get/regmissos")
+        const json = await res.json()
+        const found = json.data?.find((p) => p._id === id)
+        setPlot(found)
+      } catch (err) {
+        console.error("❌ error:", err)
+      } finally {
+        setLoading(false)
+      }
     }
     fetchData()
   }, [id])
 
-  async function handleUpload(e) {
-    const file = e.target.files[0]
-    if (!file) return
-    if (plot.images?.length >= 3) {
-      alert("อัปโหลดได้สูงสุด 3 รูป")
-      return
-    }
+  // ✅ เมื่อเลือกไฟล์
+  function handleFileChange(e) {
+    const files = Array.from(e.target.files)
+    if (!files.length) return
 
-    setUploading(true)
-    const formData = new FormData()
-    formData.append("file", file)
+    const newPreviews = files.map((file) => ({
+      file,
+      url: URL.createObjectURL(file), // [ADDED: แปลงเป็น preview URL]
+    }))
 
-    const res = await fetch("/api/mission/upload", {
-      method: "POST",
-      body: formData,
+    setImages((prev) => {
+      const updated = [...prev, ...newPreviews].slice(0, 3) // จำกัดสูงสุด 3
+      return updated
     })
-    const json = await res.json()
-    if (json.success) {
-      // [ADDED] update state
-      setPlot((prev) => ({
-        ...prev,
-        images: [...(prev.images || []), json.url].slice(0, 3)
-      }))
-    } else {
-      alert("อัปโหลดไม่สำเร็จ: " + json.message)
-    }
-    setUploading(false)
+
+    e.target.value = "" // reset input เพื่อเลือกไฟล์ใหม่ซ้ำได้
+  }
+
+  // ✅ ลบภาพ
+  function handleRemove(idx) {
+    setImages((prev) => {
+      const updated = prev.filter((_, i) => i !== idx)
+      return updated
+    })
   }
 
   if (loading) return <p className="text-center mt-10">⏳ กำลังโหลด...</p>
@@ -57,7 +59,7 @@ export default function ManagePageInner() {
 
   return (
     <div className="p-4 space-y-4">
-      {/* การ์ดแปลง */}
+      {/* การ์ดข้อมูลแปลง */}
       <div className="relative bg-gray-100 p-4 rounded-lg shadow">
         <Button
           className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white"
@@ -75,27 +77,41 @@ export default function ManagePageInner() {
         {plot.lat && plot.lon && <p>พิกัด: {plot.lat}, {plot.lon}</p>}
       </div>
 
-      {/* ✅ การ์ดแสดงรูปภาพ */}
+      {/* ✅ การ์ดรูปภาพ */}
       <div className="bg-white rounded-lg shadow p-4">
         <h3 className="text-lg font-semibold mb-2">📷 รูปภาพแปลง (สูงสุด 3)</h3>
 
+        {/* Preview รูป */}
         <div className="grid grid-cols-3 gap-2 mb-2">
-          {plot.images?.map((img, idx) => (
-            <img
-              key={idx}
-              src={img}
-              alt={`plot-img-${idx}`}
-              className="w-full h-32 object-cover rounded-lg shadow"
-            />
+          {images.map((img, idx) => (
+            <div key={idx} className="relative">
+              <img
+                src={img.url}
+                alt={`preview-${idx}`}
+                className="w-full h-32 object-cover rounded-lg shadow"
+              />
+              <button
+                onClick={() => handleRemove(idx)}
+                className="absolute top-1 right-1 bg-red-600 text-white rounded-full px-2 py-0.5 text-xs"
+              >
+                ✕
+              </button>
+            </div>
           ))}
         </div>
 
-        {plot.images?.length < 3 && (
-          <input type="file" accept="image/*" onChange={handleUpload} disabled={uploading} />
+        {/* ปุ่มเลือกไฟล์ */}
+        {images.length < 3 && (
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileChange}
+          />
         )}
       </div>
 
-      {/* ✅ การ์ดพยากรณ์อากาศ */}
+      {/* การ์ดพยากรณ์อากาศ */}
       {plot.lat && plot.lon && (
         <div className="bg-white rounded-lg shadow p-4">
           <Weather7Day lat={parseFloat(plot.lat)} lon={parseFloat(plot.lon)} />
