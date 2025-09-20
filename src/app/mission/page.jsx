@@ -16,6 +16,7 @@ export default function PlotsPage() {
   const [search, setSearch] = useState("")
   const [showSearch, setShowSearch] = useState(false)
   const [sortBy, setSortBy] = useState("latest")
+  
 
   useEffect(() => {
     let mounted = true
