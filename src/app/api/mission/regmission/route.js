@@ -18,7 +18,7 @@ async function uploadToS3(file, fileName) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer())
-    const bucket = process.env.S3_BUCKET_AWS || process.env.BUCKET_NAME_S3
+    const bucket = process.env.S3_BUCKET_NAME || process.env.S3_BUCKET_NAME
     if (!bucket) throw new Error("❌ Missing AWS_S3_BUCKET or S3_BUCKET_NAME in env")
 
     const uploadParams = {
