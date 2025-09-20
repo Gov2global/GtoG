@@ -21,5 +21,5 @@ const Learn52WeekSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.models.Learn52Week ||
-  mongoose.model("Learn52Week", Learn52WeekSchema);
+export default mongoose.models.learn52week ||
+  mongoose.model("learn52week", Learn52WeekSchema, "learn52week");

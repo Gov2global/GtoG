@@ -162,6 +162,7 @@ async function run(userId) {
 // --- Main: รับ array userId ได้เลย ---
 const userIds = [
   'U9522cc6ee5337c62188de55406470c41', //สุรสิทธิ์
+  'U0fc2bf44ecb9a30338143f85af8c5ff3',// ใจหนุ่ม
   // 'Ucebe552553cd5897128d112bd2611e07', //เกม
   // 'U5983c706a6ffcd70fc5dcc7d7a416c64', //เจษฎา
   // 'U4c0a522f20072235dbd786f567e65794',

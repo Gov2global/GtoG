@@ -13,7 +13,7 @@ export async function GET(req) {
 
     let filter = {};
     if (code) filter.code = code;
-    if (week) filter.week = week;
+    if (week) filter.week = week;  // ✅ ใช้เป็น string ตรง ๆ
 
     const records = await Learn52Week.find(filter).sort({ week: 1 }).lean();
 
