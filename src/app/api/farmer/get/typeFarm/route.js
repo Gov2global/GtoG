@@ -1,5 +1,5 @@
 // api/farmer/get/typeFarm
-import { connectMongoDB } from '../../../../../../lib/mongodb';
+import { connectMongoDB } from '../../../../../../lib/mongodb1';
 import TypeFarm from '../../../../../../models/typeFarm';
 import { NextResponse } from "next/server";
 
