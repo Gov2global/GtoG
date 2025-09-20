@@ -1,6 +1,6 @@
 // api/mission/get/learn52week
 import { NextResponse } from "next/server"
-import { connectDB } from "../../../../../../lib/mongodb";         // [CHANGED: ใช้ connectDB ตรงชื่อจริง]
+import { connectMongoDB } from "../../../../../../lib/mongodb";         // [CHANGED: ใช้ connectDB ตรงชื่อจริง]
 import Learn52Week from "../../../../../../models/learn52week"; // [CHANGED: import model จาก lib/models]
 
 export async function GET(req) {
