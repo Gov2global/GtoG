@@ -7,7 +7,7 @@ import { DiCoda } from "react-icons/di";
 import LoadingOverlay from "./LoadingOverlatSent";
 import liff from "@line/liff";
 
-function LocalAuthorityPage({ selectedType, selectedSubType, regLineID, regProfile}) {
+function LocalAuthorityPage({ selectedType, selectedSubType, regLineID, regProfile }) {
   const [formData, setFormData] = useState({
     regPosition: "",
     regProfile: regProfile || "",
@@ -43,7 +43,6 @@ function LocalAuthorityPage({ selectedType, selectedSubType, regLineID, regProfi
   }, [selectedType, selectedSubType, regLineID, regProfile]);
 
   useEffect(() => {
-    // โหลดจังหวัด
     fetch("/api/farmer/get/province")
       .then((res) => res.json())
       .then((json) => json.success && setProvinceList(json.data))
@@ -51,7 +50,8 @@ function LocalAuthorityPage({ selectedType, selectedSubType, regLineID, regProfi
   }, []);
 
   const handleChange = useCallback(
-    (field) => (value) => setFormData((prev) => ({ ...prev, [field]: value })),
+    (field) => (value) =>
+      setFormData((prev) => ({ ...prev, [field]: value })),
     []
   );
 
@@ -70,7 +70,11 @@ function LocalAuthorityPage({ selectedType, selectedSubType, regLineID, regProfi
   const handleDistrictChange = (district) => {
     handleChange("district")(district);
     const filteredSub = provinceList
-      .filter((item) => item.province === formData.province && item.district === district)
+      .filter(
+        (item) =>
+          item.province === formData.province &&
+          item.district === district
+      )
       .map((item) => item.sub_district);
     setSubDistrictList(filteredSub);
     setPostcode("");
@@ -88,13 +92,13 @@ function LocalAuthorityPage({ selectedType, selectedSubType, regLineID, regProfi
     setPostcode(found?.postcode?.toString() || "");
   };
 
-  // Validation
   const validate = () => {
     if (!formData.regName) return "กรุณากรอกชื่อ";
     if (!formData.regSurname) return "กรุณากรอกนามสกุล";
     if (!formData.regTel) return "กรุณากรอกเบอร์โทร";
     if (!formData.province) return "กรุณาเลือกจังหวัด";
-    if (!formData.regLineID) return "ไม่พบ LINE ID กรุณาเปิดผ่านแอป LINE";
+    if (!formData.regLineID)
+      return "ไม่พบ LINE ID กรุณาเปิดผ่านแอป LINE";
     return "";
   };
 
@@ -114,18 +118,18 @@ function LocalAuthorityPage({ selectedType, selectedSubType, regLineID, regProfi
     isSubmitting.current = true;
 
     try {
-      // Optional: delay แสดง loading UX
-      // await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      const idRes = await fetch(`/api/farmer/gen-id?regType=${formData.regType}`);
+      const idRes = await fetch(
+        `/api/farmer/gen-id?regType=${formData.regType}`
+      );
       const idJson = await idRes.json();
-      if (!idJson.success) throw new Error("ไม่สามารถสร้างรหัสลงทะเบียนได้");
+      if (!idJson.success)
+        throw new Error("ไม่สามารถสร้างรหัสลงทะเบียนได้");
 
       const payload = {
         ...formData,
         regID: idJson.regID,
         postcode,
-        regLineID: formData.regLineID || regLineID, // สำรอง
+        regLineID: formData.regLineID || regLineID,
       };
 
       const submitRes = await fetch("/api/farmer/submit/farmer", {
@@ -135,20 +139,10 @@ function LocalAuthorityPage({ selectedType, selectedSubType, regLineID, regProfi
       });
 
       const submitJson = await submitRes.json();
-      if (!submitJson.success) throw new Error(submitJson.message || "บันทึกข้อมูลล้มเหลว");
+      if (!submitJson.success)
+        throw new Error(submitJson.message || "บันทึกข้อมูลล้มเหลว");
 
-      // เรียก API ไปเปลี่ยน RichMenu
-      try {
-        await fetch("/api/farmer/line/set-richmenu-LocalAuthority", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ regLineID: formData.regLineID || regLineID }),
-        });
-      } catch (err) {
-        // ไม่หยุด flow, log อย่างเดียว
-        console.error("เปลี่ยน RichMenu ไม่สำเร็จ:", err);
-      }
-
+      // ✅ RichMenu จะ set อัตโนมัติใน backend
       setSuccessMsg("✅ ลงทะเบียนสำเร็จ!");
       setTimeout(() => {
         setShowLoading(false);
@@ -171,29 +165,105 @@ function LocalAuthorityPage({ selectedType, selectedSubType, regLineID, regProfi
           ลงทะเบียนหน่วยงานท้องถิ่น
         </h2>
         {errorMsg && (
-          <div className="mb-4 text-red-700 bg-red-100 rounded-lg px-4 py-2">{errorMsg}</div>
+          <div className="mb-4 text-red-700 bg-red-100 rounded-lg px-4 py-2">
+            {errorMsg}
+          </div>
         )}
         {successMsg && (
-          <div className="mb-4 text-green-700 bg-green-100 rounded-lg px-4 py-2">{successMsg}</div>
+          <div className="mb-4 text-green-700 bg-green-100 rounded-lg px-4 py-2">
+            {successMsg}
+          </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-6">
-          <ModernInput label="ชื่อ" value={formData.regName} onChange={handleChange("regName")} placeholder="กรอกชื่อ" ringColor="gray" />
-          <ModernInput label="นามสกุล" value={formData.regSurname} onChange={handleChange("regSurname")} placeholder="กรอกนามสกุล" ringColor="gray" />
-          <ModernInput label="เบอร์โทร" value={formData.regTel} onChange={handleChange("regTel")} placeholder="08xxxxxxxx" type="tel" ringColor="gray" />
-          <ModernInput label="ID LINE" value={formData.regProfile} onChange={handleChange("regProfile")} placeholder="กรุณากรอกชื่อ LINE" ringColor="amber" />
-          <ModernInput label="ตำแหน่ง" value={formData.regPosition} onChange={handleChange("regPosition")} placeholder="กรอกตำแหน่ง" ringColor="gray" />
-          <ModernInput label="เขตพื้นที่รับผิดชอบ" value={formData.regAreaOfResponsibility} onChange={handleChange("regAreaOfResponsibility")} placeholder="กรอกเขตพื้นที่รับผิดชอบ" ringColor="gray" />
-          <ModernSelect label="จังหวัด" value={formData.province} onChange={handleProvinceChange} options={[...new Set(provinceList.map((p) => p.province))].map((p) => ({ value: p, label: p }))} ringColor="gray" />
+          <ModernInput
+            label="ชื่อ"
+            value={formData.regName}
+            onChange={handleChange("regName")}
+            placeholder="กรอกชื่อ"
+            ringColor="gray"
+          />
+          <ModernInput
+            label="นามสกุล"
+            value={formData.regSurname}
+            onChange={handleChange("regSurname")}
+            placeholder="กรอกนามสกุล"
+            ringColor="gray"
+          />
+          <ModernInput
+            label="เบอร์โทร"
+            value={formData.regTel}
+            onChange={handleChange("regTel")}
+            placeholder="08xxxxxxxx"
+            type="tel"
+            ringColor="gray"
+          />
+          <ModernInput
+            label="ID LINE"
+            value={formData.regProfile}
+            onChange={handleChange("regProfile")}
+            placeholder="กรุณากรอกชื่อ LINE"
+            ringColor="amber"
+          />
+          <ModernInput
+            label="ตำแหน่ง"
+            value={formData.regPosition}
+            onChange={handleChange("regPosition")}
+            placeholder="กรอกตำแหน่ง"
+            ringColor="gray"
+          />
+          <ModernInput
+            label="เขตพื้นที่รับผิดชอบ"
+            value={formData.regAreaOfResponsibility}
+            onChange={handleChange("regAreaOfResponsibility")}
+            placeholder="กรอกเขตพื้นที่รับผิดชอบ"
+            ringColor="gray"
+          />
+          <ModernSelect
+            label="จังหวัด"
+            value={formData.province}
+            onChange={handleProvinceChange}
+            options={[
+              ...new Set(provinceList.map((p) => p.province)),
+            ].map((p) => ({ value: p, label: p }))}
+            ringColor="gray"
+          />
           {formData.province && (
-            <ModernSelect label="อำเภอ" value={formData.district} onChange={handleDistrictChange} options={districtList.map((d) => ({ value: d, label: d }))} ringColor="gray" />
+            <ModernSelect
+              label="อำเภอ"
+              value={formData.district}
+              onChange={handleDistrictChange}
+              options={districtList.map((d) => ({
+                value: d,
+                label: d,
+              }))}
+              ringColor="gray"
+            />
           )}
           {formData.district && (
-            <ModernSelect label="ตำบล" value={formData.sub_district} onChange={handleSubDistrictChange} options={subDistrictList.map((s) => ({ value: s, label: s }))} ringColor="gray" />
+            <ModernSelect
+              label="ตำบล"
+              value={formData.sub_district}
+              onChange={handleSubDistrictChange}
+              options={subDistrictList.map((s) => ({
+                value: s,
+                label: s,
+              }))}
+              ringColor="gray"
+            />
           )}
           {formData.sub_district && (
-            <ModernInput label="รหัสไปรษณีย์" value={postcode} onChange={(val) => setPostcode(val)} placeholder="รหัสไปรษณีย์" ringColor="gray" />
+            <ModernInput
+              label="รหัสไปรษณีย์"
+              value={postcode}
+              onChange={(val) => setPostcode(val)}
+              placeholder="รหัสไปรษณีย์"
+              ringColor="gray"
+            />
           )}
-          <button type="submit" className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#3E5C49] to-[#2C3E50] text-white py-3 rounded-full font-semibold hover:from-[#2C3E50] hover:to-[#1C2D3C] shadow-lg transition-all duration-300">
+          <button
+            type="submit"
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#3E5C49] to-[#2C3E50] text-white py-3 rounded-full font-semibold hover:from-[#2C3E50] hover:to-[#1C2D3C] shadow-lg transition-all duration-300"
+          >
             <DiCoda size={22} className="opacity-90" />
             ลงทะเบียน
           </button>

@@ -70,7 +70,10 @@ function PrivateAgencyPage({ selectedType, selectedSubType, regLineID, regProfil
   const handleDistrictChange = (value) => {
     handleChange("district")(value);
     const filteredSub = provinces
-      .filter((item) => item.province === formData.province && item.district === value)
+      .filter(
+        (item) =>
+          item.province === formData.province && item.district === value
+      )
       .map((item) => item.sub_district);
     setSubDistricts(filteredSub);
     setPostcode("");
@@ -127,7 +130,9 @@ function PrivateAgencyPage({ selectedType, selectedSubType, regLineID, regProfil
     isSubmitting.current = true;
 
     try {
-      const idRes = await fetch(`/api/farmer/gen-id?regType=${formData.regType}`);
+      const idRes = await fetch(
+        `/api/farmer/gen-id?regType=${formData.regType}`
+      );
       const idJson = await idRes.json();
       if (!idJson.success) throw new Error("ไม่สามารถสร้างรหัสลงทะเบียนได้");
 
@@ -148,17 +153,7 @@ function PrivateAgencyPage({ selectedType, selectedSubType, regLineID, regProfil
       const submitJson = await submitRes.json();
       if (!submitJson.success) throw new Error("บันทึกข้อมูลล้มเหลว");
 
-      // เปลี่ยน RichMenu (สำหรับหน่วยงานเอกชน)
-      try {
-        await fetch("/api/farmer/line/set-richmenu-PrivateAgency", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ regLineID }), // ส่ง regLineID ตรงๆ
-        });
-      } catch (err) {
-        console.error("เปลี่ยน RichMenu ไม่สำเร็จ:", err);
-      }
-
+      // ✅ RichMenu จะ set อัตโนมัติใน backend แล้ว
       setSuccessMsg("✅ ลงทะเบียนสำเร็จ!");
       setTimeout(() => {
         setShowLoading(false);
@@ -181,57 +176,134 @@ function PrivateAgencyPage({ selectedType, selectedSubType, regLineID, regProfil
           ลงทะเบียนหน่วยงานเอกชน
         </h2>
         {errorMsg && (
-          <div className="mb-4 text-red-700 bg-red-100 rounded-lg px-4 py-2">{errorMsg}</div>
+          <div className="mb-4 text-red-700 bg-red-100 rounded-lg px-4 py-2">
+            {errorMsg}
+          </div>
         )}
         {successMsg && (
-          <div className="mb-4 text-green-700 bg-green-100 rounded-lg px-4 py-2">{successMsg}</div>
+          <div className="mb-4 text-green-700 bg-green-100 rounded-lg px-4 py-2">
+            {successMsg}
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <ModernInput label="ชื่อบริษัทฯ" value={formData.regCompany} onChange={handleChange("regCompany")} ringColor="blue" />
-          <ModernInput label="ชื่อ" value={formData.regName} onChange={handleChange("regName")} ringColor="blue" />
-          <ModernInput label="นามสกุล" value={formData.regSurname} onChange={handleChange("regSurname")} ringColor="blue" />
-          <ModernInput label="เบอร์โทร" value={formData.regTel} onChange={handleChange("regTel")} type="tel" ringColor="blue" />
-          <ModernInput label="ID LINE" value={formData.regProfile} onChange={handleChange("regProfile")} placeholder="กรุณากรอกชื่อ LINE" ringColor="blue" />
+          <ModernInput
+            label="ชื่อบริษัทฯ"
+            value={formData.regCompany}
+            onChange={handleChange("regCompany")}
+            ringColor="blue"
+          />
+          <ModernInput
+            label="ชื่อ"
+            value={formData.regName}
+            onChange={handleChange("regName")}
+            ringColor="blue"
+          />
+          <ModernInput
+            label="นามสกุล"
+            value={formData.regSurname}
+            onChange={handleChange("regSurname")}
+            ringColor="blue"
+          />
+          <ModernInput
+            label="เบอร์โทร"
+            value={formData.regTel}
+            onChange={handleChange("regTel")}
+            type="tel"
+            ringColor="blue"
+          />
+          <ModernInput
+            label="ID LINE"
+            value={formData.regProfile}
+            onChange={handleChange("regProfile")}
+            placeholder="กรุณากรอกชื่อ LINE"
+            ringColor="blue"
+          />
 
-          <ModernSelect label="จังหวัด" value={formData.province} onChange={handleProvinceChange}
-            options={[...new Set(provinces.map((p) => p.province))].map((p) => ({ value: p, label: p }))} ringColor="blue" />
+          <ModernSelect
+            label="จังหวัด"
+            value={formData.province}
+            onChange={handleProvinceChange}
+            options={[
+              ...new Set(provinces.map((p) => p.province)),
+            ].map((p) => ({ value: p, label: p }))}
+            ringColor="blue"
+          />
 
           {formData.province && (
-            <ModernSelect label="อำเภอ" value={formData.district} onChange={handleDistrictChange}
-              options={districts.map((d) => ({ value: d, label: d }))} ringColor="blue" />
+            <ModernSelect
+              label="อำเภอ"
+              value={formData.district}
+              onChange={handleDistrictChange}
+              options={districts.map((d) => ({ value: d, label: d }))}
+              ringColor="blue"
+            />
           )}
 
           {formData.district && (
-            <ModernSelect label="ตำบล" value={formData.sub_district} onChange={handleSubDistrictChange}
-              options={subDistricts.map((s) => ({ value: s, label: s }))} ringColor="blue" />
+            <ModernSelect
+              label="ตำบล"
+              value={formData.sub_district}
+              onChange={handleSubDistrictChange}
+              options={subDistricts.map((s) => ({ value: s, label: s }))}
+              ringColor="blue"
+            />
           )}
 
           {formData.sub_district && (
             <>
-              <ModernInput label="รหัสไปรษณีย์" value={postcode} onChange={setPostcode} ringColor="blue" />
-              <ModernInput label="ที่อยู่เพิ่มเติม" value={formData.addressDetail} onChange={handleChange("addressDetail")} ringColor="blue" />
+              <ModernInput
+                label="รหัสไปรษณีย์"
+                value={postcode}
+                onChange={setPostcode}
+                ringColor="blue"
+              />
+              <ModernInput
+                label="ที่อยู่เพิ่มเติม"
+                value={formData.addressDetail}
+                onChange={handleChange("addressDetail")}
+                ringColor="blue"
+              />
             </>
           )}
 
           <div>
-            <h3 className="text-lg font-semibold text-blue-800 mb-2">ผลไม้ที่ต้องการซื้อ</h3>
+            <h3 className="text-lg font-semibold text-blue-800 mb-2">
+              ผลไม้ที่ต้องการซื้อ
+            </h3>
             {regFruits.map((fruit, index) => (
               <div key={index} className="flex gap-2 items-end mb-3">
-                <ModernInput label={`ผลไม้ #${index + 1}`} value={fruit} onChange={(val) => handleFruitChange(index, val)} placeholder="เช่น มะม่วง" ringColor="blue" />
+                <ModernInput
+                  label={`ผลไม้ #${index + 1}`}
+                  value={fruit}
+                  onChange={(val) => handleFruitChange(index, val)}
+                  placeholder="เช่น มะม่วง"
+                  ringColor="blue"
+                />
                 {regFruits.length > 1 && (
-                  <button type="button" onClick={() => removeFruit(index)} className="text-red-500 hover:text-red-700 text-sm font-medium">
+                  <button
+                    type="button"
+                    onClick={() => removeFruit(index)}
+                    className="text-red-500 hover:text-red-700 text-sm font-medium"
+                  >
                     ลบ
                   </button>
                 )}
               </div>
             ))}
-            <button type="button" onClick={addFruit} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+            <button
+              type="button"
+              onClick={addFruit}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
               ➕ เพิ่มรายการผลไม้
             </button>
           </div>
 
-          <button type="submit" className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-800 to-blue-600 text-white py-3 rounded-full font-semibold hover:from-blue-900 hover:to-blue-700 shadow-lg transition-all duration-300">
+          <button
+            type="submit"
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-800 to-blue-600 text-white py-3 rounded-full font-semibold hover:from-blue-900 hover:to-blue-700 shadow-lg transition-all duration-300"
+          >
             <DiCoda size={22} className="opacity-90" />
             ลงทะเบียน
           </button>

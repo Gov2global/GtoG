@@ -101,7 +101,7 @@ function GovernmentAgenciesPage({ selectedType, selectedSubType, regLineID, regP
     isSubmitting.current = true;
     setShowLoading(true);
 
-    // Validate
+    // ✅ Validation
     if (!formData.regName || !formData.regSurname || !formData.regTel) {
       setErrorMsg("กรุณากรอกชื่อ นามสกุล และเบอร์โทร");
       setShowLoading(false);
@@ -110,9 +110,6 @@ function GovernmentAgenciesPage({ selectedType, selectedSubType, regLineID, regP
     }
 
     try {
-      // ⏳ delay 1 วิ (optional)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
       // Gen ID
       const idRes = await fetch(`/api/farmer/gen-id?regType=${formData.regType}`);
       const idJson = await idRes.json();
@@ -125,7 +122,7 @@ function GovernmentAgenciesPage({ selectedType, selectedSubType, regLineID, regP
         regLineID: regLineID, // force ใช้ prop
       };
 
-      // Submit
+      // ✅ Submit → backend จะ set RichMenu ให้อัตโนมัติ
       const submitRes = await fetch("/api/farmer/submit/farmer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -135,21 +132,9 @@ function GovernmentAgenciesPage({ selectedType, selectedSubType, regLineID, regP
       const submitJson = await submitRes.json();
       if (!submitJson.success) throw new Error("บันทึกข้อมูลล้มเหลว");
 
-      // เรียก API set RichMenu
-      try {
-        await fetch("/api/farmer/line/set-richmenu-GovernmentAgencies", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ regLineID }), // <<< ส่ง regLineID ตรงๆ
-        });
-      } catch (err) {
-        console.error("เปลี่ยน RichMenu ไม่สำเร็จ:", err);
-      }
-
       setSuccessMsg("✅ ลงทะเบียนสำเร็จ!");
       setTimeout(() => {
         setShowLoading(false);
-        // ปิด LIFF window
         if (window?.liff) window.liff.closeWindow();
         else if (liff?.closeWindow) liff.closeWindow();
       }, 800);
