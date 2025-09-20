@@ -7,7 +7,12 @@ import { MdOutlineLocalLibrary } from "react-icons/md";
 import LoadingOverlay from "./LoadingOverlatSchool";
 import liff from "@line/liff";
 
-function EducationalInstitutionPage({ selectedType = "", selectedSubType = "", regLineID = "", regProfile = "" }) {
+function EducationalInstitutionPage({
+  selectedType = "",
+  selectedSubType = "",
+  regLineID = "",
+  regProfile = "",
+}) {
   const [formData, setFormData] = useState({
     regSchoolName: "",
     regProfile: regProfile || "",
@@ -121,7 +126,7 @@ function EducationalInstitutionPage({ selectedType = "", selectedSubType = "", r
         ...formData,
         regID: idJson.regID,
         postcode,
-        regLineID: formData.regLineID || regLineID, // สำรอง
+        regLineID: formData.regLineID || regLineID,
       };
 
       const submitRes = await fetch("/api/farmer/submit/farmer", {
@@ -133,19 +138,24 @@ function EducationalInstitutionPage({ selectedType = "", selectedSubType = "", r
       const submitJson = await submitRes.json();
       if (!submitJson.success) throw new Error(submitJson.message || "บันทึกข้อมูลล้มเหลว");
 
-      // เรียก API ไปเปลี่ยน RichMenu
-      try {
-        await fetch("/api/farmer/line/set-richmenu-EducationalInstitution", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ regLineID: formData.regLineID || regLineID }),
-        });
-      } catch (err) {
-        // ไม่หยุด flow, log อย่างเดียว
-        console.error("เปลี่ยน RichMenu ไม่สำเร็จ:", err);
-      }
-
+      // ✅ ไม่ต้องเรียก API RichMenu แยกอีกแล้ว
       setSuccessMsg("✅ ลงทะเบียนสำเร็จ!");
+
+      // ✅ Reset form
+      setFormData({
+        regSchoolName: "",
+        regProfile: "",
+        regName: "",
+        regSurname: "",
+        regTel: "",
+        regLineID: regLineID || "",
+        province: "",
+        district: "",
+        sub_district: "",
+        regType: selectedType,
+        regSubType: selectedSubType,
+      });
+
       setTimeout(() => {
         setShowLoading(false);
         if (window?.liff) window.liff.closeWindow();
