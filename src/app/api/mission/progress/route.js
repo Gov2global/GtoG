@@ -1,11 +1,11 @@
 // app/api/mission/progress
 import { NextResponse } from "next/server"
-import { connectDB } from "../../../../../lib/mongodb"
+import { connectMongoDB } from "../../../../../lib/mongodb"
 import Progress from "../../../../../models/taskProgress" 
 
 export async function POST(req) {
   try {
-    await connectDB()
+    await connectMongoDB()
 
     const body = await req.json()
 

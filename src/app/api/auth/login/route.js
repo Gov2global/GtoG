@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server'
 export const runtime = 'nodejs'
 
-import { connectDB } from '../../../../../lib/mongodb'
+import { connectMongoDB } from '../../../../../lib/mongodb'
 import Users from '../../../../../models/users'
 import bcrypt from 'bcrypt'              // ✅ ใช้ native แทน bcryptjs
 import crypto from 'crypto'
@@ -10,7 +10,7 @@ import crypto from 'crypto'
 export async function POST(req) {
   const t0 = Date.now()
   try {
-    await connectDB()
+    await connectMongoDB()
 
     let payload
     try {

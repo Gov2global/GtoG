@@ -1,11 +1,11 @@
 // api/farmer/users
 import { NextResponse } from 'next/server';
-import { connectDB } from '../../../../../lib/mongodb';
+import { connectMongoDB } from '../../../../../lib/mongodb';
 import Users from '../../../../../models/users';
 
 export async function POST(req) {
   try {
-    await connectDB();
+    await connectMongoDB();
     const body = await req.json();
 
     if (!body?.username || !body?.password || !body?.name || !body?.email || !body?.phone || !body?.role) {

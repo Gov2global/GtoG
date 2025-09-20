@@ -1,7 +1,7 @@
 // api/mission/regmission
 import { NextResponse } from "next/server"
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
-import { connectDB } from "../../../../../lib/mongodb"
+import { connectMongoDB } from "../../../../../lib/mongodb"
 import Plot from "../../../../../models/plots" // [CHANGED: แก้ให้ชื่อไฟล์ตรงกับ model จริง]
 import Counter from "../../../../../models/counter" 
 
@@ -38,7 +38,7 @@ async function uploadToS3(file, fileName) {
 
 export async function POST(req) {
   try {
-    await connectDB()
+    await connectMongoDB()
 
     const formData = await req.formData()
     const name = formData.get("name")

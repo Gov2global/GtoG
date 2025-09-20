@@ -2,12 +2,12 @@
 import { NextResponse } from 'next/server'
 export const runtime = 'nodejs'
 
-import { connectDB } from '../../../../../lib/mongodb'
+import { connectMongoDB } from '../../../../../lib/mongodb'
 import Users from '../../../../../models/users'
 
 export async function POST() {
   try {
-    await connectDB()
+    await connectMongoDB()
     const res = NextResponse.json({ ok: true })
     const session = res.cookies.get('session')?.value 
 
