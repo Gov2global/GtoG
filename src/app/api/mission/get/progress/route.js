@@ -1,13 +1,13 @@
 // api/mission/get/progress
 
 import { NextResponse } from "next/server"
-import { connectDB } from "../../../../../../lib/mongodb"; 
+import { connectMongoDB } from "../../../../../../lib/mongodb"; 
 import Progress from "../../../../../../models/taskProgress"; 
 
 
 export async function GET(req) {
   try {
-    await connectDB()
+    await connectMongoDB()
 
     // ดึง query string เช่น /api/mission/get/progress?regCode=P25092000002
     const { searchParams } = new URL(req.url)

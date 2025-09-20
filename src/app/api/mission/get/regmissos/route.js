@@ -1,11 +1,11 @@
 // api/mission/get/regmissos
 import { NextResponse } from "next/server"
-import { connectDB } from "../../../../../../lib/mongodb"
+import { connectMongoDB } from "../../../../../../lib/mongodb"
 import Plot from "../../../../../../models/plots"
 
 export async function GET() {
   try {
-    await connectDB()
+    await connectMongoDB()
 
     // ✅ ดึงข้อมูลทั้งหมด โดยไม่ตัด createdAt ออก
     const plots = await Plot.find().sort({ createdAt: -1 }) // [CHANGED: เรียงล่าสุดจาก DB ด้วย]
