@@ -20,27 +20,33 @@ function FormResgiPage() {
   const [regProfile, setRegProfile] = useState("");
 
   // ✅ Init LIFF + set regLineID/regProfile + set RichMenu ทันทีที่ user login
-  useEffect(() => {
-    liff.init({ liffId: "2007697520-g59jM8X3" }).then(() => {
-      if (liff.isLoggedIn()) {
-        liff.getProfile().then(profile => {
-          setRegLineID(profile.userId);
-          setRegProfile(profile.displayName);
-          // เรียก backend ทันทีที่ได้ userId (เปลี่ยน endpoint และ key เป็น userId)
-          fetch("/api/farmer/line/line-rich-menu-farmer", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: profile.userId }), // <== ตรงกับ backend ที่ refactor ให้
-          })
-            .then(res => res.json())
-            .then(data => console.log("RichMenu set result:", data))
-            .catch(err => console.error("RichMenu set error:", err));
-        });
+  // ✅ โหลด typeFarm
+useEffect(() => {
+  const fetchTypeFarm = async () => {
+    setIsLoadingTypeFarm(true);
+    try {
+      const res = await fetch("/api/farmer/get/typeFarm");
+      const json = await res.json();
+      console.log("📌 typeFarm data:", json); // debug
+
+      // [CHANGED: ไม่เช็ค success แล้ว set โดยตรงถ้ามี data เป็น array]
+      if (Array.isArray(json.data)) {
+        setTypeFarmList(json.data);
+      } else if (Array.isArray(json)) {
+        // [ADDED: เผื่อ backend ส่งเป็น array ตรง ๆ]
+        setTypeFarmList(json);
       } else {
-        liff.login();
+        console.warn("⚠️ ไม่พบข้อมูลใน response", json);
+        setTypeFarmList([]);
       }
-    });
-  }, []);
+    } catch (err) {
+      console.error("❌ โหลด typeFarm ล้มเหลว", err);
+      setTypeFarmList([]);
+    }
+    setIsLoadingTypeFarm(false);
+  };
+  fetchTypeFarm();
+}, []);
 
   // ✅ โหลด typeFarm จาก backend
   useEffect(() => {
