@@ -5,14 +5,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    // ⬅️ เชื่อม DB ให้แน่ใจก่อน
-    const conn = await connectMongoDB();
-    if (conn.connection.readyState !== 1) {
-      throw new Error("MongoDB not connected");
-    }
-    console.log("📡 Mongo readyState:", conn.connection.readyState);
-
-    // ✅ ใช้ Model หลัง connect แล้วเท่านั้น
+    await connectMongoDB(); // เชื่อม DB แค่ครั้งเดียว
     const typeFarmList = await TypeFarm.find().sort({ typeID: 1 }).lean();
 
     return NextResponse.json({ success: true, data: typeFarmList });
