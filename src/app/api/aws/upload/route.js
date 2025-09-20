@@ -1,6 +1,6 @@
 // api/aws/upload
 import { NextResponse } from "next/server"; // [ADDED: ใช้ NextResponse กับ App Router]
-import { getUploadSignedUrl } from "../../../../../lib/s3"; // [CHANGED: import จาก .js ไม่ใช่ .jsx]
+import { getUploadSignedUrl } from "../../../../../lib/s3";
 
 // บังคับ Node runtime (aws-sdk v3 ใช้ได้บน node)
 export const runtime = "nodejs"; // [ADDED]
