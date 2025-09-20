@@ -13,7 +13,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: typeFarmList,
-    }, { status: 200 });
+    }, { status: 200 }); 
 
   } catch (error) {
     console.error("❌ ดึงข้อมูล typeID ไม่สำเร็จ:", error);
