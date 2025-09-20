@@ -6,10 +6,10 @@ import Plot from "../../../../../models/plots" // [CHANGED: แก้ให้�
 import Counter from "../../../../../models/counter" 
 
 const s3 = new S3Client({
-  region: process.env.AWS_REGION,
+  region: process.env.REGION_AWS,
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    accessKeyId: process.env.ACCESS_KEY_ID_AWS,
+    secretAccessKey: process.env.SECRET_ACCESS_KEY_AWS,
   },
 })
 
@@ -18,7 +18,7 @@ async function uploadToS3(file, fileName) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer())
-    const bucket = process.env.AWS_S3_BUCKET || process.env.S3_BUCKET_NAME
+    const bucket = process.env.S3_BUCKET_AWS || process.env.BUCKET_NAME_S3
     if (!bucket) throw new Error("❌ Missing AWS_S3_BUCKET or S3_BUCKET_NAME in env")
 
     const uploadParams = {
@@ -29,7 +29,7 @@ async function uploadToS3(file, fileName) {
     }
 
     await s3.send(new PutObjectCommand(uploadParams))
-    return `https://${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/regplots/${fileName}`
+    return `https://${bucket}.s3.${process.env.REGION_AWS}.amazonaws.com/regplots/${fileName}`
   } catch (err) {
     console.error("❌ Upload Error:", err.message)
     return null
