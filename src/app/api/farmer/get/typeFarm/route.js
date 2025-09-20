@@ -5,13 +5,14 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    await connectMongoDB();
+    const conn = await connectMongoDB();
+    console.log("📡 Mongo readyState:", conn.connection.readyState);
 
     const typeFarmList = await TypeFarm.find().sort({ typeID: 1 }).lean();
 
-    return NextResponse.json({ success: true, data: typeFarmList }, { status: 200 });
+    return NextResponse.json({ success: true, data: typeFarmList });
   } catch (error) {
-    console.error("❌ ดึงข้อมูล typeFarm ไม่สำเร็จ:", error);
+    console.error("❌ ดึงข้อมูล typeID ไม่สำเร็จ:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }

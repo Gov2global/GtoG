@@ -19,22 +19,21 @@ function FormResgiPage() {
   const [regLineID, setRegLineID] = useState("");
   const [regProfile, setRegProfile] = useState("");
 
-  // ✅ Init LIFF + set regLineID/regProfile + set RichMenu ทันทีที่ user login
+  // ✅ Init LIFF + set regLineID/regProfile + set RichMenu
   useEffect(() => {
     liff.init({ liffId: "2007697520-g59jM8X3" }).then(() => {
       if (liff.isLoggedIn()) {
-        liff.getProfile().then(profile => {
+        liff.getProfile().then((profile) => {
           setRegLineID(profile.userId);
           setRegProfile(profile.displayName);
-          // เรียก backend ทันทีที่ได้ userId (เปลี่ยน endpoint และ key เป็น userId)
           fetch("/api/farmer/line/line-rich-menu-farmer", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: profile.userId }), // <== ตรงกับ backend ที่ refactor ให้
+            body: JSON.stringify({ userId: profile.userId }),
           })
-            .then(res => res.json())
-            .then(data => console.log("RichMenu set result:", data))
-            .catch(err => console.error("RichMenu set error:", err));
+            .then((res) => res.json())
+            .then((data) => console.log("✅ RichMenu set result:", data))
+            .catch((err) => console.error("❌ RichMenu set error:", err));
         });
       } else {
         liff.login();
@@ -49,6 +48,7 @@ function FormResgiPage() {
       try {
         const res = await fetch("/api/farmer/get/typeFarm");
         const json = await res.json();
+        console.log("📌 typeFarm API result:", json); // ✅ Debug log
         if (json.success) {
           setTypeFarmList(json.data);
         }
@@ -79,7 +79,7 @@ function FormResgiPage() {
 
   const getSubTypeOptions = () => {
     return typeFarmList
-      .filter((item) => item.typeDetaiTH === selectedType)
+      .filter((item) => item.typeDetailTH === selectedType) // ✅ field name ถูกต้อง
       .map((item) => item.subType)
       .filter((v, i, a) => a.indexOf(v) === i)
       .map((s) => ({ value: s, label: s }));
@@ -110,10 +110,10 @@ function FormResgiPage() {
                   label="ประเภทหน่วยงาน"
                   value={selectedType}
                   onChange={handleTypeChange}
-                  options={[...new Set(typeFarmList.map((t) => t.typeDetaiTH))].map((t) => ({
+                  options={[...new Set(typeFarmList.map((t) => t.typeDetailTH))].map((t) => ({
                     value: t,
                     label: t,
-                  }))}
+                  }))} // ✅ field name ถูกต้อง
                   placeholder="-- กรุณาเลือก --"
                   ringColor="amber"
                   disabled={isLoadingTypeFarm}
