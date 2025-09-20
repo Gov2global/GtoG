@@ -10,55 +10,79 @@ import { ModernSelect } from "./components/ui/Select";
 import { MdOutlineLibraryBooks } from "react-icons/md";
 import liff from "@line/liff";
 
-function FormResgiPage() {
+function FormRegisPage() { // [CHANGED: แก้ชื่อ function]
   const [step, setStep] = useState(1);
   const [typeFarmList, setTypeFarmList] = useState([]);
   const [isLoadingTypeFarm, setIsLoadingTypeFarm] = useState(true);
   const [selectedType, setSelectedType] = useState("");
   const [selectedSubType, setSelectedSubType] = useState("");
   const [regLineID, setRegLineID] = useState("");
-  const [regProfile, setRegProfile] = useState("");
+  const [regProfile, setRegProfile] = useState(null); // [CHANGED: เก็บ object profile]
 
-  // ✅ Init LIFF + set regLineID/regProfile + set RichMenu ทันทีที่ user login
+  // ✅ Init LIFF
   useEffect(() => {
-    liff.init({ liffId: "2007697520-g59jM8X3" }).then(() => {
-      if (liff.isLoggedIn()) {
-        liff.getProfile().then(profile => {
-          setRegLineID(profile.userId);
-          setRegProfile(profile.displayName);
-          // เรียก backend ทันทีที่ได้ userId (เปลี่ยน endpoint และ key เป็น userId)
-          fetch("/api/farmer/line/line-rich-menu-farmer", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: profile.userId }), // <== ตรงกับ backend ที่ refactor ให้
-          })
-            .then(res => res.json())
-            .then(data => console.log("RichMenu set result:", data))
-            .catch(err => console.error("RichMenu set error:", err));
+    const initLiff = async () => {
+      try {
+        await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID });
+        if (!liff.isLoggedIn()) {
+          liff.login({ redirectUri: window.location.href }); // [CHANGED: ให้ redirect กลับมา]
+          return;
+        }
+        const profile = await liff.getProfile();
+        setRegLineID(profile.userId);
+        setRegProfile(profile);
+
+        // ✅ call API richmenu
+        await fetch("/api/farmer/line/line-rich-menu-farmer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: profile.userId }),
         });
-      } else {
-        liff.login();
+      } catch (err) {
+        console.error("❌ LIFF init error:", err);
       }
-    });
+    };
+    initLiff();
   }, []);
 
-  // ✅ โหลด typeFarm จาก backend
+  // ✅ โหลด typeFarm
   useEffect(() => {
     const fetchTypeFarm = async () => {
       setIsLoadingTypeFarm(true);
       try {
         const res = await fetch("/api/farmer/get/typeFarm");
         const json = await res.json();
-        if (json.success) {
+        console.log("📌 typeFarm data:", json); // [ADDED: debug log]
+
+        if (json.success && Array.isArray(json.data)) {
           setTypeFarmList(json.data);
+        } else {
+          console.warn("⚠️ ไม่มีข้อมูล typeFarm หรือ format ไม่ถูกต้อง");
+          setTypeFarmList([]);
         }
       } catch (err) {
         console.error("❌ โหลด typeFarm ล้มเหลว", err);
+        setTypeFarmList([]);
       }
       setIsLoadingTypeFarm(false);
     };
     fetchTypeFarm();
   }, []);
+
+  // ✅ options
+  const getTypeOptions = () => {
+    return [...new Set(typeFarmList.map((t) => t.typeDetailTH || t.typeDetaiTH))] // [CHANGED: รองรับ key ทั้ง 2 แบบ]
+      .filter(Boolean)
+      .map((t) => ({ value: t, label: t }));
+  };
+
+  const getSubTypeOptions = () => {
+    return typeFarmList
+      .filter((item) => (item.typeDetailTH || item.typeDetaiTH) === selectedType) // [CHANGED: รองรับ key ทั้ง 2 แบบ]
+      .map((item) => item.subType)
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .map((s) => ({ value: s, label: s }));
+  };
 
   const handleTypeChange = (val) => {
     setSelectedType(val);
@@ -75,14 +99,6 @@ function FormResgiPage() {
     } else {
       alert("กรุณาเลือกประเภทและหมวดหมู่ให้ครบถ้วน");
     }
-  };
-
-  const getSubTypeOptions = () => {
-    return typeFarmList
-      .filter((item) => item.typeDetaiTH === selectedType)
-      .map((item) => item.subType)
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .map((s) => ({ value: s, label: s }));
   };
 
   return (
@@ -105,15 +121,16 @@ function FormResgiPage() {
                   <span className="animate-spin mr-2">⏳</span>
                   กำลังโหลดข้อมูลประเภทหน่วยงาน...
                 </div>
+              ) : typeFarmList.length === 0 ? (
+                <div className="text-red-600 text-center py-6">
+                  ❌ ไม่พบข้อมูลประเภทหน่วยงาน
+                </div>
               ) : (
                 <ModernSelect
                   label="ประเภทหน่วยงาน"
                   value={selectedType}
                   onChange={handleTypeChange}
-                  options={[...new Set(typeFarmList.map((t) => t.typeDetaiTH))].map((t) => ({
-                    value: t,
-                    label: t,
-                  }))}
+                  options={getTypeOptions()}
                   placeholder="-- กรุณาเลือก --"
                   ringColor="amber"
                   disabled={isLoadingTypeFarm}
@@ -133,6 +150,7 @@ function FormResgiPage() {
               <button
                 onClick={handleNext}
                 disabled={isLoadingTypeFarm}
+                aria-label="ไปขั้นตอนถัดไป"
                 className={`mt-6 w-full bg-gradient-to-r from-[#D97706] to-[#9C4400] text-white text-lg py-3 rounded-full font-bold flex justify-center items-center gap-2 hover:from-[#B45309] hover:to-[#7C3A00] transition-all
                   ${isLoadingTypeFarm ? "opacity-50 pointer-events-none" : ""}`}
               >
@@ -192,4 +210,4 @@ function FormResgiPage() {
   );
 }
 
-export default FormResgiPage;
+export default FormRegisPage; // [CHANGED: export ตามชื่อใหม่]
