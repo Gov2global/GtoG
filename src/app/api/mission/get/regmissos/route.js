@@ -22,4 +22,4 @@ export async function GET() {
       message: "เกิดข้อผิดพลาดในการดึงข้อมูลแปลง",
     }, { status: 500 })
   }
-}
+} 
