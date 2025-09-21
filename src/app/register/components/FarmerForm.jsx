@@ -1,11 +1,11 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import ModernInput from "./ui/Input";
-import { ModernSelect, ModernCreatableSelect } from "./ui/Select";
 import { GiFarmTractor } from "react-icons/gi";
 import { DiCoda } from "react-icons/di";
-import LoadingOverlay from "./LoadingOverlat";
 import liff from "@line/liff";
+import ModernInput from "@/components/ui/input";
+import { ModernSelect, ModernCreatableSelect } from "@/components/ui/select";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 // พันธุ์พืช (Hardcode)
 const plantVarieties = {
