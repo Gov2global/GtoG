@@ -111,37 +111,49 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
     });
   };
 
-  // จังหวัด/อำเภอ/ตำบล
+  // จังหวัด/อำเภอ/ตำบล (แก้ไขใหม่ใช้ Set)
   const handleProvinceChange = (value) => {
     handleChange("province")(value);
     const filteredDistricts = [
-      ...new Set(provinces.filter((p) => p.province === value).map((p) => p.district)),
+      ...new Set(
+        provinces
+          .filter((item) => item.province === value)
+          .map((item) => item.district)
+      ),
     ];
     setDistricts(filteredDistricts);
     setSubDistricts([]);
     setPostcode("");
     setFormData((prev) => ({ ...prev, district: "", sub_district: "" }));
   };
+
   const handleDistrictChange = (value) => {
     handleChange("district")(value);
-    const filteredSubDistricts = provinces
-      .filter((p) => p.province === formData.province && p.district === value)
-      .map((p) => p.sub_district);
-    setSubDistricts(filteredSubDistricts);
+    const filteredSub = [
+      ...new Set(
+        provinces
+          .filter(
+            (item) =>
+              item.province === formData.province && item.district === value
+          )
+          .map((item) => item.sub_district)
+      ),
+    ];
+    setSubDistricts(filteredSub);
     setPostcode("");
     setFormData((prev) => ({ ...prev, sub_district: "" }));
   };
+
   const handleSubDistrictChange = (value) => {
     handleChange("sub_district")(value);
     const found = provinces.find(
-      (p) =>
-        p.province === formData.province &&
-        p.district === formData.district &&
-        p.sub_district === value
+      (item) =>
+        item.province === formData.province &&
+        item.district === formData.district &&
+        item.sub_district === value
     );
     setPostcode(found?.postcode?.toString() || "");
   };
-
   // พื้นที่รวม
   const calculateTotalAreaSqm = () => {
     const rai = parseFloat(formData.areaRai) || 0;
@@ -376,31 +388,31 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
               </p>
 
               <ModernSelect
-                label="จังหวัด"
-                value={formData.province}
-                onChange={handleProvinceChange}
-                options={[
-                  ...new Set(provinces.map((p) => p.province)),
-                ].map((p) => ({ value: p, label: p }))}
-                ringColor="amber"
-              />
-              {formData.province && (
-                <ModernSelect
-                  label="อำเภอ"
-                  value={formData.district}
-                  onChange={handleDistrictChange}
-                  options={districts.map((d) => ({ value: d, label: d }))}
-                  ringColor="amber"
-                />
-              )}
-              {formData.district && (
-                <ModernSelect
-                  label="ตำบล"
-                  value={formData.sub_district}
-                  onChange={handleSubDistrictChange}
-                  options={subDistricts.map((s) => ({ value: s, label: s }))}
-                  ringColor="amber"
-                />
+            label="จังหวัด"
+            value={formData.province}
+            onChange={handleProvinceChange}
+            options={[
+              ...new Set(provinces.map((p) => p.province)),
+            ].map((p) => ({ value: p, label: p }))}
+            ringColor="amber"
+          />
+          {formData.province && (
+            <ModernSelect
+              label="อำเภอ"
+              value={formData.district}
+              onChange={handleDistrictChange}
+              options={districts.map((d) => ({ value: d, label: d }))}
+              ringColor="amber"
+            />
+          )}
+          {formData.district && (
+            <ModernSelect
+              label="ตำบล"
+              value={formData.sub_district}
+              onChange={handleSubDistrictChange}
+              options={subDistricts.map((s) => ({ value: s, label: s }))}
+              ringColor="amber"
+            />
               )}
               {formData.sub_district && (
                 <>
