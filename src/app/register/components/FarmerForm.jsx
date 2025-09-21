@@ -152,7 +152,7 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
     const rai = parseFloat(formData.areaRai) || 0;
     const ngan = parseFloat(formData.areaNgan) || 0;
     const wa = parseFloat(formData.areaWa) || 0;
-    return rai * 1600 + ngan * 400 + wa * 4;
+    return rai * 1600 + ngan * 400 + wa * 4; 
   };
 
   // Validation (เพิ่มได้อีก)
