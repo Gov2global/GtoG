@@ -373,7 +373,6 @@ const handleTypeChange = (type) => {
           </Select>
         </div>
 
-        {/* Step 2: Span */}
         {/* Step 2: Span (เลือกรหัสก่อน) */}
         {spans.length > 0 && (
           <div className="space-y-2">
@@ -390,7 +389,7 @@ const handleTypeChange = (type) => {
                       key={item.code}
                       value={item.span}
                     >
-                      {item.code} — {item.span}
+                      {item.span}
                     </SelectItem>
                   ))}
               </SelectContent>
