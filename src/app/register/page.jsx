@@ -19,13 +19,14 @@ function FormResgiPage() {
   const [regLineID, setRegLineID] = useState("");
   const [regProfile, setRegProfile] = useState("");
 
-  // ✅ Init LIFF + set regLineID/regProfile + set RichMenu
+  // ✅ Init LIFF
   useEffect(() => {
     liff.init({ liffId: "2007697520-g59jM8X3" }).then(() => {
       if (liff.isLoggedIn()) {
         liff.getProfile().then((profile) => {
           setRegLineID(profile.userId);
           setRegProfile(profile.displayName);
+
           fetch("/api/farmer/line/line-rich-menu-farmer", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -48,7 +49,7 @@ function FormResgiPage() {
       try {
         const res = await fetch("/api/farmer/get/typeFarm");
         const json = await res.json();
-        console.log("📌 typeFarm API result:", json); // ✅ Debug log
+        console.log("📌 typeFarm API result:", json);
         if (json.success) {
           setTypeFarmList(json.data);
         }
@@ -77,12 +78,14 @@ function FormResgiPage() {
     }
   };
 
+  // ✅ สร้าง options ของ subtype
   const getSubTypeOptions = () => {
     return typeFarmList
-      .filter((item) => item.typeDetailTH === selectedType) // ✅ field name ถูกต้อง
-      .map((item) => item.subType)
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .map((s) => ({ value: s, label: s }));
+      .filter((item) => item.typeDetailTH === selectedType)
+      .map((item) => ({
+        value: item.subType,
+        label: item.subType,
+      }));
   };
 
   return (
@@ -110,10 +113,12 @@ function FormResgiPage() {
                   label="ประเภทหน่วยงาน"
                   value={selectedType}
                   onChange={handleTypeChange}
-                  options={[...new Set(typeFarmList.map((t) => t.typeDetailTH))].map((t) => ({
+                  options={Array.from(
+                    new Set(typeFarmList.map((t) => t.typeDetailTH))
+                  ).map((t) => ({
                     value: t,
                     label: t,
-                  }))} // ✅ field name ถูกต้อง
+                  }))}
                   placeholder="-- กรุณาเลือก --"
                   ringColor="amber"
                   disabled={isLoadingTypeFarm}
