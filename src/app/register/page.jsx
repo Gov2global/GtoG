@@ -10,13 +10,13 @@ import { ModernSelect } from "./components/ui/Select";
 import { MdOutlineLibraryBooks } from "react-icons/md";
 import liff from "@line/liff";
 
-// ✅ ทำ mapping ชื่อ → component
+// ✅ Mapping ประเภท → Component
 const COMPONENT_MAP = {
-  "เกษตรกร": FarmerFormPage,
-  "หน่วยงานเอกชน": PrivateAgency,
-  "หน่วยงานราชการ": GovernmentAgencies,
-  "หน่วยงานท้องถิ่น": LocalAuthority,
-  "สถาบันการศึกษา": EducationalInstitution,
+  เกษตรกร: FarmerFormPage,
+  หน่วยงานเอกชน: PrivateAgency,
+  หน่วยงานราชการ: GovernmentAgencies,
+  หน่วยงานท้องถิ่น: LocalAuthority,
+  สถาบันการศึกษา: EducationalInstitution,
 };
 
 function FormResgiPage() {
@@ -35,6 +35,8 @@ function FormResgiPage() {
         liff.getProfile().then((profile) => {
           setRegLineID(profile.userId);
           setRegProfile(profile.displayName);
+
+          // 🔹 เรียก API set RichMenu
           fetch("/api/farmer/line/line-rich-menu-farmer", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -58,6 +60,7 @@ function FormResgiPage() {
         const res = await fetch("/api/farmer/get/typeFarm");
         const json = await res.json();
         console.log("📌 typeFarm API result:", json);
+
         if (json.success && Array.isArray(json.data)) {
           setTypeFarmList(json.data);
         }
@@ -66,19 +69,24 @@ function FormResgiPage() {
       }
       setIsLoadingTypeFarm(false);
     };
+
     fetchTypeFarm();
   }, []);
 
   const handleTypeChange = (val) => {
+    console.log("👉 Selected type:", val);
     setSelectedType(val);
     setSelectedSubType("");
   };
 
   const handleSubTypeChange = (val) => {
+    console.log("👉 Selected subType:", val);
     setSelectedSubType(val);
   };
 
   const handleNext = () => {
+    console.log("➡️ Next step check:", { selectedType, selectedSubType });
+
     if (selectedType && selectedSubType && !isLoadingTypeFarm) {
       setStep(2);
     } else {
@@ -86,6 +94,7 @@ function FormResgiPage() {
     }
   };
 
+  // ✅ ดึงหมวดหมู่ย่อย
   const getSubTypeOptions = () => {
     return typeFarmList
       .filter((item) => (item.typeDetailTH || item.typeDetaiTH) === selectedType)
@@ -96,6 +105,7 @@ function FormResgiPage() {
 
   return (
     <Container>
+      {/* Step 1: เลือกประเภท */}
       {step === 1 && (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-yellow-50 to-yellow-100 p-4">
           <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl px-8 py-10 border border-yellow-200">
@@ -108,6 +118,7 @@ function FormResgiPage() {
                 กรุณาเลือกประเภทหน่วยงานและหมวดหมู่ที่คุณต้องการลงทะเบียน
               </p>
             </div>
+
             <div className="space-y-5">
               {isLoadingTypeFarm ? (
                 <div className="flex items-center justify-center py-8 text-amber-600">
@@ -128,6 +139,7 @@ function FormResgiPage() {
                   disabled={isLoadingTypeFarm}
                 />
               )}
+
               {selectedType && (
                 <ModernSelect
                   label="หมวดหมู่"
@@ -139,6 +151,7 @@ function FormResgiPage() {
                   disabled={isLoadingTypeFarm}
                 />
               )}
+
               <button
                 onClick={handleNext}
                 disabled={isLoadingTypeFarm}
@@ -153,21 +166,23 @@ function FormResgiPage() {
         </div>
       )}
 
-      {step === 2 && (() => {
-        const Comp = COMPONENT_MAP[selectedType];
-        return Comp ? (
-          <Comp
-            selectedType={selectedType}
-            selectedSubType={selectedSubType}
-            regLineID={regLineID}
-            regProfile={regProfile}
-          />
-        ) : (
-          <div className="p-6 text-red-600">
-            ❌ ไม่มีฟอร์มสำหรับประเภท: {selectedType}
-          </div>
-        );
-      })()}
+      {/* Step 2: Render Form */}
+      {step === 2 &&
+        (() => {
+          const Comp = COMPONENT_MAP[selectedType];
+          return Comp ? (
+            <Comp
+              selectedType={selectedType}
+              selectedSubType={selectedSubType}
+              regLineID={regLineID}
+              regProfile={regProfile}
+            />
+          ) : (
+            <div className="p-6 text-red-600">
+              ❌ ไม่มีฟอร์มสำหรับประเภท: {selectedType}
+            </div>
+          );
+        })()}
     </Container>
   );
 }
