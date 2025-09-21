@@ -43,22 +43,24 @@ function FormResgiPage() {
 
   // ✅ โหลด typeFarm จาก backend
   useEffect(() => {
-    const fetchTypeFarm = async () => {
-      setIsLoadingTypeFarm(true);
-      try {
-        const res = await fetch("/api/farmer/get/typeFarm");
-        const json = await res.json();
-        console.log("📌 typeFarm API result:", json); // ✅ Debug log
-        if (json.success) {
-          setTypeFarmList(json.data);
-        }
-      } catch (err) {
-        console.error("❌ โหลด typeFarm ล้มเหลว", err);
+  const fetchTypeFarm = async () => {
+    setIsLoadingTypeFarm(true);
+    try {
+      const res = await fetch("/api/farmer/get/typeFarm");
+      const json = await res.json();
+      console.log("📌 typeFarm API result:", json); // ✅ Debug log
+      if (json.success && Array.isArray(json.data)) {
+        console.log("✅ Data length:", json.data.length);
+        console.table(json.data);
+        setTypeFarmList(json.data);
       }
-      setIsLoadingTypeFarm(false);
-    };
-    fetchTypeFarm();
-  }, []);
+    } catch (err) {
+      console.error("❌ โหลด typeFarm ล้มเหลว", err);
+    }
+    setIsLoadingTypeFarm(false);
+  };
+  fetchTypeFarm();
+}, []);
 
   const handleTypeChange = (val) => {
     setSelectedType(val);
