@@ -42,21 +42,19 @@ export default function RegisterPage() {
   const [types, setTypes] = useState([])
   const [spans, setSpans] = useState([])
 
+  // init LIFF
   useEffect(() => {
     liff.init({ liffId: "2007697520-ReVxGaBb" })
       .then(() => {
         if (liff.isLoggedIn()) {
           liff.getProfile().then((profile) => {
-            const userId = profile.userId
-            setForm((prev) => ({ ...prev, lineId: userId }))
+            setForm((prev) => ({ ...prev, lineId: profile.userId }))
           })
         } else {
           liff.login({ redirectUri: window.location.href })
         }
       })
-      .catch((err) => {
-        console.error("LIFF init error:", err)
-      })
+      .catch((err) => console.error("LIFF init error:", err))
   }, [])
 
   // โหลดข้อมูล learn52week
@@ -64,7 +62,7 @@ export default function RegisterPage() {
     fetch("/api/mission/get/learn52week")
       .then((res) => res.json())
       .then((res) => {
-        if (res.ok) {
+        if (res.ok && Array.isArray(res.data)) {
           setData(res.data)
           setTypes([...new Set(res.data.map((d) => d.type))])
         }
@@ -72,6 +70,7 @@ export default function RegisterPage() {
       .catch((err) => console.error("fetch error:", err))
   }, [])
 
+  // event handlers
   const handleTypeChange = (type) => {
     setForm((prev) => ({ ...prev, plantType: type, spacing: "" }))
     const filtered = data.filter((d) => d.type === type)
@@ -91,7 +90,6 @@ export default function RegisterPage() {
       alert("อุปกรณ์นี้ไม่รองรับการใช้ GPS")
       return
     }
-
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -114,15 +112,15 @@ export default function RegisterPage() {
     handleGetLocation()
   }, [])
 
+  // utils
   const compressImage = async (file) => {
     try {
-      const compressed = await imageCompression(file, {
+      return await imageCompression(file, {
         maxSizeMB: 1.5,
         maxWidthOrHeight: 1280,
         initialQuality: 0.6,
         useWebWorker: true,
       })
-      return compressed
     } catch (err) {
       console.error("compress error:", err)
       return file
@@ -132,12 +130,9 @@ export default function RegisterPage() {
   const handleFileChange = async (fileInput, key, index = null) => {
     let actualFile = fileInput
     if (!(fileInput instanceof File)) {
-      const blobType = fileInput.type || "image/jpeg"
-      actualFile = new File([fileInput], `${key}-${Date.now()}.jpg`, { type: blobType })
+      actualFile = new File([fileInput], `${key}-${Date.now()}.jpg`, { type: "image/jpeg" })
     }
-
     const compressed = await compressImage(actualFile)
-
     if (key === "general") {
       const updated = [...form.images.general]
       updated[index] = compressed
@@ -154,7 +149,6 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-
     try {
       const formData = new FormData()
       formData.append("name", form.name)
@@ -164,30 +158,25 @@ export default function RegisterPage() {
       formData.append("spacing", form.spacing)
       formData.append("lineId", form.lineId)
 
-      for (let i = 0; i < form.images.general.length; i++) {
-        const file = form.images.general[i]
-        if (file) {
-          appendImageToFormData(formData, `general${i + 1}`, file)
-        }
-      }
+      // append images
+      form.images.general.forEach((file, i) => {
+        if (file) appendImageToFormData(formData, `general${i + 1}`, file)
+      })
       if (form.images.tree) appendImageToFormData(formData, "tree", form.images.tree)
       if (form.images.leaf) appendImageToFormData(formData, "leaf", form.images.leaf)
       if (form.images.fruit) appendImageToFormData(formData, "fruit", form.images.fruit)
 
-      const res = await fetch("/api/mission/regmission", {
-        method: "POST",
-        body: formData,
-      })
-      const data = await res.json()
+      const res = await fetch("/api/mission/regmission", { method: "POST", body: formData })
+      const result = await res.json()
 
-      if (data.success) {
+      if (result.success) {
         setSuccess(true)
         setTimeout(() => {
           setSuccess(false)
           router.push("/mission")
         }, 2000)
       } else {
-        alert("บันทึกไม่สำเร็จ: " + data.error)
+        alert("บันทึกไม่สำเร็จ: " + (result.error || "unknown error"))
       }
     } catch (err) {
       console.error("Error submitting:", err)
@@ -201,21 +190,13 @@ export default function RegisterPage() {
     <div className="relative w-24 h-24 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50">
       {form.images[key] ? (
         <>
-          <img
-            src={URL.createObjectURL(form.images[key])}
-            alt={label}
-            className="object-cover w-full h-full rounded-xl"
-          />
+          <img src={URL.createObjectURL(form.images[key])} alt={label} className="object-cover w-full h-full rounded-xl" />
           <button
             type="button"
             onClick={() =>
-              setForm((prev) => ({
-                ...prev,
-                images: { ...prev.images, [key]: null },
-              }))
+              setForm((prev) => ({ ...prev, images: { ...prev.images, [key]: null } }))
             }
             className="absolute top-[-6px] right-[-6px] bg-red-500 text-white p-1 rounded-full shadow"
-            aria-label="ลบรูป"
           >
             <X size={14} />
           </button>
@@ -241,6 +222,7 @@ export default function RegisterPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-green-50 to-white p-4 pb-24 max-w-md mx-auto">
+      {/* header */}
       <div className="flex items-center mb-4">
         <Button
           type="button"
@@ -257,44 +239,29 @@ export default function RegisterPage() {
         🌱 ลงทะเบียนแปลงปลูก
       </h1>
 
+      {/* form */}
       <form onSubmit={handleSubmit} className="space-y-6 text-base bg-white p-6 rounded-2xl shadow-md">
         {/* ชื่อแปลง */}
         <div className="space-y-2">
           <Label className="text-green-700 font-semibold">ชื่อแปลง</Label>
-          <Input
-            name="name"
-            value={form.name}
-            onChange={handleInputChange}
-            placeholder="เช่น แปลงมีความสุข"
-            className="h-12 text-lg"
-          />
+          <Input name="name" value={form.name} onChange={handleInputChange} placeholder="เช่น แปลงมีความสุข" className="h-12 text-lg" />
         </div>
 
-        {/* รูปทั่วไป 4 รูป */}
+        {/* รูปทั่วไป */}
         <div className="space-y-2">
           <Label className="text-green-700 font-semibold">ถ่ายรูปลักษณะ (สูงสุด 4 รูป)</Label>
           <div className="flex flex-wrap justify-center gap-3">
             {[0, 1, 2, 3].map((index) => (
-              <div
-                key={index}
-                className="relative w-28 h-28 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50"
-              >
+              <div key={index} className="relative w-28 h-28 border-2 border-dashed rounded-xl flex items-center justify-center bg-green-50">
                 {form.images.general[index] ? (
                   <>
-                    <img
-                      src={URL.createObjectURL(form.images.general[index])}
-                      alt={`ลักษณะ ${index + 1}`}
-                      className="object-cover w-full h-full rounded-xl"
-                    />
+                    <img src={URL.createObjectURL(form.images.general[index])} alt={`ลักษณะ ${index + 1}`} className="object-cover w-full h-full rounded-xl" />
                     <button
                       type="button"
                       onClick={() => {
                         const updated = [...form.images.general]
                         updated[index] = null
-                        setForm({
-                          ...form,
-                          images: { ...form.images, general: updated },
-                        })
+                        setForm({ ...form, images: { ...form.images, general: updated } })
                       }}
                       className="absolute top-[-6px] right-[-6px] bg-red-500 text-white p-1 rounded-full shadow"
                     >
@@ -305,16 +272,7 @@ export default function RegisterPage() {
                   <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-green-600">
                     <Camera className="mb-1" size={26} />
                     <span className="text-xs">กดเพื่อถ่ายรูป</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) handleFileChange(file, "general", index)
-                      }}
-                    />
+                    <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0], "general", index)} />
                   </label>
                 )}
               </div>
@@ -343,13 +301,7 @@ export default function RegisterPage() {
             <Input name="lon" value={form.lon} onChange={handleInputChange} />
           </div>
         </div>
-        <Button
-          type="button"
-          onClick={handleGetLocation}
-          disabled={locating}
-          variant="outline"
-          className="w-full text-blue-700 border-blue-400 gap-2 py-3 font-semibold"
-        >
+        <Button type="button" onClick={handleGetLocation} disabled={locating} variant="outline" className="w-full text-blue-700 border-blue-400 gap-2 py-3 font-semibold">
           <LocateIcon className="w-5 h-5" />
           {locating ? "กำลังดึงพิกัด..." : "📍 ดึงพิกัดจาก GPS"}
         </Button>
@@ -357,7 +309,7 @@ export default function RegisterPage() {
         {/* Step 1: Type */}
         <div className="space-y-2">
           <Label className="text-green-700 font-semibold">ชนิดพืช</Label>
-          <Select onValueChange={handleTypeChange}>
+          <Select value={form.plantType} onValueChange={handleTypeChange}>
             <SelectTrigger className="h-12 text-lg">
               <SelectValue placeholder="เลือกชนิดพืช" />
             </SelectTrigger>
@@ -373,7 +325,7 @@ export default function RegisterPage() {
         {spans.length > 0 && (
           <div className="space-y-2">
             <Label className="text-green-700 font-semibold">ระยะพืช</Label>
-            <Select onValueChange={handleSpanChange}>
+            <Select value={form.spacing} onValueChange={handleSpanChange}>
               <SelectTrigger className="h-12 text-lg">
                 <SelectValue placeholder="เลือกระยะพืช" />
               </SelectTrigger>
@@ -387,17 +339,8 @@ export default function RegisterPage() {
         )}
 
         {/* Submit */}
-        <Button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-green-600 text-white text-xl hover:bg-green-700 py-4 rounded-2xl gap-2 shadow-lg"
-        >
-          {loading ? "⏳ กำลังบันทึก..." : (
-            <>
-              <CheckCircle2 className="w-6 h-6" />
-              ลงทะเบียน
-            </>
-          )}
+        <Button type="submit" disabled={loading} className="w-full bg-green-600 text-white text-xl hover:bg-green-700 py-4 rounded-2xl gap-2 shadow-lg">
+          {loading ? "⏳ กำลังบันทึก..." : (<><CheckCircle2 className="w-6 h-6" /> ลงทะเบียน</>)}
         </Button>
       </form>
 
