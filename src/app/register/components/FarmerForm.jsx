@@ -112,15 +112,12 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
   };
 
   // จังหวัด/อำเภอ/ตำบล (แก้ไขใหม่ใช้ Set)
-  const handleProvinceChange = (value) => {
+ const handleProvinceChange = (value) => {
     handleChange("province")(value);
-    const filteredDistricts = [
-      ...new Set(
-        provinces
-          .filter((item) => item.province === value)
-          .map((item) => item.district)
-      ),
-    ];
+    const filteredDistricts = provinces
+      .filter((item) => item.province === value)
+      .map((item) => item.district)
+      .filter((v, i, a) => a.indexOf(v) === i);
     setDistricts(filteredDistricts);
     setSubDistricts([]);
     setPostcode("");
@@ -129,16 +126,12 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
 
   const handleDistrictChange = (value) => {
     handleChange("district")(value);
-    const filteredSub = [
-      ...new Set(
-        provinces
-          .filter(
-            (item) =>
-              item.province === formData.province && item.district === value
-          )
-          .map((item) => item.sub_district)
-      ),
-    ];
+    const filteredSub = provinces
+      .filter(
+        (item) =>
+          item.province === formData.province && item.district === value
+      )
+      .map((item) => item.sub_district);
     setSubDistricts(filteredSub);
     setPostcode("");
     setFormData((prev) => ({ ...prev, sub_district: "" }));
@@ -388,32 +381,35 @@ function FarmerFormPage({ selectedType, selectedSubType, regLineID, regProfile }
               </p>
 
               <ModernSelect
-            label="จังหวัด"
-            value={formData.province}
-            onChange={handleProvinceChange}
-            options={[
-              ...new Set(provinces.map((p) => p.province)),
-            ].map((p) => ({ value: p, label: p }))}
-            ringColor="amber"
-          />
-          {formData.province && (
-            <ModernSelect
-              label="อำเภอ"
-              value={formData.district}
-              onChange={handleDistrictChange}
-              options={districts.map((d) => ({ value: d, label: d }))}
-              ringColor="amber"
-            />
-          )}
-          {formData.district && (
-            <ModernSelect
-              label="ตำบล"
-              value={formData.sub_district}
-              onChange={handleSubDistrictChange}
-              options={subDistricts.map((s) => ({ value: s, label: s }))}
-              ringColor="amber"
-            />
-              )}
+                          label="จังหวัด"
+                          value={formData.province}
+                          onChange={handleProvinceChange}
+                          options={[
+                            ...new Set(provinces.map((p) => p.province)),
+                          ].map((p) => ({ value: p, label: p }))}
+                          ringColor="blue"
+                        />
+              
+                        {formData.province && (
+                          <ModernSelect
+                            label="อำเภอ"
+                            value={formData.district}
+                            onChange={handleDistrictChange}
+                            options={districts.map((d) => ({ value: d, label: d }))}
+                            ringColor="blue"
+                          />
+                        )}
+              
+                        {formData.district && (
+                          <ModernSelect
+                            label="ตำบล"
+                            value={formData.sub_district}
+                            onChange={handleSubDistrictChange}
+                            options={subDistricts.map((s) => ({ value: s, label: s }))}
+                            ringColor="blue"
+                          />
+                        )}
+      
               {formData.sub_district && (
                 <>
                   <ModernInput
