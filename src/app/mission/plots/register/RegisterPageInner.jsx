@@ -77,8 +77,9 @@ export default function RegisterPage() {
 const handleTypeChange = (type) => {
   setForm((prev) => ({ ...prev, plantType: type, spacing: "" }))
   const filtered = data.filter((d) => d.type === type)
-  // เอาระยะพืชของ type ที่เลือก
-  setSpans([...new Set(filtered.map((d) => d.span))])
+
+  // ✅ เก็บเป็น array ของ object { code, span }
+  setSpans(filtered.map((d) => ({ code: d.code, span: d.span })))
 }
 
   const handleSpanChange = (span) => {
@@ -230,7 +231,7 @@ const handleTypeChange = (type) => {
           <input
             type="file"
             accept="image/*"
-            capture="environment"
+            // capture="environment"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0]
@@ -311,7 +312,7 @@ const handleTypeChange = (type) => {
                     <input
                       type="file"
                       accept="image/*"
-                      capture="environment"
+                      // capture="environment"
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0]
@@ -373,17 +374,25 @@ const handleTypeChange = (type) => {
         </div>
 
         {/* Step 2: Span */}
+        {/* Step 2: Span (เลือกรหัสก่อน) */}
         {spans.length > 0 && (
           <div className="space-y-2">
-            <Label className="text-green-700 font-semibold">ระยะพืช</Label>
+            <Label className="text-green-700 font-semibold">ระยะพืช (เลือกรหัส)</Label>
             <Select onValueChange={handleSpanChange} value={form.spacing}>
               <SelectTrigger className="h-12 text-lg">
                 <SelectValue placeholder="เลือกระยะพืช" />
               </SelectTrigger>
               <SelectContent>
-                {spans.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
+                {spans
+                  .sort((a, b) => a.code.localeCompare(b.code, "en", { numeric: true })) // ✅ เรียงตาม code
+                  .map((item) => (
+                    <SelectItem
+                      key={item.code}
+                      value={item.span}
+                    >
+                      {item.code} — {item.span}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
