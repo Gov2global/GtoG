@@ -3,9 +3,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { GiFarmTractor } from "react-icons/gi";
 import { DiCoda } from "react-icons/di";
 import liff from "@line/liff";
-import ModernInput from "./ui/Input";
-import { ModernSelect, ModernCreatableSelect } from "./ui/Select";
-import LoadingOverlay from "./LoadingOverlat";
+import ModernInput from "./ui/Input.jsx";
+import { ModernSelect, ModernCreatableSelect } from "./ui/Select.jsx";
+import LoadingOverlay from "./LoadingOverlat.jsx";
 
 // พันธุ์พืช (Hardcode)
 const plantVarieties = {
