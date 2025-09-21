@@ -1,4 +1,4 @@
-// api/farmer/get/plant/route.js
+// api/mission/get/learn52week
 import { connectMongoDB } from "../../../../../../lib/mongodb";
 import Plant from "../../../../../../models/plant";
 import { NextResponse } from "next/server";

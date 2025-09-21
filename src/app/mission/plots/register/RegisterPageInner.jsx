@@ -61,22 +61,25 @@ export default function RegisterPage() {
 
   // โหลดข้อมูล learn52week
   useEffect(() => {
-    fetch("/api/mission/get/learn52week")
-      .then((res) => res.json())
-      .then((res) => {
-        if (res.ok) {
-          setData(res.data)
-          setTypes([...new Set(res.data.map((d) => d.type))])
-        }
-      })
-      .catch((err) => console.error("fetch error:", err))
-  }, [])
+  fetch("/api/mission/get/learn52week")
+    .then((res) => res.json())
+    .then((res) => {
+      if (res.success) {
+        setData(res.data)
+        // เอาเฉพาะ type (ไม่ซ้ำ)
+        setTypes([...new Set(res.data.map((d) => d.type))])
+      }
+    })
+    .catch((err) => console.error("fetch plant error:", err))
+}, [])
 
-  const handleTypeChange = (type) => {
-    setForm((prev) => ({ ...prev, plantType: type, spacing: "" }))
-    const filtered = data.filter((d) => d.type === type)
-    setSpans([...new Set(filtered.map((d) => d.span))])
-  }
+// เวลาเลือกชนิดพืช
+const handleTypeChange = (type) => {
+  setForm((prev) => ({ ...prev, plantType: type, spacing: "" }))
+  const filtered = data.filter((d) => d.type === type)
+  // เอาระยะพืชของ type ที่เลือก
+  setSpans([...new Set(filtered.map((d) => d.span))])
+}
 
   const handleSpanChange = (span) => {
     setForm((prev) => ({ ...prev, spacing: span }))
@@ -357,7 +360,7 @@ export default function RegisterPage() {
         {/* Step 1: Type */}
         <div className="space-y-2">
           <Label className="text-green-700 font-semibold">ชนิดพืช</Label>
-          <Select onValueChange={handleTypeChange}>
+          <Select onValueChange={handleTypeChange} value={form.plantType}>
             <SelectTrigger className="h-12 text-lg">
               <SelectValue placeholder="เลือกชนิดพืช" />
             </SelectTrigger>
@@ -373,7 +376,7 @@ export default function RegisterPage() {
         {spans.length > 0 && (
           <div className="space-y-2">
             <Label className="text-green-700 font-semibold">ระยะพืช</Label>
-            <Select onValueChange={handleSpanChange}>
+            <Select onValueChange={handleSpanChange} value={form.spacing}>
               <SelectTrigger className="h-12 text-lg">
                 <SelectValue placeholder="เลือกระยะพืช" />
               </SelectTrigger>
