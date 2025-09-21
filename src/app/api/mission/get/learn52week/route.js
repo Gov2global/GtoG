@@ -1,6 +1,6 @@
 // api/mission/get/learn52week
 import { connectMongoDB } from "../../../../../../lib/mongodb";
-import Plant from "../../../../../../models/plant";
+import Plant from "../../../../../../models/learn52week";
 import { NextResponse } from "next/server";
 
 const CACHE_KEY = "plantList";
