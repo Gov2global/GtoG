@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { clearCache } from "@/lib/cache";
+import { clearCache } from "../../../../../lib/cache";
 
 export async function GET(req) {
   try {
