@@ -110,10 +110,13 @@ function FormResgiPage() {
                   label="ประเภทหน่วยงาน"
                   value={selectedType}
                   onChange={handleTypeChange}
-                  options={[...new Set(typeFarmList.map((t) => t.typeDetailTH))].map((t) => ({
-                    value: t,
-                    label: t,
-                  }))} // ✅ field name ถูกต้อง
+                  options={typeFarmList
+                    .map((t) => t.typeDetailTH)
+                    .filter((v, i, a) => a.indexOf(v) === i)
+                    .map((t) => ({
+                      value: t,
+                      label: t,
+                    }))} 
                   placeholder="-- กรุณาเลือก --"
                   ringColor="amber"
                   disabled={isLoadingTypeFarm}
