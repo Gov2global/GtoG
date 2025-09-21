@@ -37,10 +37,10 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // ใช้ข้อมูลจาก learn52week
-  const [data, setData] = useState([])
-  const [types, setTypes] = useState([])
-  const [spans, setSpans] = useState([])
+  // state สำหรับพืช
+  const [data, setData] = useState([])     // เก็บ raw data จาก DB
+  const [types, setTypes] = useState([])   // รายการชนิดพืช
+  const [spans, setSpans] = useState([])   // รายการระยะปลูก
 
   // init LIFF
   useEffect(() => {
@@ -57,24 +57,24 @@ export default function RegisterPage() {
       .catch((err) => console.error("LIFF init error:", err))
   }, [])
 
-  // โหลดข้อมูล learn52week
-// โหลดข้อมูล plant จาก DB
-useEffect(() => {
-  fetch("/api/farmer/get/plant")
-    .then((res) => res.json())
-    .then((res) => {
-      if (res.success && Array.isArray(res.data)) {
-        setTypes(res.data.map((p) => p.plantNameTH)) // แปลงเป็น array ของชื่อพืช
-      }
-    })
-    .catch((err) => console.error("fetch plant error:", err))
-}, [])
+  // โหลดข้อมูล plant จาก DB
+  useEffect(() => {
+    fetch("/api/farmer/get/plant")
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          setData(res.data) // เก็บ raw data ทั้งหมด
+          setTypes(res.data.map((p) => p.plantNameTH)) // ใช้ชื่อพืชภาษาไทย
+        }
+      })
+      .catch((err) => console.error("fetch plant error:", err))
+  }, [])
 
   // event handlers
   const handleTypeChange = (type) => {
     setForm((prev) => ({ ...prev, plantType: type, spacing: "" }))
-    const filtered = data.filter((d) => d.type === type)
-    setSpans([...new Set(filtered.map((d) => d.span))])
+    const filtered = data.filter((d) => d.plantNameTH === type)
+    setSpans([...new Set(filtered.map((d) => d.span))]) // ดึง span จาก DB
   }
 
   const handleSpanChange = (span) => {
@@ -309,16 +309,16 @@ useEffect(() => {
         {/* Step 1: Type */}
         <div className="space-y-2">
           <Label className="text-green-700 font-semibold">ชนิดพืช</Label>
-            <Select value={form.plantType} onValueChange={(val) => setForm((prev) => ({ ...prev, plantType: val }))}>
-              <SelectTrigger className="h-12 text-lg">
-                <SelectValue placeholder="เลือกชนิดพืช" />
-              </SelectTrigger>
-              <SelectContent>
-                {types.map((t) => (
-                  <SelectItem key={t} value={t}>{t}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Select value={form.plantType} onValueChange={handleTypeChange}>
+            <SelectTrigger className="h-12 text-lg">
+              <SelectValue placeholder="เลือกชนิดพืช" />
+            </SelectTrigger>
+            <SelectContent>
+              {types.map((t) => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Step 2: Span */}
