@@ -58,17 +58,17 @@ export default function RegisterPage() {
   }, [])
 
   // โหลดข้อมูล learn52week
-  useEffect(() => {
-    fetch("/api/mission/get/learn52week")
-      .then((res) => res.json())
-      .then((res) => {
-        if (res.ok && Array.isArray(res.data)) {
-          setData(res.data)
-          setTypes([...new Set(res.data.map((d) => d.type))])
-        }
-      })
-      .catch((err) => console.error("fetch error:", err))
-  }, [])
+// โหลดข้อมูล plant จาก DB
+useEffect(() => {
+  fetch("/api/farmer/get/plant")
+    .then((res) => res.json())
+    .then((res) => {
+      if (res.success && Array.isArray(res.data)) {
+        setTypes(res.data.map((p) => p.plantNameTH)) // แปลงเป็น array ของชื่อพืช
+      }
+    })
+    .catch((err) => console.error("fetch plant error:", err))
+}, [])
 
   // event handlers
   const handleTypeChange = (type) => {
@@ -309,16 +309,16 @@ export default function RegisterPage() {
         {/* Step 1: Type */}
         <div className="space-y-2">
           <Label className="text-green-700 font-semibold">ชนิดพืช</Label>
-          <Select value={form.plantType} onValueChange={handleTypeChange}>
-            <SelectTrigger className="h-12 text-lg">
-              <SelectValue placeholder="เลือกชนิดพืช" />
-            </SelectTrigger>
-            <SelectContent>
-              {types.map((t) => (
-                <SelectItem key={t} value={t}>{t}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={form.plantType} onValueChange={(val) => setForm((prev) => ({ ...prev, plantType: val }))}>
+              <SelectTrigger className="h-12 text-lg">
+                <SelectValue placeholder="เลือกชนิดพืช" />
+              </SelectTrigger>
+              <SelectContent>
+                {types.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
         </div>
 
         {/* Step 2: Span */}
