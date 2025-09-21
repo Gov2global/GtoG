@@ -10,6 +10,15 @@ import { ModernSelect } from "./components/ui/Select";
 import { MdOutlineLibraryBooks } from "react-icons/md";
 import liff from "@line/liff";
 
+// ✅ ทำ mapping ชื่อ → component
+const COMPONENT_MAP = {
+  "เกษตรกร": FarmerFormPage,
+  "หน่วยงานเอกชน": PrivateAgency,
+  "หน่วยงานราชการ": GovernmentAgencies,
+  "หน่วยงานท้องถิ่น": LocalAuthority,
+  "สถาบันการศึกษา": EducationalInstitution,
+};
+
 function FormResgiPage() {
   const [step, setStep] = useState(1);
   const [typeFarmList, setTypeFarmList] = useState([]);
@@ -19,7 +28,7 @@ function FormResgiPage() {
   const [regLineID, setRegLineID] = useState("");
   const [regProfile, setRegProfile] = useState("");
 
-  // ✅ Init LIFF + set regLineID/regProfile + set RichMenu
+  // ✅ Init LIFF
   useEffect(() => {
     liff.init({ liffId: "2007697520-g59jM8X3" }).then(() => {
       if (liff.isLoggedIn()) {
@@ -41,26 +50,24 @@ function FormResgiPage() {
     });
   }, []);
 
-  // ✅ โหลด typeFarm จาก backend
+  // ✅ โหลด typeFarm
   useEffect(() => {
-  const fetchTypeFarm = async () => {
-    setIsLoadingTypeFarm(true);
-    try {
-      const res = await fetch("/api/farmer/get/typeFarm");
-      const json = await res.json();
-      console.log("📌 typeFarm API result:", json); // ✅ Debug log
-      if (json.success && Array.isArray(json.data)) {
-        console.log("✅ Data length:", json.data.length);
-        console.table(json.data);
-        setTypeFarmList(json.data);
+    const fetchTypeFarm = async () => {
+      setIsLoadingTypeFarm(true);
+      try {
+        const res = await fetch("/api/farmer/get/typeFarm");
+        const json = await res.json();
+        console.log("📌 typeFarm API result:", json);
+        if (json.success && Array.isArray(json.data)) {
+          setTypeFarmList(json.data);
+        }
+      } catch (err) {
+        console.error("❌ โหลด typeFarm ล้มเหลว", err);
       }
-    } catch (err) {
-      console.error("❌ โหลด typeFarm ล้มเหลว", err);
-    }
-    setIsLoadingTypeFarm(false);
-  };
-  fetchTypeFarm();
-}, []);
+      setIsLoadingTypeFarm(false);
+    };
+    fetchTypeFarm();
+  }, []);
 
   const handleTypeChange = (val) => {
     setSelectedType(val);
@@ -79,13 +86,13 @@ function FormResgiPage() {
     }
   };
 
-const getSubTypeOptions = () => {
-  return typeFarmList
-    .filter((item) => (item.typeDetailTH || item.typeDetaiTH) === selectedType)
-    .map((item) => item.subType)
-    .filter((v, i, a) => a.indexOf(v) === i)
-    .map((s) => ({ value: s, label: s }));
-};
+  const getSubTypeOptions = () => {
+    return typeFarmList
+      .filter((item) => (item.typeDetailTH || item.typeDetaiTH) === selectedType)
+      .map((item) => item.subType)
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .map((s) => ({ value: s, label: s }));
+  };
 
   return (
     <Container>
@@ -115,7 +122,7 @@ const getSubTypeOptions = () => {
                   options={[...new Set(typeFarmList.map((t) => t.typeDetailTH || t.typeDetaiTH))].map((t) => ({
                     value: t,
                     label: t,
-                  }))} 
+                  }))}
                   placeholder="-- กรุณาเลือก --"
                   ringColor="amber"
                   disabled={isLoadingTypeFarm}
@@ -146,50 +153,21 @@ const getSubTypeOptions = () => {
         </div>
       )}
 
-      {step === 2 && (
-        <>
-          {selectedType === "เกษตรกร" && (
-            <FarmerFormPage
-              selectedType={selectedType}
-              selectedSubType={selectedSubType}
-              regLineID={regLineID}
-              regProfile={regProfile}
-            />
-          )}
-          {selectedType === "หน่วยงานเอกชน" && (
-            <PrivateAgency
-              selectedType={selectedType}
-              selectedSubType={selectedSubType}
-              regLineID={regLineID}
-              regProfile={regProfile}
-            />
-          )}
-          {selectedType === "หน่วยงานราชการ" && (
-            <GovernmentAgencies
-              selectedType={selectedType}
-              selectedSubType={selectedSubType}
-              regLineID={regLineID}
-              regProfile={regProfile}
-            />
-          )}
-          {selectedType === "หน่วยงานท้องถิ่น" && (
-            <LocalAuthority
-              selectedType={selectedType}
-              selectedSubType={selectedSubType}
-              regLineID={regLineID}
-              regProfile={regProfile}
-            />
-          )}
-          {selectedType === "สถาบันการศึกษา" && (
-            <EducationalInstitution
-              selectedType={selectedType}
-              selectedSubType={selectedSubType}
-              regLineID={regLineID}
-              regProfile={regProfile}
-            />
-          )}
-        </>
-      )}
+      {step === 2 && (() => {
+        const Comp = COMPONENT_MAP[selectedType];
+        return Comp ? (
+          <Comp
+            selectedType={selectedType}
+            selectedSubType={selectedSubType}
+            regLineID={regLineID}
+            regProfile={regProfile}
+          />
+        ) : (
+          <div className="p-6 text-red-600">
+            ❌ ไม่มีฟอร์มสำหรับประเภท: {selectedType}
+          </div>
+        );
+      })()}
     </Container>
   );
 }
