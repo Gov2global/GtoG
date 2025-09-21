@@ -19,7 +19,7 @@ function FormResgiPage() {
   const [regLineID, setRegLineID] = useState("");
   const [regProfile, setRegProfile] = useState("");
 
-  // ✅ Init LIFF
+  // ✅ Init LIFF + set regLineID/regProfile + set RichMenu
   useEffect(() => {
     liff.init({ liffId: "2007697520-g59jM8X3" }).then(() => {
       if (liff.isLoggedIn()) {
@@ -48,14 +48,9 @@ function FormResgiPage() {
       try {
         const res = await fetch("/api/farmer/get/typeFarm");
         const json = await res.json();
-        console.log("📌 typeFarm API result:", json);
-
+        console.log("📌 typeFarm API result:", json); // ✅ Debug log
         if (json.success) {
           setTypeFarmList(json.data);
-          console.log(
-            "📌 Type options:",
-            [...new Set(json.data.map((x) => x.typeDetailTH))]
-          );
         }
       } catch (err) {
         console.error("❌ โหลด typeFarm ล้มเหลว", err);
@@ -82,14 +77,12 @@ function FormResgiPage() {
     }
   };
 
-  // ✅ options ของ subType ตาม type ที่เลือก
   const getSubTypeOptions = () => {
     return typeFarmList
-      .filter((item) => item.typeDetailTH === selectedType)
-      .map((item) => ({
-        value: item.subType,
-        label: item.subType,
-      }));
+      .filter((item) => item.typeDetailTH === selectedType) // ✅ field name ถูกต้อง
+      .map((item) => item.subType)
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .map((s) => ({ value: s, label: s }));
   };
 
   return (
@@ -106,9 +99,7 @@ function FormResgiPage() {
                 กรุณาเลือกประเภทหน่วยงานและหมวดหมู่ที่คุณต้องการลงทะเบียน
               </p>
             </div>
-
             <div className="space-y-5">
-              {/* ✅ Dropdown ประเภท */}
               {isLoadingTypeFarm ? (
                 <div className="flex items-center justify-center py-8 text-amber-600">
                   <span className="animate-spin mr-2">⏳</span>
@@ -119,19 +110,15 @@ function FormResgiPage() {
                   label="ประเภทหน่วยงาน"
                   value={selectedType}
                   onChange={handleTypeChange}
-                  options={[...new Set(typeFarmList.map((t) => t.typeDetailTH))].map(
-                    (t) => ({
-                      value: t,
-                      label: t,
-                    })
-                  )}
+                  options={[...new Set(typeFarmList.map((t) => t.typeDetailTH))].map((t) => ({
+                    value: t,
+                    label: t,
+                  }))} // ✅ field name ถูกต้อง
                   placeholder="-- กรุณาเลือก --"
                   ringColor="amber"
                   disabled={isLoadingTypeFarm}
                 />
               )}
-
-              {/* ✅ Dropdown หมวดหมู่ */}
               {selectedType && (
                 <ModernSelect
                   label="หมวดหมู่"
@@ -143,7 +130,6 @@ function FormResgiPage() {
                   disabled={isLoadingTypeFarm}
                 />
               )}
-
               <button
                 onClick={handleNext}
                 disabled={isLoadingTypeFarm}
