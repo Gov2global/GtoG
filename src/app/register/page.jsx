@@ -79,13 +79,13 @@ function FormResgiPage() {
     }
   };
 
-  const getSubTypeOptions = () => {
-    return typeFarmList
-      .filter((item) => item.typeDetailTH === selectedType) // ✅ field name ถูกต้อง
-      .map((item) => item.subType)
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .map((s) => ({ value: s, label: s }));
-  };
+const getSubTypeOptions = () => {
+  return typeFarmList
+    .filter((item) => (item.typeDetailTH || item.typeDetaiTH) === selectedType)
+    .map((item) => item.subType)
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .map((s) => ({ value: s, label: s }));
+};
 
   return (
     <Container>
@@ -112,10 +112,10 @@ function FormResgiPage() {
                   label="ประเภทหน่วยงาน"
                   value={selectedType}
                   onChange={handleTypeChange}
-                  options={[...new Set(typeFarmList.map((t) => t.typeDetailTH))].map((t) => ({
+                  options={[...new Set(typeFarmList.map((t) => t.typeDetailTH || t.typeDetaiTH))].map((t) => ({
                     value: t,
                     label: t,
-                  }))} // ✅ field name ถูกต้อง
+                  }))} 
                   placeholder="-- กรุณาเลือก --"
                   ringColor="amber"
                   disabled={isLoadingTypeFarm}
