@@ -29,66 +29,82 @@ export default function ManagePageInner() {
   const CATEGORY_ORDER = ["DG004", "DG001", "DG005", "DG003", "DG002", "DG006"]
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        // 🔹 โหลดข้อมูล plot
-        const res = await fetch("/api/mission/get/regmissos")
-        const json = await res.json()
-        const found = json.data?.find((p) => p._id === id)
-        setPlot(found)
+  async function fetchData() {
+    try {
+      // 🔹 โหลดข้อมูล plot
+      const res = await fetch("/api/mission/get/regmissos")
+      const json = await res.json()
+      const found = json.data?.find((p) => p._id === id)
+      setPlot(found)
 
-        // 🔹 โหลดพยากรณ์อากาศ
-        if (found?.lat && found?.lon) {
-          const weatherRes = await fetch(
-            `https://api.open-meteo.com/v1/forecast?latitude=${found.lat}&longitude=${found.lon}&current_weather=true`
-          )
-          const weatherJson = await weatherRes.json()
-          setWeather(weatherJson.current_weather)
-        }
-
-        // 🔹 โหลด learn52week
-        const learnRes = await fetch("/api/mission/get/learn52week")
-        const learnJson = await learnRes.json()
-        const matched = (learnJson.data || []).filter(
-          (r) => r.span?.trim() === found?.spacing?.trim()
+      // 🔹 โหลดพยากรณ์อากาศ
+      if (found?.lat && found?.lon) {
+        const weatherRes = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${found.lat}&longitude=${found.lon}&current_weather=true`
         )
-
-        const extractedCodes = matched.map((r) => r.code?.trim()).filter(Boolean)
-        setCodes(extractedCodes)
-
-        if (extractedCodes.length > 0) {
-          // 🔹 โหลด todolist
-          const todoRes = await fetch("/api/mission/get/todolist")
-          const todoJson = await todoRes.json()
-          const allTodos = todoJson.data || []
-
-          const filteredTodos = allTodos.filter((todo) => {
-            const farmerCode = todo["Code-farmer"]?.toLowerCase().trim().replace(",", "")
-            return farmerCode && extractedCodes.map(c => c.toLowerCase()).includes(farmerCode)
-          })
-
-          // 🔹 โหลด progress เพื่อกรอง task ที่ทำแล้ว
-          const progressRes = await fetch(`/api/mission/get/progress?regCode=${found.regCode}`)
-          const progressJson = await progressRes.json()
-          const doneList = progressJson.data || []
-
-          const notDoneTasks = filteredTodos.filter((todo) => {
-            return !doneList.some(
-              (p) => p.id === todo.ID && p.regCode === found.regCode
-            )
-          })
-
-          setTasks(notDoneTasks)
-        }
-      } catch (err) {
-        console.error("❌ error:", err)
-      } finally {
-        setLoading(false)
+        const weatherJson = await weatherRes.json()
+        setWeather(weatherJson.current_weather)
       }
-    }
 
-    fetchData()
-  }, [id])
+      // ✅ ฟังก์ชัน normalize สำหรับเทียบ string
+      const normalize = (s) => s?.toLowerCase().replace(/\s+/g, "").trim()
+
+      // 🔹 โหลด learn52week
+      const learnRes = await fetch("/api/mission/get/learn52week")
+      const learnJson = await learnRes.json()
+      const matched = (learnJson.data || []).filter(
+        (r) =>
+          normalize(r.span) === normalize(found?.spacing) &&
+          normalize(r.type) === normalize(found?.plantType)
+      )
+
+      const extractedCodes = matched
+        .map((r) => r.code?.trim())
+        .filter(Boolean)
+      setCodes(extractedCodes)
+
+      if (extractedCodes.length > 0) {
+        // 🔹 โหลด todolist
+        const todoRes = await fetch("/api/mission/get/todolist")
+        const todoJson = await todoRes.json()
+        const allTodos = todoJson.data || []
+
+        const filteredTodos = allTodos.filter((todo) => {
+          const farmerCode = todo["Code-farmer"]
+            ?.toLowerCase()
+            .trim()
+            .replace(",", "")
+          return (
+            farmerCode &&
+            extractedCodes.map((c) => c.toLowerCase()).includes(farmerCode)
+          )
+        })
+
+        // 🔹 โหลด progress เพื่อกรอง task ที่ทำแล้ว
+        const progressRes = await fetch(
+          `/api/mission/get/progress?regCode=${found.regCode}`
+        )
+        const progressJson = await progressRes.json()
+        const doneList = progressJson.data || []
+
+        const notDoneTasks = filteredTodos.filter((todo) => {
+          return !doneList.some(
+            (p) => p.id === todo.ID && p.regCode === found.regCode
+          )
+        })
+
+        setTasks(notDoneTasks)
+      }
+    } catch (err) {
+      console.error("❌ error:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  fetchData()
+}, [id])
+
 
   const handleCheckboxChange = (taskId) => {
     setChecked((prev) => ({ ...prev, [taskId]: !prev[taskId] }))
